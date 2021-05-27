@@ -1,5 +1,5 @@
 [package]
-name = "yield-optimizer"
+name = "yield_optimizer"
 version = "0.1.0"
 authors = ["Nexus Labs"]
 edition = "2018"
@@ -16,6 +16,7 @@ backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
 cw20 = { version = "0.6" }
+cosmwasm-bignumber = "2.0.0"
 cosmwasm-storage = { version = "0.14.0" }
 terra-cosmwasm = { version = "2.0.0" }
 cosmwasm-std = { version = "0.14.0" }
