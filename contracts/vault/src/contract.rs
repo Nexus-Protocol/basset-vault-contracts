@@ -1,14 +1,12 @@
 use cosmwasm_std::{
-    entry_point, from_binary, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
+    entry_point, from_binary, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response,
     StdResult,
 };
 
 use crate::error::ContractError;
 use crate::state::{State, STATE};
 use cw20::Cw20ReceiveMsg;
-use yield_optimizer::vault::{
-    CountResponse, Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
-};
+use yield_optimizer::vault::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors
@@ -25,7 +23,33 @@ pub fn instantiate(
     };
     STATE.save(deps.storage, &state)?;
 
-    Ok(Response::default())
+    Ok(Response {
+        messages: vec![],
+        submessages: vec![SubMsg {
+            msg: WasmMsg::Instantiate {
+                admin: None,
+                code_id: msg.token_code_id,
+                msg: to_binary(&TokenInstantiateMsg {
+                    name: "terraswap liquidity token".to_string(),
+                    symbol: "uLP".to_string(),
+                    decimals: 6,
+                    initial_balances: vec![],
+                    mint: Some(MinterResponse {
+                        minter: env.contract.address.to_string(),
+                        cap: None,
+                    }),
+                })?,
+                send: vec![],
+                label: "".to_string(),
+            }
+            .into(),
+            gas_limit: None,
+            id: 1,
+            reply_on: ReplyOn::Success,
+        }],
+        attributes: vec![],
+        data: None,
+    })
 }
 
 // And declare a custom Error variant for the ones where you will want to make use of it
@@ -47,24 +71,33 @@ pub fn receive_cw20(
     info: MessageInfo,
     cw20_msg: Cw20ReceiveMsg,
 ) -> Result<Response, ContractError> {
-    let contract_addr = info.sender.clone();
-
     match from_binary(&cw20_msg.msg) {
-        Ok(Cw20HookMsg::Deposit {}) => Ok(Response::default()),
+        Ok(Cw20HookMsg::Deposit {}) => receive_cw20_deposit(deps, env, info, cw20_msg),
         Err(err) => Err(ContractError::Std(err)),
     }
+}
+
+fn receive_cw20_deposit(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    cw20_msg: Cw20ReceiveMsg,
+) -> Result<Response, ContractError> {
+    let asset_addr = info.sender.clone();
+    let asset_holder = Addr::unchecked(cw20_msg.sender.clone());
+
+    Ok(Response::default())
 }
 
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetCount {} => to_binary(&query_count(deps)?),
+        QueryMsg::Todo {} => to_binary(&todo_query()?),
     }
 }
 
-fn query_count(deps: Deps) -> StdResult<CountResponse> {
-    let state = STATE.load(deps.storage)?;
-    Ok(CountResponse { count: state.count })
+fn todo_query() -> StdResult<Response> {
+    Ok(Response::default())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
