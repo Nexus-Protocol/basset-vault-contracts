@@ -36,6 +36,7 @@ overflow-checks = true
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
+cw20-base = "0.6.1"
 cw20 = { version = "0.6" }
 yield_optimizer = { path = "../../packages/yield_optimizer", default-features = false, version = "0.1.0"}
 cosmwasm-std = { version = "0.14.0" }
@@ -44,6 +45,7 @@ cw-storage-plus = "0.6.0"
 schemars = "0.8.1"
 serde = { version = "1.0.125", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.24" }
+protobuf = { version = "2", features = ["with-bytes"] }
 
 [dev-dependencies]
 cosmwasm-schema = { version = "0.14.0" }

@@ -6,15 +6,16 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ReceiveMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct InstantiateMsg {}
+pub struct InstantiateMsg {
+    pub token_code_id: u64,
+    //Luna / ETH / Sol, will be converted to cLuna, cETH, cSol
+    pub collateral_token_symbol: String,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     Receive(Cw20ReceiveMsg),
-    ////////////////////
-    /// Overseer operations
-    ////////////////////
     // DepositTokens {
     //     depositor: Addr,
     //     amount: Uint256,

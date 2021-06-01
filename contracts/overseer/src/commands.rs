@@ -16,7 +16,7 @@ use yield_optimizer::{
     asset::AssetInfo,
     overseer::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
 };
-use yield_optimizer::{asset::AssetInfoRaw, vault::ExecuteMsg as VaultHandleMsg};
+use yield_optimizer::{asset::AssetInfoRaw, basset_farmer::ExecuteMsg as VaultHandleMsg};
 
 pub fn deposit_asset(
     deps: DepsMut,

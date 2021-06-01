@@ -1,56 +1,83 @@
 use cosmwasm_std::{
-    entry_point, from_binary, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult,
+    attr, entry_point, from_binary, to_binary, Addr, Binary, CanonicalAddr, Deps, DepsMut, Env,
+    MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 
-use crate::error::ContractError;
 use crate::state::{State, STATE};
+use crate::{error::ContractError, response::MsgInstantiateContractResponse};
 use cw20::Cw20ReceiveMsg;
-use yield_optimizer::vault::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use cw20_base::msg::{InstantiateMsg as TokenInstantiateMsg, MinterResponse};
+use protobuf::Message;
+use yield_optimizer::basset_farmer::{
+    Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
+};
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     let state = State {
-        count: 22,
-        owner: info.sender,
+        casset_token: CanonicalAddr::from(vec![]),
     };
+
     STATE.save(deps.storage, &state)?;
 
-    Ok(Response::default())
-    // Ok(Response {
-    //     messages: vec![],
-    //     submessages: vec![SubMsg {
-    //         msg: WasmMsg::Instantiate {
-    //             admin: None,
-    //             code_id: msg.token_code_id,
-    //             msg: to_binary(&TokenInstantiateMsg {
-    //                 name: "terraswap liquidity token".to_string(),
-    //                 symbol: "uLP".to_string(),
-    //                 decimals: 6,
-    //                 initial_balances: vec![],
-    //                 mint: Some(MinterResponse {
-    //                     minter: env.contract.address.to_string(),
-    //                     cap: None,
-    //                 }),
-    //             })?,
-    //             send: vec![],
-    //             label: "".to_string(),
-    //         }
-    //         .into(),
-    //         gas_limit: None,
-    //         id: 1,
-    //         reply_on: ReplyOn::Success,
-    //     }],
-    //     attributes: vec![],
-    //     data: None,
-    // })
+    Ok(Response {
+        messages: vec![],
+        submessages: vec![SubMsg {
+            msg: WasmMsg::Instantiate {
+                admin: None,
+                code_id: msg.token_code_id,
+                msg: to_binary(&TokenInstantiateMsg {
+                    name: "nexus basset token share representation".to_string(),
+                    symbol: format!("c{}", msg.collateral_token_symbol),
+                    decimals: 6,
+                    initial_balances: vec![],
+                    mint: Some(MinterResponse {
+                        minter: env.contract.address.to_string(),
+                        cap: None,
+                    }),
+                })?,
+                send: vec![],
+                label: "".to_string(),
+            }
+            .into(),
+            gas_limit: None,
+            id: 1,
+            reply_on: ReplyOn::Success,
+        }],
+        attributes: vec![],
+        data: None,
+    })
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+    let data = msg.result.unwrap().data.unwrap();
+    let res: MsgInstantiateContractResponse =
+        Message::parse_from_bytes(data.as_slice()).map_err(|_| {
+            StdError::parse_err("MsgInstantiateContractResponse", "failed to parse data")
+        })?;
+
+    let casset_token = res.get_contract_address();
+
+    let api = deps.api;
+    STATE.update(deps.storage, |mut state| -> StdResult<_> {
+        state.casset_token = api.addr_canonicalize(casset_token)?;
+        Ok(state)
+    })?;
+
+    Ok(Response {
+        messages: vec![],
+        submessages: vec![],
+        attributes: vec![attr("casset_token_addr", casset_token)],
+        data: None,
+    })
 }
 
 // And declare a custom Error variant for the ones where you will want to make use of it
