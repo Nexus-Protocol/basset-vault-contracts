@@ -23,33 +23,34 @@ pub fn instantiate(
     };
     STATE.save(deps.storage, &state)?;
 
-    Ok(Response {
-        messages: vec![],
-        submessages: vec![SubMsg {
-            msg: WasmMsg::Instantiate {
-                admin: None,
-                code_id: msg.token_code_id,
-                msg: to_binary(&TokenInstantiateMsg {
-                    name: "terraswap liquidity token".to_string(),
-                    symbol: "uLP".to_string(),
-                    decimals: 6,
-                    initial_balances: vec![],
-                    mint: Some(MinterResponse {
-                        minter: env.contract.address.to_string(),
-                        cap: None,
-                    }),
-                })?,
-                send: vec![],
-                label: "".to_string(),
-            }
-            .into(),
-            gas_limit: None,
-            id: 1,
-            reply_on: ReplyOn::Success,
-        }],
-        attributes: vec![],
-        data: None,
-    })
+    Ok(Response::default())
+    // Ok(Response {
+    //     messages: vec![],
+    //     submessages: vec![SubMsg {
+    //         msg: WasmMsg::Instantiate {
+    //             admin: None,
+    //             code_id: msg.token_code_id,
+    //             msg: to_binary(&TokenInstantiateMsg {
+    //                 name: "terraswap liquidity token".to_string(),
+    //                 symbol: "uLP".to_string(),
+    //                 decimals: 6,
+    //                 initial_balances: vec![],
+    //                 mint: Some(MinterResponse {
+    //                     minter: env.contract.address.to_string(),
+    //                     cap: None,
+    //                 }),
+    //             })?,
+    //             send: vec![],
+    //             label: "".to_string(),
+    //         }
+    //         .into(),
+    //         gas_limit: None,
+    //         id: 1,
+    //         reply_on: ReplyOn::Success,
+    //     }],
+    //     attributes: vec![],
+    //     data: None,
+    // })
 }
 
 // And declare a custom Error variant for the ones where you will want to make use of it

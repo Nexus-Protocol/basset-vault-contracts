@@ -1,27 +1,34 @@
+//TODO: remove me
 use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::{Addr, Api, CanonicalAddr, Deps, Querier, StdError, StdResult, Storage};
 
-pub type Token = (CanonicalAddr, Uint256);
-pub type TokenHuman = (Addr, Uint256);
+pub type TokenCanonical = (CanonicalAddr, Uint256);
+pub type TokenAddr = (Addr, Uint256);
+pub type TokenString = (String, Uint256);
 
-pub type Tokens = Vec<Token>;
-pub type TokensHuman = Vec<TokenHuman>;
+pub type TokensCanonical = Vec<TokenCanonical>;
+pub type TokensAddr = Vec<TokenAddr>;
+pub type TokensString = Vec<TokenString>;
 
 pub trait TokensMath {
-    fn sub(&mut self, collaterals: Tokens) -> StdResult<()>;
-    fn add(&mut self, collaterals: Tokens);
+    fn sub(&mut self, collaterals: TokensCanonical) -> StdResult<()>;
+    fn add(&mut self, collaterals: TokensCanonical);
 }
 
-pub trait TokensToHuman {
-    fn to_human(&self, api: &dyn Api) -> StdResult<TokensHuman>;
+pub trait TokensValidate {
+    fn validate(&self, api: &dyn Api) -> StdResult<TokensAddr>;
 }
 
-pub trait TokensToRaw {
-    fn to_raw(&self, api: &dyn Api) -> StdResult<Tokens>;
+pub trait TokensToAddr {
+    fn to_human(&self, api: &dyn Api) -> StdResult<TokensAddr>;
 }
 
-impl TokensMath for Tokens {
-    fn sub(&mut self, tokens: Tokens) -> StdResult<()> {
+pub trait TokensToCanonical {
+    fn to_raw(&self, api: &dyn Api) -> StdResult<TokensCanonical>;
+}
+
+impl TokensMath for TokensCanonical {
+    fn sub(&mut self, tokens: TokensCanonical) -> StdResult<()> {
         self.sort_by(|a, b| {
             let res = a.0.as_slice().cmp(&b.0.as_slice());
             if res == std::cmp::Ordering::Equal {
@@ -71,7 +78,7 @@ impl TokensMath for Tokens {
         Ok(())
     }
 
-    fn add(&mut self, tokens: Tokens) {
+    fn add(&mut self, tokens: TokensCanonical) {
         self.sort_by(|a, b| {
             let res = a.0.as_slice().cmp(&b.0.as_slice());
             if res == std::cmp::Ordering::Equal {
@@ -118,22 +125,32 @@ impl TokensMath for Tokens {
     }
 }
 
-impl TokensToHuman for Tokens {
-    fn to_human(&self, api: &dyn Api) -> StdResult<TokensHuman> {
-        let collaterals: TokensHuman = self
+impl TokensToAddr for TokensCanonical {
+    fn to_human(&self, api: &dyn Api) -> StdResult<TokensAddr> {
+        let collaterals: TokensAddr = self
             .iter()
             .map(|c| Ok((api.addr_humanize(&c.0)?, c.1)))
-            .collect::<StdResult<TokensHuman>>()?;
+            .collect::<StdResult<TokensAddr>>()?;
         Ok(collaterals)
     }
 }
 
-impl TokensToRaw for TokensHuman {
-    fn to_raw(&self, api: &dyn Api) -> StdResult<Tokens> {
-        let tokens: Tokens = self
+impl TokensToCanonical for TokensAddr {
+    fn to_raw(&self, api: &dyn Api) -> StdResult<TokensCanonical> {
+        let tokens: TokensCanonical = self
             .iter()
             .map(|c| Ok((api.addr_canonicalize(&c.0.to_string())?, c.1)))
-            .collect::<StdResult<Tokens>>()?;
+            .collect::<StdResult<TokensCanonical>>()?;
         Ok(tokens)
+    }
+}
+
+impl TokensValidate for TokensString {
+    fn validate(&self, api: &dyn Api) -> StdResult<TokensAddr> {
+        let validated: TokensAddr = self
+            .iter()
+            .map(|c| Ok((api.addr_validate(&c.0)?, c.1)))
+            .collect::<StdResult<TokensAddr>>()?;
+        Ok(validated)
     }
 }

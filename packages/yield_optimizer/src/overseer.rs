@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ReceiveMsg;
 
-use crate::tokens::TokensHuman;
+use crate::asset::{Asset, AssetString};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {}
@@ -13,10 +13,31 @@ pub struct InstantiateMsg {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    ////////////////////
-    /// User operations
-    ////////////////////
-    DepositTokens { tokens: TokensHuman },
+    UserMsg { user_msg: UserMsg },
+    MaintainerMsg { mantainer_msg: MaintainerMsg },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum UserMsg {
+    Deposit { asset: AssetString },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum MaintainerMsg {
+    /// Create new custody contract for the given collateral token
+    Whitelist {
+        name: String,
+        collateral_token: String,
+        strategy_contract: String,
+    },
+    /// Update registered whitelist info
+    UpdateWhitelist {
+        collateral_token: String,         // bAsset token contract
+        custody_contract: Option<String>, // bAsset custody contract
+        max_ltv: Option<Decimal256>,      // Loan To Value ratio
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -34,22 +55,11 @@ pub struct MigrateMsg {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    Tokens {
+    Assets {
         depositor: String,
     },
-    AllTokens {
+    AllAssets {
         start_after: Option<String>,
         limit: Option<u32>,
     },
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct TokensResponse {
-    pub depositor: Addr,
-    pub tokens: TokensHuman, // <(Token, Amount)>
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
-pub struct AllDepositorsResponse {
-    pub depositors: Vec<(Addr, TokensHuman)>,
 }

@@ -1,3 +1,4 @@
+use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -11,6 +12,17 @@ pub struct InstantiateMsg {}
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     Receive(Cw20ReceiveMsg),
+    ////////////////////
+    /// Overseer operations
+    ////////////////////
+    // DepositTokens {
+    //     depositor: Addr,
+    //     amount: Uint256,
+    // },
+    // WithdrawTokens {
+    //     depositor: Addr,
+    //     amount: Uint256,
+    // },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

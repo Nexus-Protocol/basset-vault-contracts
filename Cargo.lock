@@ -586,6 +586,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
 
 [[package]]
+name = "yield-optimizer-basset-farmer"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-storage-plus",
+ "cw20",
+ "schemars",
+ "serde",
+ "thiserror",
+ "yield_optimizer",
+]
+
+[[package]]
 name = "yield-optimizer-overseer"
 version = "0.1.0"
 dependencies = [
@@ -595,21 +610,6 @@ dependencies = [
  "cosmwasm-storage",
  "cw-storage-plus",
  "cw0",
- "cw20",
- "schemars",
- "serde",
- "thiserror",
- "yield_optimizer",
-]
-
-[[package]]
-name = "yield-optimizer-vault"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw-storage-plus",
  "cw20",
  "schemars",
  "serde",
