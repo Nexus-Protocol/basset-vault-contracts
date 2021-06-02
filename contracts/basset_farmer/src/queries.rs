@@ -1,7 +1,8 @@
 use cosmwasm_std::{Deps, StdResult};
 
-use crate::state::{State, STATE};
+use crate::state::load_config;
+use crate::state::Config;
 
-pub fn query_state(deps: Deps) -> StdResult<State> {
-    STATE.load(deps.storage)
+pub fn query_config(deps: Deps) -> StdResult<Config> {
+    load_config(deps.storage)
 }

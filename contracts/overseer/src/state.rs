@@ -29,10 +29,8 @@ pub struct WhitelistElem {
 }
 
 pub const STATE: Item<State> = Item::new("state");
-//key: CanonicalAddr
-pub const DEPOSITED_ASSETS: Map<&[u8], Vec<AssetInfoRaw>> = Map::new("deposits");
-//key: CanonicalAddr
-pub const TOKENS_WHITELIST: Map<&[u8], WhitelistElem> = Map::new("whitelist");
+pub const DEPOSITED_ASSETS: Map<Addr, Vec<AssetInfoRaw>> = Map::new("deposits");
+pub const TOKENS_WHITELIST: Map<Addr, WhitelistElem> = Map::new("whitelist");
 pub const CONFIG: Item<Config> = Item::new("config");
 
 pub fn store_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()> {
@@ -47,11 +45,11 @@ pub fn store_deposits(
     depositor: &CanonicalAddr,
     assets: &Vec<AssetInfoRaw>,
 ) -> StdResult<()> {
-    if assets.len() == 0 {
-        DEPOSITED_ASSETS.remove(storage, depositor.as_slice());
-    } else {
-        DEPOSITED_ASSETS.save(storage, depositor.as_slice(), assets)?;
-    }
+    // if assets.len() == 0 {
+    //     DEPOSITED_ASSETS.remove(storage, depositor.as_slice());
+    // } else {
+    //     DEPOSITED_ASSETS.save(storage, depositor.as_slice(), assets)?;
+    // }
 
     Ok(())
 }
@@ -60,10 +58,11 @@ pub fn read_deposits(
     storage: &dyn Storage,
     depositor: &CanonicalAddr,
 ) -> StdResult<Vec<AssetInfoRaw>> {
-    match DEPOSITED_ASSETS.may_load(storage, depositor.as_slice())? {
-        Some(v) => Ok(v),
-        None => Ok(vec![]),
-    }
+    Ok(vec![])
+    // match DEPOSITED_ASSETS.may_load(storage, depositor.as_slice())? {
+    //     Some(v) => Ok(v),
+    //     None => Ok(vec![]),
+    // }
 }
 
 // pub fn depositor_to_human(
@@ -80,8 +79,9 @@ pub fn read_whitelist_elem(
     storage: &dyn Storage,
     token: &CanonicalAddr,
 ) -> StdResult<WhitelistElem> {
-    match TOKENS_WHITELIST.load(storage, token.as_slice()) {
-        Ok(v) => Ok(v),
-        _ => Err(StdError::generic_err("Token is not registered")),
-    }
+    Err(StdError::generic_err("Token is not registered"))
+    // match TOKENS_WHITELIST.load(storage, token.as_slice()) {
+    //     Ok(v) => Ok(v),
+    //     _ => Err(StdError::generic_err("Token is not registered")),
+    // }
 }

@@ -8,6 +8,8 @@ use cw20::Cw20ReceiveMsg;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub token_code_id: u64,
+    //address for bLuna token, for example
+    pub basset_token_addr: String,
     //Luna / ETH / Sol, will be converted to cLuna, cETH, cSol
     pub collateral_token_symbol: String,
 }
@@ -15,11 +17,8 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    OverseerMsg { overseer_msg: OverseerMsg },
     Receive(Cw20ReceiveMsg),
-    // DepositTokens {
-    //     depositor: Addr,
-    //     amount: Uint256,
-    // },
     // WithdrawTokens {
     //     depositor: Addr,
     //     amount: Uint256,
@@ -28,10 +27,15 @@ pub enum ExecuteMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+pub enum OverseerMsg {
+    Deposit { farmer: String, amount: Uint256 },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum Cw20HookMsg {
-    /// Return stable coins to a user
-    /// according to exchange rate
     Deposit {},
+    Withdraw { amount: Uint256 },
 }
 
 /// We currently take no arguments for migrations

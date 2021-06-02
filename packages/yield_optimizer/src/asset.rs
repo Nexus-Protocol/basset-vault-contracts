@@ -191,17 +191,14 @@ impl AssetInfo {
         }
     }
 
-    pub fn query_addr(
-        &self,
-        querier: &QuerierWrapper,
-        api: &dyn Api,
-        addr: Addr,
-    ) -> StdResult<Uint128> {
+    pub fn query_addr(&self, deps: Deps, addr: Addr) -> StdResult<Uint128> {
         match self {
             AssetInfo::Token { contract_addr } => {
-                query_token_balance(querier, api, contract_addr.clone(), addr)
+                query_token_balance(deps, contract_addr.clone(), addr)
             }
-            AssetInfo::NativeToken { denom } => query_balance(querier, addr, denom.to_string()),
+            AssetInfo::NativeToken { denom } => {
+                query_balance(&deps.querier, addr, denom.to_string())
+            }
         }
     }
 

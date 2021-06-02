@@ -1,10 +1,15 @@
 use crate::asset::{Asset, AssetInfo};
+use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::{
-    to_binary, Addr, AllBalanceResponse, Api, BalanceResponse, BankQuery, Binary, Coin, Querier,
-    QuerierWrapper, QueryRequest, StdResult, Storage, Uint128, WasmQuery,
+    to_binary, Addr, AllBalanceResponse, Api, BalanceResponse, BankQuery, Binary, Coin, Deps,
+    Querier, QuerierWrapper, QueryRequest, StdResult, Storage, Uint128, WasmQuery,
 };
 use cosmwasm_storage::to_length_prefixed;
+use cw20::Cw20QueryMsg;
 use cw20::TokenInfoResponse;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+// use moneymarket::custody::{BorrowerResponse, QueryMsg as CustodyQueryMsg};
 
 pub fn query_balance(
     querier: &QuerierWrapper,
@@ -29,28 +34,28 @@ pub fn query_all_balances(querier: &QuerierWrapper, account_addr: Addr) -> StdRe
 }
 
 pub fn query_token_balance(
-    querier: &QuerierWrapper,
-    api: &dyn Api,
+    deps: Deps,
     contract_addr: Addr,
     account_addr: Addr,
 ) -> StdResult<Uint128> {
     // load balance form the token contract
-    Ok(querier
+    Ok(deps
+        .querier
         .query(&QueryRequest::Wasm(WasmQuery::Raw {
             contract_addr: contract_addr.to_string(),
             key: Binary::from(concat(
                 &to_length_prefixed(b"balance").to_vec(),
-                (api.addr_canonicalize(account_addr.as_str())?).as_slice(),
+                (deps.api.addr_canonicalize(account_addr.as_str())?).as_slice(),
             )),
         }))
         .unwrap_or_else(|_| Uint128::zero()))
 }
 
+//TODO: use WasmQuery::Raw
 pub fn query_supply(querier: &QuerierWrapper, contract_addr: Addr) -> StdResult<Uint128> {
-    // load price form the oracle
-    let token_info: TokenInfoResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
+    let token_info: TokenInfoResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: contract_addr.to_string(),
-        key: Binary::from(to_length_prefixed(b"token_info")),
+        msg: to_binary(&Cw20QueryMsg::TokenInfo {})?,
     }))?;
 
     Ok(token_info.total_supply)
@@ -61,4 +66,29 @@ fn concat(namespace: &[u8], key: &[u8]) -> Vec<u8> {
     let mut k = namespace.to_vec();
     k.extend_from_slice(key);
     k
+}
+
+//todo: use Anchor as dependency
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct BorrowerResponse {
+    pub borrower: String,
+    pub balance: Uint256,
+    pub spendable: Uint256,
+}
+
+pub fn get_bluna_in_custody(
+    deps: Deps,
+    custody_basset_addr: Addr,
+    account_addr: Addr,
+) -> StdResult<Uint256> {
+    let borrower_info: BorrowerResponse =
+        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
+            contract_addr: custody_basset_addr.to_string(),
+            key: Binary::from(concat(
+                &to_length_prefixed(b"borrower").to_vec(),
+                (deps.api.addr_canonicalize(account_addr.as_str())?).as_slice(),
+            )),
+        }))?;
+
+    Ok(borrower_info.balance)
 }

@@ -3,14 +3,17 @@ use cosmwasm_std::{
     MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 
-use crate::state::{State, STATE};
 use crate::{commands, queries};
 use crate::{error::ContractError, response::MsgInstantiateContractResponse};
+use crate::{
+    state::{Config, CONFIG},
+    ContractResult,
+};
 use cw20::{Cw20ReceiveMsg, MinterResponse};
 use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
 use yield_optimizer::basset_farmer::{
-    Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
+    Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, OverseerMsg, QueryMsg,
 };
 
 #[entry_point]
@@ -19,12 +22,13 @@ pub fn instantiate(
     env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
-) -> Result<Response, ContractError> {
-    let state = State {
+) -> ContractResult<Response> {
+    let config = Config {
         casset_token: CanonicalAddr::from(vec![]),
+        basset_token: deps.api.addr_canonicalize(&msg.basset_token_addr)?,
     };
 
-    STATE.save(deps.storage, &state)?;
+    CONFIG.save(deps.storage, &config)?;
 
     Ok(Response {
         messages: vec![],
@@ -56,7 +60,7 @@ pub fn instantiate(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> ContractResult<Response> {
     let data = msg.result.unwrap().data.unwrap();
     let res: MsgInstantiateContractResponse =
         Message::parse_from_bytes(data.as_slice()).map_err(|_| {
@@ -66,9 +70,9 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
     let casset_token = res.get_contract_address();
 
     let api = deps.api;
-    STATE.update(deps.storage, |mut state| -> StdResult<_> {
-        state.casset_token = api.addr_canonicalize(casset_token)?;
-        Ok(state)
+    CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
+        config.casset_token = api.addr_canonicalize(casset_token)?;
+        Ok(config)
     })?;
 
     Ok(Response {
@@ -85,44 +89,25 @@ pub fn execute(
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response, ContractError> {
+) -> ContractResult<Response> {
     match msg {
-        ExecuteMsg::Receive(msg) => receive_cw20(deps, env, info, msg),
+        ExecuteMsg::Receive(msg) => commands::receive_cw20(deps, env, info, msg),
+        ExecuteMsg::OverseerMsg { overseer_msg } => match overseer_msg {
+            OverseerMsg::Deposit { farmer, amount } => {
+                commands::deposit_basset(deps, env, info, farmer, amount)
+            }
+        },
     }
-}
-
-pub fn receive_cw20(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    cw20_msg: Cw20ReceiveMsg,
-) -> Result<Response, ContractError> {
-    match from_binary(&cw20_msg.msg) {
-        Ok(Cw20HookMsg::Deposit {}) => receive_cw20_deposit(deps, env, info, cw20_msg),
-        Err(err) => Err(ContractError::Std(err)),
-    }
-}
-
-fn receive_cw20_deposit(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    cw20_msg: Cw20ReceiveMsg,
-) -> Result<Response, ContractError> {
-    let asset_addr = info.sender.clone();
-    let asset_holder = Addr::unchecked(cw20_msg.sender.clone());
-
-    Ok(Response::default())
 }
 
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::State {} => to_binary(&queries::query_state(deps)?),
+        QueryMsg::State {} => to_binary(&queries::query_config(deps)?),
     }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> ContractResult<Response> {
     Ok(Response::default())
 }
