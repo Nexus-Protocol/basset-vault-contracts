@@ -6,14 +6,14 @@ use cosmwasm_std::{
 use cw_storage_plus::Bound;
 
 use crate::state::{read_deposits, read_whitelist_elem, store_deposits, State, STATE};
-use crate::{commands, query};
+use crate::{commands, queries};
 use crate::{error::ContractError, state::WhitelistElem};
 use cw0::calc_range_start_human;
 use cw20::Cw20ReceiveMsg;
 use yield_optimizer::overseer::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use yield_optimizer::{
+    basset_farmer::ExecuteMsg as VaultHandleMsg,
     overseer::{MaintainerMsg, UserMsg},
-    vault::ExecuteMsg as VaultHandleMsg,
 };
 
 // Note, you can use StdResult in some functions where you do not
@@ -74,8 +74,9 @@ pub fn execute_maintainer_msg(
             //    }
             //  ]
             // }
-            let assets = tokens.validate(deps.api)?;
-            commands::deposit_tokens(deps, info, assets)
+            // let assets = tokens.validate(deps.api)?;
+            // commands::deposit_asset(deps, info, assets)
+            Ok(Response::default())
         }
 
         MaintainerMsg::UpdateWhitelist {
@@ -83,8 +84,9 @@ pub fn execute_maintainer_msg(
             custody_contract,
             max_ltv,
         } => {
-            let assets = tokens.validate(deps.api)?;
-            commands::deposit_tokens(deps, info, assets)
+            // let assets = tokens.validate(deps.api)?;
+            // commands::register_whitelist(deps, info, assets)
+            Ok(Response::default())
         }
     }
 }
@@ -97,8 +99,9 @@ pub fn execute_user_msg(
 ) -> Result<Response, ContractError> {
     match msg {
         UserMsg::Deposit { asset } => {
-            let asset = asset.into_asset(deps.as_ref())?;
-            commands::deposit_asset(deps, info, asset)
+            // let asset = asset.into_asset(deps.as_ref())?;
+            // commands::deposit_asset(deps, info, asset)
+            Ok(Response::default())
         }
     }
 }
@@ -106,9 +109,14 @@ pub fn execute_user_msg(
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Assets { depositor } => to_binary(&query::query_assets(deps, depositor)?),
+        QueryMsg::Assets { depositor } => {
+            // to_binary(&queries::query_assets(deps, depositor)?)
+            Ok(Binary::default())
+        }
+
         QueryMsg::AllAssets { start_after, limit } => {
-            to_binary(&query::query_all_depositors(deps, start_after, limit)?)
+            // to_binary(&queries::query_all_depositors(deps, start_after, limit)?)
+            Ok(Binary::default())
         }
     }
 }

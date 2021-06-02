@@ -6,12 +6,12 @@ use cosmwasm_std::{
 use cw_storage_plus::Bound;
 
 use crate::state::{read_deposits, read_whitelist_elem, store_deposits, State, STATE};
-use crate::{commands, query};
+use crate::{commands, queries};
 use crate::{error::ContractError, state::WhitelistElem};
 use cw0::calc_range_start_human;
 use cw20::Cw20ReceiveMsg;
 use yield_optimizer::overseer::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use yield_optimizer::vault::ExecuteMsg as VaultHandleMsg;
+// use yield_optimizer::vault::ExecuteMsg as VaultHandleMsg;
 
 // settings for pagination
 const MAX_LIMIT: u32 = 30;
