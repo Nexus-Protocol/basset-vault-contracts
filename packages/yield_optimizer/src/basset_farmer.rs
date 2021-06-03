@@ -38,7 +38,7 @@ pub enum OverseerMsg {
 #[serde(rename_all = "snake_case")]
 pub enum Cw20HookMsg {
     Deposit {},
-    Withdraw { amount: Uint256 },
+    Withdraw {},
 }
 
 /// We currently take no arguments for migrations

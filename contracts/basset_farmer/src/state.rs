@@ -16,7 +16,7 @@ pub struct Config {
 pub const CONFIG: Item<Config> = Item::new("config");
 pub const FARMERS: Map<&Addr, FarmerInfo> = Map::new("farmers");
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
 pub struct FarmerInfo {
     pub balance_casset: Uint256,
     pub spendable_basset: Uint256,
@@ -27,7 +27,9 @@ pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
 }
 
 pub fn load_farmer_info(storage: &dyn Storage, farmer_addr: &Addr) -> StdResult<FarmerInfo> {
-    FARMERS.load(storage, farmer_addr)
+    FARMERS
+        .may_load(storage, farmer_addr)
+        .map(|res| res.unwrap_or_default())
 }
 
 pub fn store_farmer_info(

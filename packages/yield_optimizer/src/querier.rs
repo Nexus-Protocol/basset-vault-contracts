@@ -75,7 +75,7 @@ pub struct BorrowerResponse {
     pub spendable: Uint256,
 }
 
-pub fn get_bluna_in_custody(
+pub fn get_basset_in_custody(
     deps: Deps,
     custody_basset_addr: Addr,
     account_addr: Addr,

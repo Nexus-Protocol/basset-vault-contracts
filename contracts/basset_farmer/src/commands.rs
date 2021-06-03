@@ -17,7 +17,7 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, MinterResponse};
 use yield_optimizer::{
     basset_farmer::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
-    querier::{get_bluna_in_custody, query_supply, query_token_balance},
+    querier::{get_basset_in_custody, query_supply, query_token_balance},
 };
 
 pub fn receive_cw20(
@@ -28,9 +28,7 @@ pub fn receive_cw20(
 ) -> ContractResult<Response> {
     match from_binary(&cw20_msg.msg) {
         Ok(Cw20HookMsg::Deposit {}) => commands::receive_cw20_deposit(deps, env, info, cw20_msg),
-        Ok(Cw20HookMsg::Withdraw { amount }) => {
-            commands::receive_cw20_withdraw(deps, env, info, cw20_msg, amount)
-        }
+        Ok(Cw20HookMsg::Withdraw {}) => commands::receive_cw20_withdraw(deps, env, info, cw20_msg),
         Err(err) => Err(ContractError::Std(err)),
     }
 }
@@ -78,7 +76,6 @@ pub fn receive_cw20_withdraw(
     _env: Env,
     info: MessageInfo,
     cw20_msg: Cw20ReceiveMsg,
-    amount: Uint256,
 ) -> ContractResult<Response> {
     let contract_addr = info.sender;
     // only basset contract can execute this message
@@ -133,7 +130,7 @@ pub fn deposit_basset(
 
     // basset balance in custody contract
     let custody_basset_addr = deps.api.addr_humanize(&config.custody_basset_contract)?;
-    let basset_in_custody = get_bluna_in_custody(
+    let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
         custody_basset_addr,
         env.contract.address.clone(),

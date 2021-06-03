@@ -1,4 +1,7 @@
-use crate::{queries, response::MsgInstantiateContractResponse, state::Config};
+use crate::{
+    response::MsgInstantiateContractResponse,
+    state::{load_config, Config},
+};
 
 use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
@@ -68,7 +71,7 @@ fn proper_initialization() {
     let _res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg.clone()).unwrap();
 
     // it worked, let's query the state
-    let farmer_config: Config = queries::query_config(deps.as_ref()).unwrap();
+    let farmer_config: Config = load_config(&deps.storage).unwrap();
     let casset_token_addr = deps.api.addr_humanize(&farmer_config.casset_token).unwrap();
     assert_eq!(cluna_contract_addr, casset_token_addr.to_string());
 }
