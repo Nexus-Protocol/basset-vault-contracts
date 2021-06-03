@@ -51,11 +51,10 @@ pub fn query_token_balance(
         .unwrap_or_else(|_| Uint128::zero()))
 }
 
-//TODO: use WasmQuery::Raw
 pub fn query_supply(querier: &QuerierWrapper, contract_addr: Addr) -> StdResult<Uint128> {
-    let token_info: TokenInfoResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+    let token_info: TokenInfoResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
         contract_addr: contract_addr.to_string(),
-        msg: to_binary(&Cw20QueryMsg::TokenInfo {})?,
+        key: Binary::from(to_length_prefixed(b"token_info")),
     }))?;
 
     Ok(token_info.total_supply)

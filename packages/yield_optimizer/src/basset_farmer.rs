@@ -12,6 +12,9 @@ pub struct InstantiateMsg {
     pub basset_token_addr: String,
     //Luna / ETH / Sol, will be converted to cLuna, cETH, cSol
     pub collateral_token_symbol: String,
+    //Nexus overseer addr
+    pub overseer_addr: String,
+    pub custody_basset_contract: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

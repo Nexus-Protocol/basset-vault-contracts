@@ -26,6 +26,8 @@ pub fn instantiate(
     let config = Config {
         casset_token: CanonicalAddr::from(vec![]),
         basset_token: deps.api.addr_canonicalize(&msg.basset_token_addr)?,
+        overseer_contract: deps.api.addr_canonicalize(&msg.overseer_addr)?,
+        custody_basset_contract: deps.api.addr_canonicalize(&msg.custody_basset_contract)?,
     };
 
     CONFIG.save(deps.storage, &config)?;

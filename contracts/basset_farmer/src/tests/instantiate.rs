@@ -1,4 +1,4 @@
-use crate::{queries, response::MsgInstantiateContractResponse, state::State};
+use crate::{queries, response::MsgInstantiateContractResponse, state::Config};
 
 use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
@@ -18,6 +18,9 @@ fn proper_initialization() {
     let msg = yield_optimizer::basset_farmer::InstantiateMsg {
         token_code_id,
         collateral_token_symbol: "Luna".to_string(),
+        basset_token_addr: "addr0002".to_string(),
+        custody_basset_contract: "addr0003".to_string(),
+        overseer_addr: "addr0004".to_string(),
     };
 
     let env = mock_env();
@@ -65,7 +68,7 @@ fn proper_initialization() {
     let _res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg.clone()).unwrap();
 
     // it worked, let's query the state
-    let farmer_state: State = queries::query_state(deps.as_ref()).unwrap();
-    let casset_token_addr = deps.api.addr_humanize(&farmer_state.casset_token).unwrap();
+    let farmer_config: Config = queries::query_config(deps.as_ref()).unwrap();
+    let casset_token_addr = deps.api.addr_humanize(&farmer_config.casset_token).unwrap();
     assert_eq!(cluna_contract_addr, casset_token_addr.to_string());
 }

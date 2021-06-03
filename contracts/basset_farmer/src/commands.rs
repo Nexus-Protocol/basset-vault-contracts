@@ -1,6 +1,7 @@
 use cosmwasm_std::{
-    attr, entry_point, from_binary, to_binary, Addr, Binary, CanonicalAddr, Deps, DepsMut, Env,
-    MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
+    attr, entry_point, from_binary, to_binary, Addr, Binary, CanonicalAddr, CosmosMsg, Deps,
+    DepsMut, Env, MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Uint128,
+    WasmMsg,
 };
 
 use crate::{
@@ -127,13 +128,16 @@ pub fn deposit_basset(
     }
 
     // total cAsset supply
-    let casset_token_addr = deps.api.addr_humanize(&config.casset_token)?;
-    let casset_supply = query_supply(&deps.querier, casset_token_addr)?;
+    let casset_token_addr: Addr = deps.api.addr_humanize(&config.casset_token)?;
+    let casset_supply: Uint256 = query_supply(&deps.querier, casset_token_addr.clone())?.into();
 
     // basset balance in custody contract
     let custody_basset_addr = deps.api.addr_humanize(&config.custody_basset_contract)?;
-    let basset_in_custody =
-        get_bluna_in_custody(deps.as_ref(), custody_basset_addr, env.contract.address)?;
+    let basset_in_custody = get_bluna_in_custody(
+        deps.as_ref(),
+        custody_basset_addr,
+        env.contract.address.clone(),
+    )?;
 
     // basset balance in cw20 contract
     let basset_token_addr = deps.api.addr_humanize(&config.basset_token)?;
@@ -144,7 +148,8 @@ pub fn deposit_basset(
     // user_share = (deposited_basset / total_basset)
     // cAsset_to_mint = cAsset_supply * user_share / (1 - user_share)
     let basset_balance: Uint256 = basset_in_custody + bluna_in_contract_address.into();
-    let farmer_basset_share = Decimal256::from_ratio(deposit_amount.into(), basset_balance.into());
+    let farmer_basset_share: Decimal256 =
+        Decimal256::from_ratio(deposit_amount.0, basset_balance.0);
 
     let casset_to_mint =
         casset_supply * farmer_basset_share / (Decimal256::one() - farmer_basset_share);
@@ -152,14 +157,13 @@ pub fn deposit_basset(
     farmer_info.spendable_basset = farmer_info.spendable_basset - deposit_amount;
     store_farmer_info(deps.storage, &farmer_addr, &farmer_info)?;
 
-    //todo: send cLuna to farmer
-
     Ok(Response {
         messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: casset_token_addr.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Mint {
-                recipient: farmer,
-                amount: casset_to_mint,
+                recipient: farmer.clone(),
+                //TODO: what is the reason to use Uint256 if we convert it to Uint128 at the end?
+                amount: casset_to_mint.into(),
             })?,
             send: vec![],
         })],
