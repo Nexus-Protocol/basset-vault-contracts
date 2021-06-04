@@ -39,10 +39,10 @@ pub fn receive_cw20_deposit(
     info: MessageInfo,
     cw20_msg: Cw20ReceiveMsg,
 ) -> ContractResult<Response> {
-    let contract_addr = info.sender;
+    let basset_addr = info.sender;
     // only basset contract can execute this message
     let config: Config = CONFIG.load(deps.storage)?;
-    if deps.api.addr_canonicalize(&contract_addr.to_string())? != config.basset_token {
+    if deps.api.addr_canonicalize(&basset_addr.to_string())? != config.basset_token {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -145,13 +145,24 @@ pub fn deposit_basset(
     // user_share = (deposited_basset / total_basset)
     // cAsset_to_mint = cAsset_supply * user_share / (1 - user_share)
     let basset_balance: Uint256 = basset_in_custody + bluna_in_contract_address.into();
+    if basset_balance == Uint256::zero() {
+        //impossible because if 'farmer' have 'spendable_basset' then he deposit some bAsset
+        return Err(ContractError::Impossible(
+            "basset balance is zero".to_string(),
+        ));
+    }
     let farmer_basset_share: Decimal256 =
         Decimal256::from_ratio(deposit_amount.0, basset_balance.0);
 
-    let casset_to_mint =
-        casset_supply * farmer_basset_share / (Decimal256::one() - farmer_basset_share);
+    let casset_to_mint = if farmer_basset_share == Decimal256::one() {
+        deposit_amount
+    } else {
+        // 'casset_supply' can't be zero here, cause we already mint some for first farmer
+        casset_supply * farmer_basset_share / (Decimal256::one() - farmer_basset_share)
+    };
 
     farmer_info.spendable_basset = farmer_info.spendable_basset - deposit_amount;
+    farmer_info.balance_casset += casset_to_mint;
     store_farmer_info(deps.storage, &farmer_addr, &farmer_info)?;
 
     Ok(Response {

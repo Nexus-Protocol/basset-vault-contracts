@@ -1,6 +1,7 @@
 mod deposit_basset;
 mod instantiate;
 
+use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::{
     from_slice, to_binary, Addr, Api, CanonicalAddr, Coin, ContractResult, Decimal, Empty,
     OwnedDeps, Querier, QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
@@ -12,6 +13,7 @@ use cosmwasm_std::{
 use cosmwasm_storage::to_length_prefixed;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
+use yield_optimizer::querier::BorrowerResponse;
 
 use cw20::TokenInfoResponse;
 
@@ -32,6 +34,7 @@ pub fn mock_dependencies(
 }
 
 pub struct WasmMockQuerier {
+    borrowers_info: HashMap<String, HashMap<String, BorrowerResponse>>,
     base: MockQuerier<Empty>,
     token_querier: TokenQuerier,
 }
@@ -85,6 +88,47 @@ impl WasmMockQuerier {
         match &request {
             QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
                 let key: &[u8] = key.as_slice();
+
+                let prefix_borrower_info = to_length_prefixed(b"borrower").to_vec();
+                if key[..prefix_borrower_info.len()].to_vec() == prefix_borrower_info {
+                    let key_address: &[u8] = &key[prefix_borrower_info.len()..];
+                    let address_raw: CanonicalAddr = CanonicalAddr::from(key_address);
+
+                    let api: MockApi = MockApi::default();
+                    let address: Addr = match api.addr_humanize(&address_raw) {
+                        Ok(v) => v,
+                        Err(e) => {
+                            return SystemResult::Err(SystemError::InvalidRequest {
+                                error: format!("Parsing query request: {}", e),
+                                request: key.into(),
+                            })
+                        }
+                    };
+
+                    let empty_borrowers = HashMap::new();
+                    let default_borrower = BorrowerResponse {
+                        borrower: address.to_string(),
+                        balance: Uint256::zero(),
+                        spendable: Uint256::zero(),
+                    };
+
+                    let borrowers_map = self
+                        .borrowers_info
+                        .get(contract_addr)
+                        .unwrap_or(&empty_borrowers);
+                    let borrower_info = borrowers_map
+                        .get(&address.to_string())
+                        .unwrap_or(&default_borrower);
+
+                    return SystemResult::Ok(ContractResult::from(to_binary(&borrower_info)));
+                }
+
+                println!(
+                    "get {} for conntract {}",
+                    std::str::from_utf8(key).unwrap(),
+                    contract_addr
+                );
+
                 let balances: &HashMap<String, Uint128> =
                     match self.token_querier.balances.get(contract_addr) {
                         Some(balances) => balances,
@@ -101,8 +145,6 @@ impl WasmMockQuerier {
 
                 let prefix_token_info = to_length_prefixed(b"token_info").to_vec();
                 let prefix_balance = to_length_prefixed(b"balance").to_vec();
-
-                //TODO: добавить сюда получение инфы о заёмщике: get_basset_in_custody
 
                 if key.to_vec() == prefix_token_info {
                     let mut total_supply = Uint128::zero();
@@ -132,6 +174,12 @@ impl WasmMockQuerier {
                         }
                     };
 
+                    println!(
+                        "getting 'balance' from contract {} for address: {}",
+                        contract_addr,
+                        address.to_string()
+                    );
+
                     let balance = match balances.get(&address.to_string()) {
                         Some(v) => v,
                         None => {
@@ -155,6 +203,7 @@ impl WasmMockQuerier {
 impl WasmMockQuerier {
     pub fn new(base: MockQuerier) -> Self {
         WasmMockQuerier {
+            borrowers_info: HashMap::new(),
             base,
             token_querier: TokenQuerier::default(),
         }

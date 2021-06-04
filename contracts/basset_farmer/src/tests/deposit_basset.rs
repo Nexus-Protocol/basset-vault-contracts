@@ -82,6 +82,16 @@ fn deposit_basset() {
         assert_eq!(Uint256::from(deposit_amount), farmer_info.spendable_basset);
     }
 
+    deps.querier.with_token_balances(&[
+        (
+            &cluna_contract_addr,
+            &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128(0))],
+        ),
+        (
+            &basset_token_addr,
+            &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_amount)],
+        ),
+    ]);
     // -= OVERSEER SEND 'Deposit' message to basset_farmer =-
     {
         let deposit_msg = OverseerMsg::Deposit {

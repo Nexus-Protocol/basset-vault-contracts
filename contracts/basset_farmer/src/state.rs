@@ -18,6 +18,8 @@ pub const FARMERS: Map<&Addr, FarmerInfo> = Map::new("farmers");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
 pub struct FarmerInfo {
+    //TODO: probably I don't need that field. We know balance from cAsset contract address
+    //but I leave it here for some time
     pub balance_casset: Uint256,
     pub spendable_basset: Uint256,
 }
