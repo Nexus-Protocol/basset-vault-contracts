@@ -160,7 +160,6 @@ pub fn deposit_basset(
         // 'casset_supply' can't be zero here, cause we already mint some for first farmer
         casset_supply * farmer_basset_share / (Decimal256::one() - farmer_basset_share)
     };
-    println!("casset_to_mint: {}", casset_to_mint);
 
     farmer_info.spendable_basset = farmer_info.spendable_basset - deposit_amount;
     farmer_info.balance_casset += casset_to_mint;
