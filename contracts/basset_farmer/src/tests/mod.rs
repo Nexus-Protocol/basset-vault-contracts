@@ -123,12 +123,6 @@ impl WasmMockQuerier {
                     return SystemResult::Ok(ContractResult::from(to_binary(&borrower_info)));
                 }
 
-                println!(
-                    "get {} for conntract {}",
-                    std::str::from_utf8(key).unwrap(),
-                    contract_addr
-                );
-
                 let balances: &HashMap<String, Uint128> =
                     match self.token_querier.balances.get(contract_addr) {
                         Some(balances) => balances,
@@ -173,12 +167,6 @@ impl WasmMockQuerier {
                             })
                         }
                     };
-
-                    println!(
-                        "getting 'balance' from contract {} for address: {}",
-                        contract_addr,
-                        address.to_string()
-                    );
 
                     let balance = match balances.get(&address.to_string()) {
                         Some(v) => v,

@@ -63,7 +63,7 @@ pub fn receive_basset(deps: DepsMut, farmer: Addr, amount: Uint256) -> ContractR
         messages: vec![],
         submessages: vec![],
         attributes: vec![
-            attr("action", "deposit_basset"),
+            attr("action", "deposit_basset_step_1"),
             attr("farmer", farmer.as_str()),
             attr("amount", amount.to_string()),
         ],
@@ -160,6 +160,7 @@ pub fn deposit_basset(
         // 'casset_supply' can't be zero here, cause we already mint some for first farmer
         casset_supply * farmer_basset_share / (Decimal256::one() - farmer_basset_share)
     };
+    println!("casset_to_mint: {}", casset_to_mint);
 
     farmer_info.spendable_basset = farmer_info.spendable_basset - deposit_amount;
     farmer_info.balance_casset += casset_to_mint;
@@ -177,7 +178,7 @@ pub fn deposit_basset(
         })],
         submessages: vec![],
         attributes: vec![
-            attr("action", "deposit_basset"),
+            attr("action", "deposit_basset_step_2"),
             attr("farmer", farmer),
             attr("amount", deposit_amount),
         ],
