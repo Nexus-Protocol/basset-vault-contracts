@@ -70,10 +70,11 @@ fn calc_price_variance(prices: &VecDeque<Decimal256>, elems_count: u64) -> Decim
         .fold(Decimal256::zero(), |result, p| result + p);
     println!("diviations_sum: {}", diviations_sum);
 
-    let variance: Decimal256 = (diviations_sum / decimal_elems_count);
+    let variance_square: Decimal256 = (diviations_sum / decimal_elems_count);
 
-    //TODO: в процентах от средней цены!
-    return variance;
+    //TODO: variance = sqrt(variance_square);
+    //TODO: result = variance / mean_price * 100;
+    return variance_square;
 }
 
 fn safe_sub(x: Decimal256, y: Decimal256) -> Decimal256 {

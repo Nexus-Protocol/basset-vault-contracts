@@ -25,5 +25,9 @@ pub fn query_state(deps: Deps) -> StdResult<StateResponse> {
 }
 
 pub fn borrow_limits() -> StdResult<BorrowLimitsResponse> {
+    //TODO: maybe in first version I can simply return
+    // min: 75%
+    // aim: 80%
+    // max: 85%
     todo!()
 }
