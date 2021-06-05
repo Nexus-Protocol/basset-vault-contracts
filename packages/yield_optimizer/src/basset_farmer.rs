@@ -48,5 +48,13 @@ pub struct MigrateMsg {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    State {},
+    Config {},
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ConfigResponse {
+    pub overseer_contract: String,
+    pub custody_basset_contract: String,
+    pub casset_token: String,
+    pub basset_token: String,
 }

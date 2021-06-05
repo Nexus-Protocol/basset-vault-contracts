@@ -42,7 +42,7 @@ pub fn receive_cw20_deposit(
     let basset_addr = info.sender;
     // only basset contract can execute this message
     let config: Config = CONFIG.load(deps.storage)?;
-    if deps.api.addr_canonicalize(&basset_addr.to_string())? != config.basset_token {
+    if basset_addr != config.basset_token {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -80,7 +80,7 @@ pub fn receive_cw20_withdraw(
     let contract_addr = info.sender;
     // only basset contract can execute this message
     let config: Config = CONFIG.load(deps.storage)?;
-    if deps.api.addr_canonicalize(&contract_addr.to_string())? != config.basset_token {
+    if contract_addr != config.basset_token {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -110,7 +110,7 @@ pub fn deposit_basset(
     deposit_amount: Uint256,
 ) -> ContractResult<Response> {
     let config: Config = load_config(deps.storage)?;
-    if deps.api.addr_canonicalize(&info.sender.to_string())? != config.overseer_contract {
+    if info.sender != config.overseer_contract {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -125,21 +125,18 @@ pub fn deposit_basset(
     }
 
     // total cAsset supply
-    let casset_token_addr: Addr = deps.api.addr_humanize(&config.casset_token)?;
-    let casset_supply: Uint256 = query_supply(&deps.querier, casset_token_addr.clone())?.into();
+    let casset_supply: Uint256 = query_supply(&deps.querier, config.casset_token.clone())?.into();
 
     // basset balance in custody contract
-    let custody_basset_addr = deps.api.addr_humanize(&config.custody_basset_contract)?;
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
-        custody_basset_addr,
+        config.custody_basset_contract,
         env.contract.address.clone(),
     )?;
 
     // basset balance in cw20 contract
-    let basset_token_addr = deps.api.addr_humanize(&config.basset_token)?;
     let bluna_in_contract_address =
-        query_token_balance(deps.as_ref(), basset_token_addr, env.contract.address)?;
+        query_token_balance(deps.as_ref(), config.basset_token, env.contract.address)?;
 
     // cAsset tokens to mint:
     // user_share = (deposited_basset / total_basset)
@@ -167,7 +164,7 @@ pub fn deposit_basset(
 
     Ok(Response {
         messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: casset_token_addr.to_string(),
+            contract_addr: config.casset_token.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Mint {
                 recipient: farmer.clone(),
                 //TODO: what is the reason to use Uint256 if we convert it to Uint128 at the end?

@@ -24,10 +24,10 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> ContractResult<Response> {
     let config = Config {
-        casset_token: CanonicalAddr::from(vec![]),
-        basset_token: deps.api.addr_canonicalize(&msg.basset_token_addr)?,
-        overseer_contract: deps.api.addr_canonicalize(&msg.overseer_addr)?,
-        custody_basset_contract: deps.api.addr_canonicalize(&msg.custody_basset_contract)?,
+        casset_token: Addr::unchecked(""),
+        basset_token: deps.api.addr_validate(&msg.basset_token_addr)?,
+        overseer_contract: deps.api.addr_validate(&msg.overseer_addr)?,
+        custody_basset_contract: deps.api.addr_validate(&msg.custody_basset_contract)?,
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -73,7 +73,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> ContractResult<Response> {
 
     let api = deps.api;
     CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
-        config.casset_token = api.addr_canonicalize(casset_token)?;
+        config.casset_token = api.addr_validate(casset_token)?;
         Ok(config)
     })?;
 
@@ -105,7 +105,7 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::State {} => to_binary(&queries::query_config(deps)?),
+        QueryMsg::Config {} => to_binary(&queries::query_config(deps)?),
     }
 }
 

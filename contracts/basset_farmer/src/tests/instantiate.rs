@@ -72,6 +72,5 @@ fn proper_initialization() {
 
     // it worked, let's query the state
     let farmer_config: Config = load_config(&deps.storage).unwrap();
-    let casset_token_addr = deps.api.addr_humanize(&farmer_config.casset_token).unwrap();
-    assert_eq!(cluna_contract_addr, casset_token_addr.to_string());
+    assert_eq!(cluna_contract_addr, farmer_config.casset_token.to_string());
 }

@@ -185,6 +185,7 @@ fn deposit_basset() {
             let farmer_info =
                 load_farmer_info(&deps.storage, &Addr::unchecked(user_2_address)).unwrap();
             assert_eq!(Uint256::zero(), farmer_info.spendable_basset);
+
             let farmer_share = Decimal256::from_ratio(
                 Uint256::from(deposit_2_amount).0,
                 Uint256::from(deposit_1_amount + deposit_2_amount).0,
