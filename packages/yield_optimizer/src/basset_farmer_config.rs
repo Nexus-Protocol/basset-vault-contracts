@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use cosmwasm_std::{Addr, Decimal};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -14,6 +16,7 @@ pub struct InstantiateMsg {
     pub stable_denom: String,
     pub oracle_addr: String,
     pub basset_token_addr: String,
+    pub price_timeframe_millis: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -60,7 +63,7 @@ pub struct ConfigResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct StateResponse {
-    pub prices: Vec<Decimal256>,
+    pub prices: VecDeque<Decimal256>,
     pub price_last_update_time: u64,
 
     // 1. average price value

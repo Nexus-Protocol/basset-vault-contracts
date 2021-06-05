@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Addr, CanonicalAddr, Decimal, StdResult, Storage};
 use cw_storage_plus::{Item, Map};
+use std::collections::VecDeque;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
@@ -14,6 +15,8 @@ pub struct Config {
     pub oracle_addr: Addr,
     pub basset_token_addr: Addr,
     pub stable_denom: String,
+    //TODO: looks like I don't need that
+    pub price_timeframe_millis: u64,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
@@ -22,9 +25,11 @@ pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
     CONFIG.load(storage)
 }
 
+pub const PRICES_COUNT: u64 = 5;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct State {
-    pub prices: Vec<Decimal256>,
+    //TODO: simple f32 is enough here
+    pub prices: VecDeque<Decimal256>,
     pub price_last_update_time: u64,
 
     // 1. average price value

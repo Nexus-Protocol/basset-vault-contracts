@@ -1,8 +1,9 @@
 use crate::asset::{Asset, AssetInfo};
-use cosmwasm_bignumber::Uint256;
+use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
     to_binary, Addr, AllBalanceResponse, Api, BalanceResponse, BankQuery, Binary, Coin, Deps,
-    Querier, QuerierWrapper, QueryRequest, StdResult, Storage, Uint128, WasmQuery,
+    Querier, QuerierWrapper, QueryRequest, StdError, StdResult, Storage, Timestamp, Uint128,
+    WasmQuery,
 };
 use cosmwasm_storage::to_length_prefixed;
 use cw20::Cw20QueryMsg;
@@ -67,7 +68,7 @@ fn concat(namespace: &[u8], key: &[u8]) -> Vec<u8> {
     k
 }
 
-//todo: use Anchor as dependency
+//TODO: use Anchor as dependency
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct BorrowerResponse {
     pub borrower: String,
@@ -90,4 +91,61 @@ pub fn get_basset_in_custody(
         }))?;
 
     Ok(borrower_info.balance)
+}
+
+//TODO: use Anchor as dependency
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct PriceResponse {
+    pub rate: Decimal256,
+    pub last_updated_base: u64,
+    pub last_updated_quote: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum OracleQueryMsg {
+    Config {},
+    Feeder {
+        asset: String,
+    },
+    Price {
+        base: String,
+        quote: String,
+    },
+    Prices {
+        start_after: Option<String>,
+        limit: Option<u32>,
+    },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct TimeConstraints {
+    pub block_time: Timestamp,
+    pub valid_timeframe_millis: u64,
+}
+
+pub fn query_price(
+    deps: &Deps,
+    oracle_addr: &Addr,
+    base: String,
+    quote: String,
+    time_contraints: Option<TimeConstraints>,
+) -> StdResult<PriceResponse> {
+    let oracle_price: PriceResponse =
+        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: oracle_addr.to_string(),
+            msg: to_binary(&OracleQueryMsg::Price { base, quote })?,
+        }))?;
+
+    if let Some(time_contraints) = time_contraints {
+        let valid_update_time = (time_contraints.block_time.nanos() / 1_000_000)
+            - time_contraints.valid_timeframe_millis;
+        if oracle_price.last_updated_base < valid_update_time
+            || oracle_price.last_updated_quote < valid_update_time
+        {
+            return Err(StdError::generic_err("Price is too old"));
+        }
+    }
+
+    Ok(oracle_price)
 }
