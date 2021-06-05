@@ -14,6 +14,7 @@ pub struct InstantiateMsg {
     pub collateral_token_symbol: String,
     //Nexus overseer addr
     pub overseer_addr: String,
+    pub governance_addr: String,
     pub custody_basset_contract: String,
 }
 
@@ -53,6 +54,7 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ConfigResponse {
+    pub governance_contract: String,
     pub overseer_contract: String,
     pub custody_basset_contract: String,
     pub casset_token: String,

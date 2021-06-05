@@ -22,6 +22,7 @@ fn deposit_basset() {
     let basset_token_addr = "addr0002".to_string();
     let custody_basset_contract = "addr0003".to_string();
     let overseer_addr = "addr0004".to_string();
+    let governance_addr = "addr0005".to_string();
     let token_code_id = 10u64; //cw20 contract code
     let mut deps = mock_dependencies(&[]);
 
@@ -39,6 +40,7 @@ fn deposit_basset() {
             basset_token_addr: basset_token_addr.clone(),
             custody_basset_contract: custody_basset_contract.clone(),
             overseer_addr: overseer_addr.clone(),
+            governance_addr: governance_addr.to_string(),
         };
 
         let info = mock_info("addr0000", &[]);

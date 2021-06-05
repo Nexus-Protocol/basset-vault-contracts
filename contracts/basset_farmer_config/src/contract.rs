@@ -3,8 +3,8 @@ use cosmwasm_std::{
     MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 
+use crate::error::ContractError;
 use crate::{commands, queries};
-use crate::{error::ContractError, response::MsgInstantiateContractResponse};
 use crate::{
     state::{Config, CONFIG},
     ContractResult,
@@ -12,7 +12,7 @@ use crate::{
 use cw20::{Cw20ReceiveMsg, MinterResponse};
 use protobuf::Message;
 use yield_optimizer::basset_farmer_config::{
-    ExecuteMsg, InstantiateMsg, MigrateMsg, OverseerMsg, QueryMsg,
+    ExecuteMsg, GovernanceMsg, InstantiateMsg, MigrateMsg, QueryMsg,
 };
 
 #[entry_point]
@@ -23,6 +23,7 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> ContractResult<Response> {
     let config = Config {
+        governance_contract_addr: deps.api.addr_validate(&msg.governance_contract_addr)?,
         borrow_ration_aim: msg.borrow_ration_aim,
         borrow_ration_upper_gap: msg.borrow_ration_upper_gap,
         borrow_ration_bottom_gap: msg.borrow_ration_bottom_gap,
@@ -45,8 +46,8 @@ pub fn execute(
 ) -> ContractResult<Response> {
     match msg {
         ExecuteMsg::UpdatePirce {} => commands::update_price(),
-        ExecuteMsg::OverseerMsg { overseer_msg } => match overseer_msg {
-            OverseerMsg::UpdateConfig {
+        ExecuteMsg::GovernanceMsg { overseer_msg } => match overseer_msg {
+            GovernanceMsg::UpdateConfig {
                 borrow_ration_aim,
                 borrow_ration_upper_gap,
                 borrow_ration_bottom_gap,

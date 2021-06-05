@@ -7,6 +7,7 @@ use cw20::Cw20ReceiveMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
+    pub governance_contract_addr: String,
     pub borrow_ration_aim: Decimal,
     pub borrow_ration_upper_gap: Decimal,
     pub borrow_ration_bottom_gap: Decimal,
@@ -19,12 +20,12 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     UpdatePirce {},
-    OverseerMsg { overseer_msg: OverseerMsg },
+    GovernanceMsg { overseer_msg: GovernanceMsg },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum OverseerMsg {
+pub enum GovernanceMsg {
     UpdateConfig {
         borrow_ration_aim: Option<Decimal>,
         borrow_ration_upper_gap: Option<Decimal>,

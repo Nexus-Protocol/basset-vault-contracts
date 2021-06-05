@@ -7,6 +7,7 @@ use cw_storage_plus::{Item, Map};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
+    pub governance_contract: Addr,
     pub overseer_contract: Addr,
     pub custody_basset_contract: Addr,
     pub casset_token: Addr,

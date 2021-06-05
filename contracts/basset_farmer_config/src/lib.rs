@@ -4,7 +4,6 @@ mod commands;
 pub mod contract;
 pub mod error;
 mod queries;
-mod response;
 pub mod state;
 
 #[cfg(test)]

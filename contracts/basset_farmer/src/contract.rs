@@ -28,6 +28,7 @@ pub fn instantiate(
         basset_token: deps.api.addr_validate(&msg.basset_token_addr)?,
         overseer_contract: deps.api.addr_validate(&msg.overseer_addr)?,
         custody_basset_contract: deps.api.addr_validate(&msg.custody_basset_contract)?,
+        governance_contract: deps.api.addr_validate(&msg.governance_addr)?,
     };
 
     CONFIG.save(deps.storage, &config)?;

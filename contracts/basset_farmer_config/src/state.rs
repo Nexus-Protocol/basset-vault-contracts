@@ -7,6 +7,7 @@ use cw_storage_plus::{Item, Map};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
+    pub governance_contract_addr: Addr,
     pub borrow_ration_aim: Decimal,
     pub borrow_ration_upper_gap: Decimal,
     pub borrow_ration_bottom_gap: Decimal,

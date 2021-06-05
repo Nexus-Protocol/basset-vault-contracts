@@ -4,8 +4,8 @@ use cosmwasm_std::{
     Uint128, WasmMsg,
 };
 
+use crate::error::ContractError;
 use crate::{commands, queries, state::load_config};
-use crate::{error::ContractError, response::MsgInstantiateContractResponse};
 use crate::{
     state::{Config, CONFIG},
     ContractResult,
@@ -33,5 +33,10 @@ pub fn update_config(
     basset_token_addr: Option<String>,
     stable_denom: Option<String>,
 ) -> ContractResult<Response> {
+    let config = load_config(deps.storage)?;
+    if info.sender != config.governance_contract_addr {
+        return Err(ContractError::Unauthorized {});
+    }
+
     todo!()
 }

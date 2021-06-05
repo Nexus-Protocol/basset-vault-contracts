@@ -24,6 +24,7 @@ fn proper_initialization() {
         basset_token_addr: "addr0002".to_string(),
         custody_basset_contract: "addr0003".to_string(),
         overseer_addr: "addr0004".to_string(),
+        governance_addr: "addr0005".to_string(),
     };
 
     let env = mock_env();
