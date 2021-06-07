@@ -233,7 +233,6 @@ pub fn sweep(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Respo
     //2. sell all ANC to UST
     //3. 95% is a rewards, calculate them, add to rewards. Update global_reward_index
     //4. 5% is for Psi stakers, swap UST to Psi and send them to Governance contract.
-    // test ss
 }
 
 pub fn swap_anc(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
