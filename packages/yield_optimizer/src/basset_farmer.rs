@@ -21,12 +21,22 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    Anyone { anyone_msg: AnyoneMsg },
     OverseerMsg { overseer_msg: OverseerMsg },
     Receive(Cw20ReceiveMsg),
     // WithdrawTokens {
     //     depositor: Addr,
     //     amount: Uint256,
     // },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AnyoneMsg {
+    Rebalance {},
+    Sweep {},
+    SwapAnc {},
+    DisributeRewards {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ReceiveMsg;
 
-use crate::asset::{Asset, AssetString};
+use terraswap::asset::Asset;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {}
@@ -20,7 +20,7 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum UserMsg {
-    Deposit { asset: AssetString },
+    Deposit { asset: Asset },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

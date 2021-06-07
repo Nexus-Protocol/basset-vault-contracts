@@ -13,7 +13,7 @@ use cw20::{Cw20ReceiveMsg, MinterResponse};
 use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
 use yield_optimizer::basset_farmer::{
-    Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, OverseerMsg, QueryMsg,
+    AnyoneMsg, Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, OverseerMsg, QueryMsg,
 };
 
 #[entry_point]
@@ -95,6 +95,12 @@ pub fn execute(
 ) -> ContractResult<Response> {
     match msg {
         ExecuteMsg::Receive(msg) => commands::receive_cw20(deps, env, info, msg),
+        ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
+            AnyoneMsg::Rebalance {} => commands::rebalance(deps, env, info),
+            AnyoneMsg::Sweep {} => commands::sweep(deps, env, info),
+            AnyoneMsg::SwapAnc {} => commands::swap_anc(deps, env, info),
+            AnyoneMsg::DisributeRewards {} => commands::distribute_rewards(deps, env, info),
+        },
         ExecuteMsg::OverseerMsg { overseer_msg } => match overseer_msg {
             OverseerMsg::Deposit { farmer, amount } => {
                 commands::deposit_basset(deps, env, info, farmer, amount)

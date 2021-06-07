@@ -6,6 +6,7 @@ pub mod error;
 mod queries;
 mod response;
 pub mod state;
+mod utils;
 
 #[cfg(test)]
 mod tests;

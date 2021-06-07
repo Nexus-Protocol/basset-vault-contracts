@@ -1,4 +1,3 @@
-use crate::asset::{Asset, AssetInfo};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
     to_binary, Addr, AllBalanceResponse, Api, BalanceResponse, BankQuery, Binary, Coin, Deps,
@@ -36,8 +35,8 @@ pub fn query_all_balances(querier: &QuerierWrapper, account_addr: Addr) -> StdRe
 
 pub fn query_token_balance(
     deps: Deps,
-    contract_addr: Addr,
-    account_addr: Addr,
+    contract_addr: &Addr,
+    account_addr: &Addr,
 ) -> StdResult<Uint128> {
     // load balance form the token contract
     Ok(deps
@@ -148,4 +147,11 @@ pub fn query_price(
     }
 
     Ok(oracle_price)
+}
+
+//TODO: Use Anchor as dependency
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AnchorMarketMsg {
+    ClaimRewards { to: Option<String> },
 }

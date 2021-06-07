@@ -3,6 +3,9 @@ use cosmwasm_std::{
     DepsMut, Env, MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Uint128,
     WasmMsg,
 };
+use terraswap::asset::{Asset, AssetInfo};
+use terraswap::pair::Cw20HookMsg as TerraswapCw20HookMsg;
+use terraswap::pair::ExecuteMsg as TerraswapExecuteMsg;
 
 use crate::{
     commands, queries,
@@ -14,10 +17,11 @@ use crate::{
     ContractResult,
 };
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, MinterResponse};
+use cw20::Cw20ReceiveMsg;
+use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use yield_optimizer::{
-    basset_farmer::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
-    querier::{get_basset_in_custody, query_supply, query_token_balance},
+    basset_farmer::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
+    querier::{get_basset_in_custody, query_supply, query_token_balance, AnchorMarketMsg},
 };
 
 pub fn receive_cw20(
@@ -93,6 +97,22 @@ pub fn receive_cw20_withdraw(
 pub fn withdrawn_basset(deps: DepsMut, farmer: Addr, amount: Uint256) -> ContractResult<Response> {
     //TODO
 
+    todo!();
+
+    Ok(Response {
+        messages: vec![],
+        submessages: vec![],
+        attributes: vec![],
+        data: None,
+    })
+}
+
+/// Executor: anyone
+pub fn rebalance(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+    //TODO
+
+    todo!();
+
     Ok(Response {
         messages: vec![],
         submessages: vec![],
@@ -136,7 +156,7 @@ pub fn deposit_basset(
 
     // basset balance in cw20 contract
     let bluna_in_contract_address =
-        query_token_balance(deps.as_ref(), config.basset_token, env.contract.address)?;
+        query_token_balance(deps.as_ref(), &config.basset_token, &env.contract.address)?;
 
     // cAsset tokens to mint:
     // user_share = (deposited_basset / total_basset)
@@ -180,4 +200,77 @@ pub fn deposit_basset(
         ],
         data: None,
     })
+}
+
+/// Anyone can execute sweep function to claim
+/// ANC rewards, swap ANC => UST token, swap
+/// part of UST => PSI token and distribute
+/// result PSI token to gov contract
+pub fn sweep(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+    let config: Config = load_config(deps.storage)?;
+
+    Ok(Response {
+        messages: vec![
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: config.anchor_market_contract.to_string(),
+                msg: to_binary(&AnchorMarketMsg::ClaimRewards { to: None })?,
+                send: vec![],
+            }),
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: env.contract.address.to_string(),
+                msg: to_binary(&ExecuteMsg::Anyone {
+                    anyone_msg: AnyoneMsg::SwapAnc {},
+                })?,
+                send: vec![],
+            }),
+        ],
+        submessages: vec![],
+        attributes: vec![attr("action", "sweep")],
+        data: None,
+    })
+
+    //1. claim ANC rewards
+    //2. sell all ANC to UST
+    //3. 95% is a rewards, calculate them, add to rewards. Update global_reward_index
+    //4. 5% is for Psi stakers, swap UST to Psi and send them to Governance contract.
+}
+
+pub fn swap_anc(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+    let config: Config = load_config(deps.storage)?;
+
+    let amount = query_token_balance(deps.as_ref(), &config.anchor_token, &env.contract.address)?;
+    Ok(Response {
+        messages: vec![
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: config.anchor_token.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Send {
+                    amount,
+                    contract: config.anchor_ust_swap_contract.to_string(),
+                    msg: to_binary(&TerraswapCw20HookMsg::Swap {
+                        belief_price: None,
+                        max_spread: None,
+                        to: None,
+                    })?,
+                })?,
+                send: vec![],
+            }),
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: env.contract.address.to_string(),
+                msg: to_binary(&ExecuteMsg::Anyone {
+                    anyone_msg: AnyoneMsg::DisributeRewards {},
+                })?,
+                send: vec![],
+            }),
+        ],
+        submessages: vec![],
+        attributes: vec![
+            attr("action", "sweep"),
+            attr("anc_swapped", format!("{:?}", amount.to_string())),
+        ],
+        data: None,
+    })
+}
+
+pub fn distribute_rewards(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+    todo!()
 }

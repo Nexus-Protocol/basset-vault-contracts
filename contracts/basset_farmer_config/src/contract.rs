@@ -59,7 +59,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> ContractResult<Response> {
     match msg {
-        ExecuteMsg::UpdatePirce {} => commands::update_price(deps, env, info),
+        ExecuteMsg::UpdatePrice {} => commands::update_price(deps, env, info),
         ExecuteMsg::GovernanceMsg { overseer_msg } => match overseer_msg {
             GovernanceMsg::UpdateConfig {
                 borrow_ration_aim,

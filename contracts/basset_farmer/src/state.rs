@@ -9,7 +9,10 @@ use cw_storage_plus::{Item, Map};
 pub struct Config {
     pub governance_contract: Addr,
     pub overseer_contract: Addr,
+    pub anchor_token: Addr,
+    pub anchor_market_contract: Addr,
     pub custody_basset_contract: Addr,
+    pub anchor_ust_swap_contract: Addr,
     pub casset_token: Addr,
     pub basset_token: Addr,
 }
