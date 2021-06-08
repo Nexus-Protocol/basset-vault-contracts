@@ -99,6 +99,7 @@ pub fn execute(
             AnyoneMsg::Rebalance {} => commands::rebalance(deps, env, info),
             AnyoneMsg::Sweep {} => commands::sweep(deps, env, info),
             AnyoneMsg::SwapAnc {} => commands::swap_anc(deps, env, info),
+            AnyoneMsg::BuyPsiTokens {} => commands::buy_psi_tokens(deps, env, info),
             AnyoneMsg::DisributeRewards {} => commands::distribute_rewards(deps, env, info),
         },
         ExecuteMsg::OverseerMsg { overseer_msg } => match overseer_msg {

@@ -1,7 +1,7 @@
 use cosmwasm_std::{
-    attr, entry_point, from_binary, to_binary, Addr, Binary, CanonicalAddr, CosmosMsg, Deps,
-    DepsMut, Env, MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Uint128,
-    WasmMsg,
+    attr, entry_point, from_binary, to_binary, Addr, Binary, CanonicalAddr, Coin, CosmosMsg,
+    Decimal, Deps, DepsMut, Env, MessageInfo, Reply, ReplyOn, Response, StdError, StdResult,
+    SubMsg, Uint128, WasmMsg,
 };
 use terraswap::asset::{Asset, AssetInfo};
 use terraswap::pair::Cw20HookMsg as TerraswapCw20HookMsg;
@@ -21,7 +21,9 @@ use cw20::Cw20ReceiveMsg;
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use yield_optimizer::{
     basset_farmer::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
-    querier::{get_basset_in_custody, query_supply, query_token_balance, AnchorMarketMsg},
+    querier::{
+        get_basset_in_custody, query_balance, query_supply, query_token_balance, AnchorMarketMsg,
+    },
 };
 
 pub fn receive_cw20(
@@ -208,6 +210,7 @@ pub fn deposit_basset(
 /// result PSI token to gov contract
 pub fn sweep(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
     let config: Config = load_config(deps.storage)?;
+    //TODO: should we care about Authorization here?
 
     Ok(Response {
         messages: vec![
@@ -237,6 +240,7 @@ pub fn sweep(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Respo
 
 pub fn swap_anc(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
     let config: Config = load_config(deps.storage)?;
+    //TODO: should we care about Authorization here?
 
     let amount = query_token_balance(deps.as_ref(), &config.anchor_token, &env.contract.address)?;
     Ok(Response {
@@ -264,13 +268,100 @@ pub fn swap_anc(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Re
         ],
         submessages: vec![],
         attributes: vec![
-            attr("action", "sweep"),
+            attr("action", "swap_anc"),
             attr("anc_swapped", format!("{:?}", amount.to_string())),
         ],
         data: None,
     })
 }
 
+//TODO: move stable denom to config?
+const STABLE_DENOM: String = "uust".to_string();
+
+/// Expecting that our UST balance is always zero (all UST is in aUST).
+/// So, all UST that we have - comes from ANC -> UST swap
+pub fn buy_psi_tokens(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+    let config: Config = load_config(deps.storage)?;
+    //TODO: should we care about Authorization here?
+    let ust_balance = query_balance(&deps.querier, &env.contract.address, STABLE_DENOM)?;
+
+    let ust_to_buy_psi = ust_balance * Decimal::from_ratio(1u128, config.psi_part_in_rewards.0);
+
+    let swap_asset = Asset {
+        info: AssetInfo::NativeToken {
+            denom: STABLE_DENOM,
+        },
+        amount: ust_to_buy_psi,
+    };
+
+    // deduct tax first
+    let ust_to_buy_psi = (swap_asset.deduct_tax(&deps.querier)?).amount;
+
+    Ok(Response {
+        messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: config.ust_psi_swap_contract.to_string(),
+            msg: to_binary(&TerraswapExecuteMsg::Swap {
+                offer_asset: Asset {
+                    amount: ust_to_buy_psi,
+                    ..swap_asset
+                },
+                max_spread: None,
+                belief_price: None,
+                to: None,
+            })?,
+            send: vec![Coin {
+                denom: STABLE_DENOM,
+                amount: ust_to_buy_psi,
+            }],
+        })],
+        submessages: vec![],
+        attributes: vec![
+            attr("action", "buy_psi_tokens"),
+            attr("ust_spent", format!("{:?}", ust_to_buy_psi.to_string())),
+        ],
+        data: None,
+    })
+}
+
 pub fn distribute_rewards(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
-    todo!()
+    //TODO: should we care about Authorization here?
+
+    let config: Config = load_config(deps.storage)?;
+    let ust_balance = query_balance(&deps.querier, &env.contract.address, STABLE_DENOM)?;
+    let send_asset = Asset {
+        info: AssetInfo::NativeToken {
+            denom: STABLE_DENOM,
+        },
+        amount: ust_balance,
+    };
+    let ust_to_deposit = (send_asset.deduct_tax(&deps.querier)?).amount;
+
+    let psi_balance = query_token_balance(deps.as_ref(), &config.psi_token, &env.contract.address)?;
+    Ok(Response {
+        messages: vec![
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: config.anchor_market_contract.to_string(),
+                msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
+                send: vec![Coin {
+                    denom: STABLE_DENOM,
+                    amount: ust_to_deposit,
+                }],
+            }),
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: config.psi_token.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: config.governance_contract.to_string(),
+                    amount: psi_balance,
+                })?,
+                send: vec![],
+            }),
+        ],
+        submessages: vec![],
+        attributes: vec![
+            attr("action", "distribute_rewards"),
+            attr("ust_to_deposit", ust_to_deposit),
+            attr("psi_to_governance", psi_balance),
+        ],
+        data: None,
+    })
 }

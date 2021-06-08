@@ -11,9 +11,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 // use moneymarket::custody::{BorrowerResponse, QueryMsg as CustodyQueryMsg};
 
+//TODO: if you have `terraswap` as dependency - use it from there!
 pub fn query_balance(
     querier: &QuerierWrapper,
-    account_addr: Addr,
+    account_addr: &Addr,
     denom: String,
 ) -> StdResult<Uint128> {
     // load price form the oracle
@@ -24,6 +25,7 @@ pub fn query_balance(
     Ok(balance.amount.amount)
 }
 
+//TODO: if you have `terraswap` as dependency - use it from there!
 pub fn query_all_balances(querier: &QuerierWrapper, account_addr: Addr) -> StdResult<Vec<Coin>> {
     // load price form the oracle
     let all_balances: AllBalanceResponse =
@@ -33,6 +35,7 @@ pub fn query_all_balances(querier: &QuerierWrapper, account_addr: Addr) -> StdRe
     Ok(all_balances.amount)
 }
 
+//TODO: if you have `terraswap` as dependency - use it from there!
 pub fn query_token_balance(
     deps: Deps,
     contract_addr: &Addr,
@@ -51,6 +54,7 @@ pub fn query_token_balance(
         .unwrap_or_else(|_| Uint128::zero()))
 }
 
+//TODO: if you have `terraswap` as dependency - use it from there!
 pub fn query_supply(querier: &QuerierWrapper, contract_addr: Addr) -> StdResult<Uint128> {
     let token_info: TokenInfoResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
         contract_addr: contract_addr.to_string(),
@@ -154,4 +158,5 @@ pub fn query_price(
 #[serde(rename_all = "snake_case")]
 pub enum AnchorMarketMsg {
     ClaimRewards { to: Option<String> },
+    DepositStable {},
 }

@@ -36,6 +36,7 @@ pub enum AnyoneMsg {
     Rebalance {},
     Sweep {},
     SwapAnc {},
+    BuyPsiTokens {},
     DisributeRewards {},
 }
 
