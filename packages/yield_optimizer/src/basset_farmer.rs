@@ -38,6 +38,7 @@ pub enum AnyoneMsg {
     SwapAnc {},
     BuyPsiTokens {},
     DisributeRewards {},
+    ClaimRewards {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

@@ -365,3 +365,13 @@ pub fn distribute_rewards(deps: DepsMut, env: Env, info: MessageInfo) -> Contrac
         data: None,
     })
 }
+
+pub fn claim_rewards(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+    //TODO: what if user sent his cAsset to someone? How we can manage rewards here?
+
+    // 1. ask cAsset contract for user balance
+    // 2. ask governance contract for user balance
+    // 3. now you know his cAsset balance - calculate rewards based on diff between borrowed UST
+    //    and UST in Anchor deposit
+    todo!()
+}

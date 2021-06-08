@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_bignumber::Uint256;
+use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Addr, CanonicalAddr, StdResult, Storage, Uint128};
 use cw_storage_plus::{Item, Map};
 
@@ -16,9 +16,17 @@ pub struct Config {
     pub ust_psi_swap_contract: Addr,
     pub casset_token: Addr,
     pub basset_token: Addr,
+    pub aterra_token: Addr,
     //what part of UST from selling ANC spend to buy PSI
     pub psi_part_in_rewards: Uint128,
     pub psi_token: Addr,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct State {
+    // pub last_reward_updated: u64,
+    pub global_reward_index: Decimal256,
+    pub last_reward_amount: Decimal256,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");

@@ -73,6 +73,46 @@ fn concat(namespace: &[u8], key: &[u8]) -> Vec<u8> {
 
 //TODO: use Anchor as dependency
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct BorrowerInfoResponse {
+    pub borrower: String,
+    pub interest_index: Decimal256,
+    pub reward_index: Decimal256,
+    pub loan_amount: Uint256,
+    pub pending_rewards: Decimal256,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct BorrowerInfo {
+    pub interest_index: Decimal256,
+    pub reward_index: Decimal256,
+    pub loan_amount: Uint256,
+    pub pending_rewards: Decimal256,
+}
+
+pub fn query_borrower_info(
+    deps: Deps,
+    anchor_market_contract: &Addr,
+    borrower: &Addr,
+) -> StdResult<BorrowerInfoResponse> {
+    let borrower_info: BorrowerInfo = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
+        contract_addr: anchor_market_contract.to_string(),
+        key: Binary::from(concat(
+            &to_length_prefixed(b"liability").to_vec(),
+            (deps.api.addr_canonicalize(borrower.as_str())?).as_slice(),
+        )),
+    }))?;
+
+    Ok(BorrowerInfoResponse {
+        borrower: borrower.to_string(),
+        interest_index: borrower_info.interest_index,
+        reward_index: borrower_info.reward_index,
+        loan_amount: borrower_info.loan_amount,
+        pending_rewards: borrower_info.pending_rewards,
+    })
+}
+
+//TODO: use Anchor as dependency
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct BorrowerResponse {
     pub borrower: String,
     pub balance: Uint256,
@@ -128,7 +168,7 @@ pub struct TimeConstraints {
 }
 
 pub fn query_price(
-    deps: &Deps,
+    deps: Deps,
     oracle_addr: &Addr,
     base: String,
     quote: String,
@@ -159,4 +199,31 @@ pub fn query_price(
 pub enum AnchorMarketMsg {
     ClaimRewards { to: Option<String> },
     DepositStable {},
+}
+
+//TODO: Use Anchor as dependency
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AnchorMarketQueryMsg {
+    EpochState { block_height: Option<u64> },
+}
+
+//TODO: Use Anchor as dependency
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct EpochStateResponse {
+    pub exchange_rate: Decimal256,
+    pub aterra_supply: Uint256,
+}
+
+pub fn query_aterra_state(
+    deps: Deps,
+    anchor_market_contract: &Addr,
+) -> StdResult<EpochStateResponse> {
+    let epoch_state: EpochStateResponse =
+        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: anchor_market_contract.to_string(),
+            msg: to_binary(&AnchorMarketQueryMsg::EpochState { block_height: None })?,
+        }))?;
+
+    Ok(epoch_state)
 }

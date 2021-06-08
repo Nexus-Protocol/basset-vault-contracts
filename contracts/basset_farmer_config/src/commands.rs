@@ -30,7 +30,7 @@ pub fn update_price(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResul
     let config: Config = load_config(deps.storage)?;
 
     let price: PriceResponse = query_price(
-        &deps.as_ref(),
+        deps.as_ref(),
         &config.oracle_addr,
         config.basset_token_addr.to_string(),
         config.stable_denom.to_string(),

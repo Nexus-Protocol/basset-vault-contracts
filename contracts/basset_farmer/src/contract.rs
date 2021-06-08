@@ -101,6 +101,7 @@ pub fn execute(
             AnyoneMsg::SwapAnc {} => commands::swap_anc(deps, env, info),
             AnyoneMsg::BuyPsiTokens {} => commands::buy_psi_tokens(deps, env, info),
             AnyoneMsg::DisributeRewards {} => commands::distribute_rewards(deps, env, info),
+            AnyoneMsg::ClaimRewards {} => commands::claim_rewards(deps, env, info),
         },
         ExecuteMsg::OverseerMsg { overseer_msg } => match overseer_msg {
             OverseerMsg::Deposit { farmer, amount } => {
