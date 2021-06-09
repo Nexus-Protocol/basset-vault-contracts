@@ -692,6 +692,7 @@ dependencies = [
  "cw20",
  "schemars",
  "serde",
+ "terraswap",
  "thiserror",
  "yield_optimizer",
 ]

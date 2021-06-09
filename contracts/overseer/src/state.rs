@@ -7,7 +7,7 @@ use cosmwasm_std::{Addr, Api, CanonicalAddr, Order, StdError, StdResult, Storage
 use cw_storage_plus::Bound;
 use cw_storage_plus::Item;
 use cw_storage_plus::Map;
-use yield_optimizer::asset::{AssetInfo, AssetInfoRaw};
+use terraswap::asset::{AssetInfoRaw, PairInfo, PairInfoRaw};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct State {

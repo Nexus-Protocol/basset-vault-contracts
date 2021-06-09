@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     attr, entry_point, from_binary, to_binary, Addr, Binary, CanonicalAddr, Deps, DepsMut, Env,
-    MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, WasmMsg,
+    MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
 };
 
 use crate::{commands, queries};
@@ -29,6 +29,15 @@ pub fn instantiate(
         overseer_contract: deps.api.addr_validate(&msg.overseer_addr)?,
         custody_basset_contract: deps.api.addr_validate(&msg.custody_basset_contract)?,
         governance_contract: deps.api.addr_validate(&msg.governance_addr)?,
+
+        //TODO: get from InstantiateMsg
+        anchor_token: Addr::unchecked(""),
+        anchor_market_contract: Addr::unchecked(""),
+        anchor_ust_swap_contract: Addr::unchecked(""),
+        ust_psi_swap_contract: Addr::unchecked(""),
+        aterra_token: Addr::unchecked(""),
+        psi_part_in_rewards: Uint128::from(0u64),
+        psi_token: Addr::unchecked(""),
     };
 
     CONFIG.save(deps.storage, &config)?;

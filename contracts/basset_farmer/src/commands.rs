@@ -276,20 +276,24 @@ pub fn swap_anc(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Re
 }
 
 //TODO: move stable denom to config?
-const STABLE_DENOM: String = "uust".to_string();
+const STABLE_DENOM: &str = "uust";
 
 /// Expecting that our UST balance is always zero (all UST is in aUST).
 /// So, all UST that we have - comes from ANC -> UST swap
 pub fn buy_psi_tokens(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
     let config: Config = load_config(deps.storage)?;
     //TODO: should we care about Authorization here?
-    let ust_balance = query_balance(&deps.querier, &env.contract.address, STABLE_DENOM)?;
+    let ust_balance = query_balance(
+        &deps.querier,
+        &env.contract.address,
+        STABLE_DENOM.to_string(),
+    )?;
 
     let ust_to_buy_psi = ust_balance * Decimal::from_ratio(1u128, config.psi_part_in_rewards.0);
 
     let swap_asset = Asset {
         info: AssetInfo::NativeToken {
-            denom: STABLE_DENOM,
+            denom: STABLE_DENOM.to_string(),
         },
         amount: ust_to_buy_psi,
     };
@@ -310,7 +314,7 @@ pub fn buy_psi_tokens(deps: DepsMut, env: Env, info: MessageInfo) -> ContractRes
                 to: None,
             })?,
             send: vec![Coin {
-                denom: STABLE_DENOM,
+                denom: STABLE_DENOM.to_string(),
                 amount: ust_to_buy_psi,
             }],
         })],
@@ -327,10 +331,14 @@ pub fn distribute_rewards(deps: DepsMut, env: Env, info: MessageInfo) -> Contrac
     //TODO: should we care about Authorization here?
 
     let config: Config = load_config(deps.storage)?;
-    let ust_balance = query_balance(&deps.querier, &env.contract.address, STABLE_DENOM)?;
+    let ust_balance = query_balance(
+        &deps.querier,
+        &env.contract.address,
+        STABLE_DENOM.to_string(),
+    )?;
     let send_asset = Asset {
         info: AssetInfo::NativeToken {
-            denom: STABLE_DENOM,
+            denom: STABLE_DENOM.to_string(),
         },
         amount: ust_balance,
     };
@@ -343,7 +351,7 @@ pub fn distribute_rewards(deps: DepsMut, env: Env, info: MessageInfo) -> Contrac
                 contract_addr: config.anchor_market_contract.to_string(),
                 msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
                 send: vec![Coin {
-                    denom: STABLE_DENOM,
+                    denom: STABLE_DENOM.to_string(),
                     amount: ust_to_deposit,
                 }],
             }),

@@ -12,11 +12,9 @@ use crate::{commands, queries};
 use crate::{error::ContractError, state::WhitelistElem};
 use cw0::calc_range_start_human;
 use cw20::Cw20ReceiveMsg;
-use yield_optimizer::{asset::AssetInfoRaw, basset_farmer::ExecuteMsg as VaultHandleMsg};
-use yield_optimizer::{
-    asset::{AssetInfo, AssetString},
-    overseer::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
-};
+use terraswap::asset::{AssetInfo, AssetInfoRaw};
+use yield_optimizer::basset_farmer::ExecuteMsg as VaultHandleMsg;
+use yield_optimizer::overseer::{Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 
 pub fn deposit_asset(
     deps: DepsMut,
@@ -46,7 +44,6 @@ pub fn deposit_asset(
     //         })?,
     //     }));
     // }
-
     // // Logging stuff, so can be removed
     // let tokens_logs: Vec<String> = tokens_addr
     //     .iter()
@@ -68,7 +65,7 @@ pub fn deposit_asset(
 pub fn register_whitelist(
     deps: DepsMut,
     info: MessageInfo,
-    tokens_human: AssetString, //or AssetAddr
+    tokens_human: String, //or AssetAddr
 ) -> Result<Response, ContractError> {
     // let config: Config = read_config(&deps.storage)?;
     // if deps.api.canonical_address(&env.message.sender)? != config.maintainer {
