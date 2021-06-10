@@ -22,7 +22,6 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    UpdatePrice {},
     GovernanceMsg { overseer_msg: GovernanceMsg },
 }
 
@@ -47,10 +46,13 @@ pub struct MigrateMsg {}
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     Config {},
-    State {},
-    BorrowLimits {},
+    BorrowerAction {
+        borrowed_amount: Uint256,
+        locked_basset_amount: Uint256,
+    },
 }
 
+//TODO: update, cause Config struct changed
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ConfigResponse {
     pub borrow_ration_aim: Decimal,
@@ -73,8 +75,22 @@ pub struct StateResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct BorrowLimitsResponse {
-    pub max_ratio: Decimal,
-    pub aim_ratio: Decimal,
-    pub min_ratio: Decimal,
+pub enum BorrowerActionResponse {
+    Nothing {},
+    Borrow { amount: Uint256 },
+    Repay { amount: Uint256 },
+}
+
+impl BorrowerActionResponse {
+    pub fn repay(amount: Uint256) -> Self {
+        BorrowerActionResponse::Repay { amount }
+    }
+
+    pub fn borrow(amount: Uint256) -> Self {
+        BorrowerActionResponse::Borrow { amount }
+    }
+
+    pub fn nothing() -> Self {
+        BorrowerActionResponse::Nothing {}
+    }
 }

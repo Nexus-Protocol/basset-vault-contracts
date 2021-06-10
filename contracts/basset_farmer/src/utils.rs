@@ -33,6 +33,7 @@ pub fn update_reward_index(deps: DepsMut, env: Env, state: &mut State) -> StdRes
 
     let aust_balance =
         query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address)?;
+    //TODO: do not count entire supply. Count tokens in staking!
     let casset_token_supply = query_supply(&deps.querier, config.casset_token)?;
     let ust_balance = query_balance(&deps.querier, env.contract.address, "uust".to_string())?;
 

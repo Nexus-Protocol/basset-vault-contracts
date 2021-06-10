@@ -28,25 +28,26 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> ContractResult<Response> {
-    let config = Config {
-        governance_contract_addr: deps.api.addr_validate(&msg.governance_contract_addr)?,
-        borrow_ration_aim: msg.borrow_ration_aim,
-        borrow_ration_upper_gap: msg.borrow_ration_upper_gap,
-        borrow_ration_bottom_gap: msg.borrow_ration_bottom_gap,
-        oracle_addr: deps.api.addr_validate(&msg.oracle_addr)?,
-        basset_token_addr: deps.api.addr_validate(&msg.basset_token_addr)?,
-        stable_denom: msg.stable_denom,
-        price_timeframe_millis: msg.price_timeframe_millis,
-    };
+    //TODO
+    // let config = Config {
+    //     governance_contract_addr: deps.api.addr_validate(&msg.governance_contract_addr)?,
+    //     borrow_ration_aim: msg.borrow_ration_aim,
+    //     borrow_ration_upper_gap: msg.borrow_ration_upper_gap,
+    //     borrow_ration_bottom_gap: msg.borrow_ration_bottom_gap,
+    //     oracle_addr: deps.api.addr_validate(&msg.oracle_addr)?,
+    //     basset_token_addr: deps.api.addr_validate(&msg.basset_token_addr)?,
+    //     stable_denom: msg.stable_denom,
+    //     price_timeframe_millis: msg.price_timeframe_millis,
+    // };
 
-    CONFIG.save(deps.storage, &config)?;
+    // CONFIG.save(deps.storage, &config)?;
 
-    let state = State {
-        prices: VecDeque::with_capacity(PRICES_COUNT as usize),
-        price_last_update_time: 0,
-        last_std_dev_from_average_price: Decimal256::zero(),
-    };
-    save_state(deps.storage, &state)?;
+    // let state = State {
+    //     prices: VecDeque::with_capacity(PRICES_COUNT as usize),
+    //     price_last_update_time: 0,
+    //     last_std_dev_from_average_price: Decimal256::zero(),
+    // };
+    // save_state(deps.storage, &state)?;
 
     Ok(Response::default())
 }
@@ -59,7 +60,6 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> ContractResult<Response> {
     match msg {
-        ExecuteMsg::UpdatePrice {} => commands::update_price(deps, env, info),
         ExecuteMsg::GovernanceMsg { overseer_msg } => match overseer_msg {
             GovernanceMsg::UpdateConfig {
                 borrow_ration_aim,
@@ -87,8 +87,14 @@ pub fn execute(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&queries::query_config(deps)?),
-        QueryMsg::State {} => to_binary(&queries::query_state(deps)?),
-        QueryMsg::BorrowLimits {} => to_binary(&queries::borrow_limits()?),
+        QueryMsg::BorrowerAction {
+            borrowed_amount,
+            locked_basset_amount,
+        } => to_binary(&queries::borrower_action(
+            deps,
+            borrowed_amount,
+            locked_basset_amount,
+        )?),
     }
 }
 

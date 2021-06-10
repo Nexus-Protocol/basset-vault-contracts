@@ -25,37 +25,6 @@ use yield_optimizer::{
     },
 };
 
-pub fn update_price(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
-    // let mut state: State = load_state(deps.storage)?;
-    // let config: Config = load_config(deps.storage)?;
-
-    // let price: PriceResponse = query_price(
-    //     deps.as_ref(),
-    //     &config.oracle_addr,
-    //     config.basset_token_addr.to_string(),
-    //     config.stable_denom.to_string(),
-    //     None,
-    // )?;
-
-    // let last_update = std::cmp::min(price.last_updated_base, price.last_updated_quote);
-    // if last_update == state.price_last_update_time || last_update > state.price_last_update_time {
-    //     return Err(StdError::generic_err("Already processed price").into());
-    // }
-    // state.price_last_update_time = last_update;
-
-    // if state.prices.len() == PRICES_COUNT as usize {
-    //     state.prices.pop_back();
-    //     state.prices.push_front(price.rate);
-    //     state.last_std_dev_from_average_price = calc_price_variance(&state.prices, PRICES_COUNT);
-    // } else {
-    //     state.prices.push_front(price.rate);
-    // }
-
-    // save_state(deps.storage, &state)?;
-
-    todo!()
-}
-
 //fn calc_price_variance(prices: &VecDeque<Decimal256>, elems_count: u64) -> Decimal256 {
 //    let prices_sum: Decimal256 = prices
 //        .iter()

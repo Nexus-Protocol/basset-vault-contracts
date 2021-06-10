@@ -9,12 +9,13 @@ use std::collections::VecDeque;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub governance_contract_addr: Addr,
-    pub borrow_ration_aim: Decimal,
-    pub borrow_ration_upper_gap: Decimal,
-    pub borrow_ration_bottom_gap: Decimal,
+    pub borrow_ltv_max: Decimal256,
+    pub borrow_ltv_min: Decimal256,
+    pub borrow_ltv_aim: Decimal256,
     pub oracle_addr: Addr,
     pub basset_token_addr: Addr,
     pub stable_denom: String,
+    pub basset_max_ltv: Decimal256,
     //TODO: looks like I don't need that
     pub price_timeframe_millis: u64,
 }
