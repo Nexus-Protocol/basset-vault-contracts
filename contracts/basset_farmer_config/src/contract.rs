@@ -1,22 +1,14 @@
-use std::collections::VecDeque;
-
-use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::{
-    attr, entry_point, from_binary, to_binary, Addr, Binary, CanonicalAddr, Deps, DepsMut, Env,
-    MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, WasmMsg,
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
 
 use crate::{
-    commands, queries,
-    state::{save_state, PRICES_COUNT},
+    commands,
+    error::ContractError,
+    queries,
+    state::{load_config, save_config},
 };
-use crate::{error::ContractError, state::State};
-use crate::{
-    state::{Config, CONFIG},
-    ContractResult,
-};
-use cw20::{Cw20ReceiveMsg, MinterResponse};
-use protobuf::Message;
+use crate::{state::Config, ContractResult};
 use yield_optimizer::basset_farmer_config::{
     ExecuteMsg, GovernanceMsg, InstantiateMsg, MigrateMsg, QueryMsg,
 };
@@ -24,30 +16,22 @@ use yield_optimizer::basset_farmer_config::{
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> ContractResult<Response> {
-    //TODO
-    // let config = Config {
-    //     governance_contract_addr: deps.api.addr_validate(&msg.governance_contract_addr)?,
-    //     borrow_ration_aim: msg.borrow_ration_aim,
-    //     borrow_ration_upper_gap: msg.borrow_ration_upper_gap,
-    //     borrow_ration_bottom_gap: msg.borrow_ration_bottom_gap,
-    //     oracle_addr: deps.api.addr_validate(&msg.oracle_addr)?,
-    //     basset_token_addr: deps.api.addr_validate(&msg.basset_token_addr)?,
-    //     stable_denom: msg.stable_denom,
-    //     price_timeframe_millis: msg.price_timeframe_millis,
-    // };
+    let config = Config {
+        governance_contract_addr: deps.api.addr_validate(&msg.governance_contract_addr)?,
+        oracle_addr: deps.api.addr_validate(&msg.oracle_addr)?,
+        basset_token_addr: deps.api.addr_validate(&msg.basset_token_addr)?,
+        stable_denom: msg.stable_denom,
+        borrow_ltv_max: msg.borrow_ltv_max,
+        borrow_ltv_min: msg.borrow_ltv_min,
+        borrow_ltv_aim: msg.borrow_ltv_aim,
+        basset_max_ltv: msg.basset_max_ltv,
+    };
 
-    // CONFIG.save(deps.storage, &config)?;
-
-    // let state = State {
-    //     prices: VecDeque::with_capacity(PRICES_COUNT as usize),
-    //     price_last_update_time: 0,
-    //     last_std_dev_from_average_price: Decimal256::zero(),
-    // };
-    // save_state(deps.storage, &state)?;
+    save_config(deps.storage, &config)?;
 
     Ok(Response::default())
 }
@@ -55,31 +39,39 @@ pub fn instantiate(
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> ContractResult<Response> {
     match msg {
-        ExecuteMsg::GovernanceMsg { overseer_msg } => match overseer_msg {
-            GovernanceMsg::UpdateConfig {
-                borrow_ration_aim,
-                borrow_ration_upper_gap,
-                borrow_ration_bottom_gap,
-                oracle_addr,
-                basset_token_addr,
-                stable_denom,
-            } => commands::update_config(
-                deps,
-                env,
-                info,
-                borrow_ration_aim,
-                borrow_ration_upper_gap,
-                borrow_ration_bottom_gap,
-                oracle_addr,
-                basset_token_addr,
-                stable_denom,
-            ),
-        },
+        ExecuteMsg::GovernanceMsg { overseer_msg } => {
+            let config = load_config(deps.storage)?;
+            if info.sender != config.governance_contract_addr {
+                return Err(ContractError::Unauthorized {});
+            }
+
+            match overseer_msg {
+                GovernanceMsg::UpdateConfig {
+                    oracle_addr,
+                    basset_token_addr,
+                    stable_denom,
+                    borrow_ltv_max,
+                    borrow_ltv_min,
+                    borrow_ltv_aim,
+                    basset_max_ltv,
+                } => commands::update_config(
+                    deps,
+                    config,
+                    oracle_addr,
+                    basset_token_addr,
+                    stable_denom,
+                    borrow_ltv_max,
+                    borrow_ltv_min,
+                    borrow_ltv_aim,
+                    basset_max_ltv,
+                ),
+            }
+        }
     }
 }
 

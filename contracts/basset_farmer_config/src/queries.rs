@@ -1,25 +1,23 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Deps, StdResult};
 use yield_optimizer::{
-    basset_farmer_config::{BorrowerActionResponse, ConfigResponse, StateResponse},
+    basset_farmer_config::{BorrowerActionResponse, ConfigResponse},
     querier::{query_price, PriceResponse},
 };
 
-use crate::state::{load_config, load_state, Config};
+use crate::state::{load_config, Config};
 
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let config: Config = load_config(deps.storage)?;
-    todo!()
-    // Ok(ConfigResponse {
-    // })
-}
-
-pub fn query_state(deps: Deps) -> StdResult<StateResponse> {
-    let state = load_state(deps.storage)?;
-    Ok(StateResponse {
-        prices: state.prices,
-        price_last_update_time: state.price_last_update_time,
-        last_std_dev_from_average_price: state.last_std_dev_from_average_price,
+    Ok(ConfigResponse {
+        governance_contract_addr: config.governance_contract_addr,
+        oracle_addr: config.oracle_addr,
+        basset_token_addr: config.basset_token_addr,
+        stable_denom: config.stable_denom,
+        borrow_ltv_max: config.borrow_ltv_max,
+        borrow_ltv_min: config.borrow_ltv_min,
+        borrow_ltv_aim: config.borrow_ltv_aim,
+        basset_max_ltv: config.basset_max_ltv,
     })
 }
 

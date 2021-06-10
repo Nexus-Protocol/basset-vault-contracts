@@ -1,3 +1,5 @@
+mod instantiate;
+
 use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::{
     from_slice, to_binary, Addr, Api, CanonicalAddr, Coin, ContractResult, Decimal, Empty,
