@@ -44,13 +44,13 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> ContractResult<Response> {
     match msg {
-        ExecuteMsg::GovernanceMsg { overseer_msg } => {
+        ExecuteMsg::GovernanceMsg { governance_msg } => {
             let config = load_config(deps.storage)?;
             if info.sender != config.governance_contract_addr {
                 return Err(ContractError::Unauthorized {});
             }
 
-            match overseer_msg {
+            match governance_msg {
                 GovernanceMsg::UpdateConfig {
                     oracle_addr,
                     basset_token_addr,

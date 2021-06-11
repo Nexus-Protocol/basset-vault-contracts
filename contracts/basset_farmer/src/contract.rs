@@ -14,7 +14,11 @@ use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
 use yield_optimizer::basset_farmer::{
     AnyoneMsg, Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, OverseerMsg, QueryMsg,
+    YourselfMsg,
 };
+
+pub const SUBMSG_ID_INIT_CASSET: u64 = 1;
+pub const SUBMSG_ID_REDEEM_STABLE: u64 = 2;
 
 #[entry_point]
 pub fn instantiate(
@@ -38,6 +42,8 @@ pub fn instantiate(
         aterra_token: Addr::unchecked(""),
         psi_part_in_rewards: Uint128::from(0u64),
         psi_token: Addr::unchecked(""),
+        basset_farmer_config_contract: Addr::unchecked(""),
+        stable_denom: "".to_string(),
     };
 
     CONFIG.save(deps.storage, &config)?;
@@ -63,7 +69,7 @@ pub fn instantiate(
             }
             .into(),
             gas_limit: None,
-            id: 1,
+            id: SUBMSG_ID_INIT_CASSET,
             reply_on: ReplyOn::Success,
         }],
         attributes: vec![],
@@ -73,6 +79,8 @@ pub fn instantiate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> ContractResult<Response> {
+    //TODO: add check for msg.id:
+    //if SUBMSG_ID_INIT_CASSET then ...
     let data = msg.result.unwrap().data.unwrap();
     let res: MsgInstantiateContractResponse =
         Message::parse_from_bytes(data.as_slice()).map_err(|_| {
@@ -104,6 +112,13 @@ pub fn execute(
 ) -> ContractResult<Response> {
     match msg {
         ExecuteMsg::Receive(msg) => commands::receive_cw20(deps, env, info, msg),
+        ExecuteMsg::Yourself { yourself_msg } => match yourself_msg {
+            YourselfMsg::AfterBorrow {
+                borrowed_amount,
+                buffer_size,
+            } => todo!(),
+            YourselfMsg::AfterAterraRedeem { repay_amount } => todo!(),
+        },
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
             AnyoneMsg::Rebalance {} => commands::rebalance(deps, env, info),
             AnyoneMsg::Sweep {} => commands::sweep(deps, env, info),

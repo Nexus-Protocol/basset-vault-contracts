@@ -197,8 +197,23 @@ pub fn query_price(
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AnchorMarketMsg {
-    ClaimRewards { to: Option<String> },
+    ClaimRewards {
+        to: Option<String>,
+    },
     DepositStable {},
+    BorrowStable {
+        borrow_amount: Uint256,
+        to: Option<String>,
+    },
+    RepayStable {},
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AnchorMarketCw20Msg {
+    /// Return stable coins to a user
+    /// according to exchange rate
+    RedeemStable {},
 }
 
 //TODO: Use Anchor as dependency

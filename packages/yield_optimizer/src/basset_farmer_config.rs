@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use cosmwasm_std::{Addr, Decimal};
+use cosmwasm_std::{to_binary, Addr, Decimal, Deps, QueryRequest, StdResult, WasmQuery};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -22,7 +22,7 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    GovernanceMsg { overseer_msg: GovernanceMsg },
+    GovernanceMsg { governance_msg: GovernanceMsg },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -69,20 +69,46 @@ pub struct ConfigResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub enum BorrowerActionResponse {
     Nothing {},
-    Borrow { amount: Uint256 },
-    Repay { amount: Uint256 },
+    Borrow {
+        amount: Uint256,
+        advised_buffer_size: Uint256,
+    },
+    Repay {
+        amount: Uint256,
+        advised_buffer_size: Uint256,
+    },
 }
 
 impl BorrowerActionResponse {
     pub fn repay(amount: Uint256) -> Self {
-        BorrowerActionResponse::Repay { amount }
+        // BorrowerActionResponse::Repay { amount }
+        todo!()
     }
 
     pub fn borrow(amount: Uint256) -> Self {
-        BorrowerActionResponse::Borrow { amount }
+        // BorrowerActionResponse::Borrow { amount }
+        todo!()
     }
 
     pub fn nothing() -> Self {
         BorrowerActionResponse::Nothing {}
     }
+}
+
+pub fn query_borrower_action(
+    deps: Deps,
+    basset_farmer_config_contract: &Addr,
+    borrowed_amount: Uint256,
+    locked_basset_amount: Uint256,
+) -> StdResult<BorrowerActionResponse> {
+    let borrower_action: BorrowerActionResponse =
+        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: basset_farmer_config_contract.to_string(),
+            msg: to_binary(&QueryMsg::BorrowerAction {
+                borrowed_amount,
+                locked_basset_amount,
+            })?,
+        }))?;
+
+    Ok(borrower_action)
 }

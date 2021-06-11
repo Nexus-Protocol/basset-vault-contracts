@@ -73,10 +73,14 @@ fn calc_borrower_action(
     if current_ltv >= borrow_ltv_max {
         let aim_borrow_amount = borrow_ltv_aim * max_borrow_amount;
         let repay_amount = borrowed_amount - aim_borrow_amount;
+        //TODO: buffer_size should be (max_ltv - aim_ltv)+0.15, to be able to repay loan directly
+        //from buffer with high probability
         BorrowerActionResponse::repay(repay_amount)
     } else if current_ltv <= borrow_ltv_min {
         let aim_borrow_amount = borrow_ltv_aim * max_borrow_amount;
         let borrow_amount = aim_borrow_amount - borrowed_amount;
+        //TODO: buffer_size should be (max_ltv - aim_ltv)+0.15, to be able to repay loan directly
+        //from buffer with high probability
         BorrowerActionResponse::borrow(borrow_amount)
     } else {
         BorrowerActionResponse::nothing()

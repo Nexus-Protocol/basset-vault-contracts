@@ -7,3 +7,6 @@ message MsgInstantiateContractResponse {
     // Data contains base64-encoded bytes to returned from the contract
     bytes data = 2;
   }
+
+
+//TODO: MsgExecuteContractResponse

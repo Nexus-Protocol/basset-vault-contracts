@@ -20,6 +20,8 @@ pub struct Config {
     //what part of UST from selling ANC spend to buy PSI
     pub psi_part_in_rewards: Uint128,
     pub psi_token: Addr,
+    pub basset_farmer_config_contract: Addr,
+    pub stable_denom: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -27,9 +29,13 @@ pub struct State {
     // pub last_reward_updated: u64,
     pub global_reward_index: Decimal256,
     pub last_reward_amount: Decimal256,
+    //TODO: rename to avoid UST in naming
+    pub ust_buffer_balance: Uint256,
+    pub aterra_balance: Uint256,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
+pub const STATE: Item<State> = Item::new("state");
 pub const FARMERS: Map<&Addr, FarmerInfo> = Map::new("farmers");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
@@ -56,4 +62,8 @@ pub fn store_farmer_info(
     farmer_info: &FarmerInfo,
 ) -> StdResult<()> {
     FARMERS.save(storage, farmer_addr, farmer_info)
+}
+
+pub fn load_state(storage: &dyn Storage) -> StdResult<State> {
+    STATE.load(storage)
 }
