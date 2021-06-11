@@ -88,7 +88,7 @@ fn calculate_reward_index(
     }
 }
 
-fn calculate_aterra_amount_to_sell(
+pub fn calculate_aterra_amount_to_sell(
     state: &State,
     aterra_exchange_rate: Decimal256,
     repay_amount: Uint256,
@@ -398,5 +398,98 @@ mod test {
             aim_buffer_size,
         );
         assert_eq!(state.aterra_balance, aterra_to_sell);
+    }
+
+    #[test]
+    fn aterra_sell_calc_fill_aim_buffer() {
+        let mut state = State {
+            global_reward_index: Decimal256::zero(),
+            last_reward_amount: Decimal256::zero(),
+            ust_buffer_balance: Uint256::from(100u64),
+            aterra_balance: Uint256::from(100u64),
+        };
+
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let repay_amount = Uint256::from(200u64);
+        //total: 100+120
+        //total - repay = 220 - 200 = 20 which is less then we need to aim_buffer_size, so sell all
+        let aim_buffer_size = Uint256::from(100u64);
+        let aterra_to_sell = calculate_aterra_amount_to_sell(
+            &state,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+        );
+        assert_eq!(state.aterra_balance, aterra_to_sell);
+    }
+
+    #[test]
+    fn aterra_sell_calc_no_need_to_sell() {
+        let mut state = State {
+            global_reward_index: Decimal256::zero(),
+            last_reward_amount: Decimal256::zero(),
+            ust_buffer_balance: Uint256::from(100u64),
+            aterra_balance: Uint256::from(100u64),
+        };
+
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let repay_amount = Uint256::from(50u64);
+        //ust_buffer >= repay + aim_buffer
+        //so no need to sell
+        let aim_buffer_size = Uint256::from(50u64);
+        let aterra_to_sell = calculate_aterra_amount_to_sell(
+            &state,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+        );
+        assert_eq!(Uint256::zero(), aterra_to_sell);
+    }
+
+    #[test]
+    fn aterra_sell_calc_get_portion_from_buffer() {
+        let mut state = State {
+            global_reward_index: Decimal256::zero(),
+            last_reward_amount: Decimal256::zero(),
+            ust_buffer_balance: Uint256::from(100u64),
+            aterra_balance: Uint256::from(100u64),
+        };
+
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let repay_amount = Uint256::from(80u64);
+        //we can get 20 coins from buffer, cause aim_buffer < current_buffer
+        //need to sell only to get 80 - 20 = 60 coins
+        let aim_buffer_size = Uint256::from(80u64);
+        let aterra_to_sell = calculate_aterra_amount_to_sell(
+            &state,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+        );
+        assert_eq!(Uint256::from(50u64), aterra_to_sell);
+    }
+
+    #[test]
+    fn aterra_sell_calc_sell_to_add_to_buffer() {
+        //TODO
+        let mut state = State {
+            global_reward_index: Decimal256::zero(),
+            last_reward_amount: Decimal256::zero(),
+            ust_buffer_balance: Uint256::from(100u64),
+            aterra_balance: Uint256::from(100u64),
+        };
+
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let repay_amount = Uint256::from(70u64);
+        //we need to add 20 coins to buffer, cause aim_buffer > current_buffer
+        //need to sell to get 70 + 20 = 90 coins
+        let aim_buffer_size = Uint256::from(120u64);
+        let aterra_to_sell = calculate_aterra_amount_to_sell(
+            &state,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+        );
+        assert_eq!(Uint256::from(75u64), aterra_to_sell);
     }
 }

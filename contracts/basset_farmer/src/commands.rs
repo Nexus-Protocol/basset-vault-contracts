@@ -12,6 +12,7 @@ use crate::{
     contract::SUBMSG_ID_REDEEM_STABLE,
     queries,
     state::{load_config, load_farmer_info, load_state, store_farmer_info, FarmerInfo, State},
+    utils::calculate_aterra_amount_to_sell,
 };
 use crate::{error::ContractError, response::MsgInstantiateContractResponse};
 use crate::{
@@ -215,111 +216,30 @@ fn repay_logic(
     //TODO: handle 95% borrow error (use submessages)
     //TODO: handle stable taxes - how much you will repay if Send Xust?
 
-    //TODO: get us smarter
-    let stable_denom = config.stable_denom.clone();
-    let anchor_market_contract = config.anchor_market_contract.to_string();
-
-    let redeem_aterra_submessage =
-        get_redeem_aterra_submessages(deps, config, state, repay_amount, aim_buffer_size)?;
-
-    Ok(Response {
-        messages: vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: anchor_market_contract,
-                msg: to_binary(&AnchorMarketMsg::RepayStable {})?,
-                send: vec![Coin {
-                    denom: stable_denom,
-                    //TODO: is it ok to convert Uint256 to Uint128 - it can throw runtime
-                    //exception
-                    amount: repay_amount.into(),
-                }],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: contract.address.to_string(),
-                msg: to_binary(&YourselfMsg::AfterAterraRedeem { repay_amount })?,
-                send: vec![],
-            }),
-        ],
-        submessages: redeem_aterra_submessage,
-        attributes: vec![
-            attr("action", "repay_stable"),
-            attr("amount", repay_amount),
-            attr("aim_buffer_size", aim_buffer_size),
-        ],
-        data: None,
-    })
-}
-
-fn get_redeem_aterra_submessages(
-    deps: Deps,
-    config: Config,
-    state: State,
-    repay_amount: Uint256,
-    aim_buffer_size: Uint256,
-) -> ContractResult<Vec<SubMsg<Empty>>> {
     let aterra_exchange_rate: Decimal256 =
         query_aterra_state(deps, &config.anchor_market_contract)?.exchange_rate;
-    let current_aterra_balance: Uint256 = state.aterra_balance;
-    let current_buffer_balance: Uint256 = state.ust_buffer_balance;
-    let current_total_stable_balance =
-        current_aterra_balance * aterra_exchange_rate + current_buffer_balance;
+    let aterra_amount_to_sell = calculate_aterra_amount_to_sell(
+        &state,
+        aterra_exchange_rate,
+        repay_amount,
+        aim_buffer_size,
+    );
 
-    if repay_amount > current_total_stable_balance {
-        //if we need to repay more than we have - means we farming with loss
-        //- repay as much as can
-        //TODO: looks like we can't withdraw all users bAsset. Ignore that case for the moment
-        todo!() //repay as much as can
-    } else if (current_total_stable_balance - repay_amount) > aim_buffer_size {
-        //means we need to sell all aterra and use rest as a buffer
-        todo!() //sell all aterra
-    } else {
-        //means we need to repay only by selling some aterra
-        //OR just get it from buffer without selling aterra
-        todo!() //sell some aterra
-    }
+    //TODO: save REPAYING_LOAN_STATE that you use in 'reply > SUBMSG_ID_REDEEM_STABLE'
 
-    if state.ust_buffer_balance > aim_buffer_size {
-        let took_from_buffer = state.ust_buffer_balance - aim_buffer_size;
-        if repay_amount > took_from_buffer {
-            let amount_to_withdraw = repay_amount - took_from_buffer;
-
-            let aterra_exchange_rate: Decimal256 =
-                query_aterra_state(deps, &config.anchor_market_contract)?.exchange_rate;
-            let amount_to_repay: Uint256 = amount_to_withdraw / aterra_exchange_rate;
-
-            return Ok(vec![SubMsg {
-                msg: WasmMsg::Execute {
-                    contract_addr: config.aterra_token.to_string(),
-                    msg: to_binary(&Cw20ExecuteMsg::Send {
-                        contract: config.anchor_market_contract.to_string(),
-                        amount: amount_to_repay.into(),
-                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
-                    })?,
-                    send: vec![],
-                }
-                .into(),
-                gas_limit: None,
-                id: SUBMSG_ID_REDEEM_STABLE,
-                reply_on: ReplyOn::Error,
-            }]);
-        } else {
-            //we don't need to sell any aterra, cause it is enough coins in buffer
-            return Ok(Vec::new());
-        }
-    } else {
-        let additional_ust_from_selling_aterra = aim_buffer_size - state.ust_buffer_balance;
-        let amount_to_withdraw = repay_amount + additional_ust_from_selling_aterra;
-
-        let aterra_exchange_rate: Decimal256 =
-            query_aterra_state(deps, &config.anchor_market_contract)?.exchange_rate;
-        let amount_to_repay: Uint256 = amount_to_withdraw / aterra_exchange_rate;
-
-        return Ok(vec![SubMsg {
+    Ok(Response {
+        //TODO: looks like we do not need this
+        messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: contract.address.to_string(),
+            msg: to_binary(&YourselfMsg::AfterAterraRedeem { repay_amount })?,
+            send: vec![],
+        })],
+        submessages: vec![SubMsg {
             msg: WasmMsg::Execute {
                 contract_addr: config.aterra_token.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Send {
                     contract: config.anchor_market_contract.to_string(),
-                    amount: amount_to_repay.into(),
+                    amount: aterra_amount_to_sell.into(),
                     msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
                 })?,
                 send: vec![],
@@ -327,9 +247,15 @@ fn get_redeem_aterra_submessages(
             .into(),
             gas_limit: None,
             id: SUBMSG_ID_REDEEM_STABLE,
-            reply_on: ReplyOn::Error,
-        }]);
-    }
+            reply_on: ReplyOn::Always,
+        }],
+        attributes: vec![
+            attr("action", "repay_loan"),
+            attr("amount", repay_amount),
+            attr("aim_buffer_size", aim_buffer_size),
+        ],
+        data: None,
+    })
 }
 
 /// Executor: overseer

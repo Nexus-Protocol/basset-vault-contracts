@@ -30,12 +30,21 @@ pub struct State {
     pub global_reward_index: Decimal256,
     pub last_reward_amount: Decimal256,
     //TODO: rename to avoid UST in naming
+    //TODO: better to query balance each time!
     pub ust_buffer_balance: Uint256,
     pub aterra_balance: Uint256,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
+pub struct RepayingLoanState {
+    pub to_repay: Uint256,
+    pub aterra_amount_to_sell: Uint256,
+    pub aterra_exchange_rate: Decimal256,
+}
+
 pub const CONFIG: Item<Config> = Item::new("config");
 pub const STATE: Item<State> = Item::new("state");
+pub const REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
 pub const FARMERS: Map<&Addr, FarmerInfo> = Map::new("farmers");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
@@ -66,4 +75,8 @@ pub fn store_farmer_info(
 
 pub fn load_state(storage: &dyn Storage) -> StdResult<State> {
     STATE.load(storage)
+}
+
+pub fn load_repaying_loan_state(storage: &dyn Storage) -> StdResult<RepayingLoanState> {
+    REPAYING_LOAN.load(storage)
 }
