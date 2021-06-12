@@ -14,6 +14,7 @@ use cosmwasm_std::{
 use cosmwasm_storage::to_length_prefixed;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
+use std::hash::Hash;
 use yield_optimizer::querier::{BorrowerInfoResponse, BorrowerResponse};
 
 use cw20::TokenInfoResponse;
@@ -39,6 +40,7 @@ pub struct WasmMockQuerier {
     borrowers: HashMap<String, HashMap<String, BorrowerResponse>>,
     base: MockQuerier<Empty>,
     token_querier: TokenQuerier,
+    wasm_query_smart_responses: HashMap<String, Binary>,
 }
 
 #[derive(Clone, Default)]
@@ -55,17 +57,18 @@ impl TokenQuerier {
     }
 }
 
-pub(crate) fn array_to_hashmap<T>(
-    balances: &[(&String, &[(&String, &T)])],
-) -> HashMap<String, HashMap<String, T>>
+pub(crate) fn array_to_hashmap<K, V>(
+    balances: &[(&String, &[(&K, &V)])],
+) -> HashMap<String, HashMap<K, V>>
 where
-    T: Clone,
+    V: Clone,
+    K: Clone + Eq + Hash,
 {
-    let mut result_map: HashMap<String, HashMap<String, T>> = HashMap::new();
+    let mut result_map: HashMap<String, HashMap<K, V>> = HashMap::new();
     for (contract_addr, map_values) in balances.iter() {
-        let mut contract_balances_map: HashMap<String, T> = HashMap::new();
-        for (addr, value) in map_values.iter() {
-            contract_balances_map.insert(addr.to_string(), (**value).clone());
+        let mut contract_balances_map: HashMap<K, V> = HashMap::new();
+        for (key, value) in map_values.iter() {
+            contract_balances_map.insert((**key).clone(), (**value).clone());
         }
 
         result_map.insert(contract_addr.to_string(), contract_balances_map);
@@ -161,6 +164,22 @@ impl WasmMockQuerier {
                     panic!("DO NOT ENTER HERE")
                 }
             }
+            QueryRequest::Wasm(WasmQuery::Smart { contract_addr, msg }) => {
+                let response = match self.wasm_query_smart_responses.get(contract_addr) {
+                    Some(response) => response,
+                    None => {
+                        return SystemResult::Err(SystemError::InvalidRequest {
+                            error: format!(
+                                "No WasmQuery::Smart responses exists for the contract {}",
+                                contract_addr
+                            ),
+                            request: (*msg).clone(),
+                        })
+                    }
+                };
+
+                SystemResult::Ok(ContractResult::Ok(response.clone()))
+            }
             _ => self.base.handle_query(request),
         }
     }
@@ -253,6 +272,7 @@ impl WasmMockQuerier {
             borrowers: HashMap::new(),
             base,
             token_querier: TokenQuerier::default(),
+            wasm_query_smart_responses: HashMap::new(),
         }
     }
 
@@ -263,5 +283,13 @@ impl WasmMockQuerier {
 
     pub fn with_loan(&mut self, borrowers_info: &[(&String, &[(&String, &BorrowerInfoResponse)])]) {
         self.borrowers_info = array_to_hashmap(borrowers_info);
+    }
+
+    pub fn with_wasm_query_response(&mut self, contract_responses_map: &[(&String, &Binary)]) {
+        let mut result_map: HashMap<String, Binary> = HashMap::new();
+        for (contract_addr, response) in contract_responses_map.iter() {
+            result_map.insert((**contract_addr).clone(), (**response).clone());
+        }
+        self.wasm_query_smart_responses = result_map;
     }
 }

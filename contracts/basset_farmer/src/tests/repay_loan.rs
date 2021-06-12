@@ -16,6 +16,7 @@ use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
 use yield_optimizer::{
     basset_farmer::{Cw20HookMsg, ExecuteMsg, OverseerMsg},
+    basset_farmer_config::BorrowerActionResponse,
     querier::BorrowerInfoResponse,
 };
 
@@ -60,7 +61,7 @@ fn repay_loan() {
             aterra_token,
             psi_part_in_rewards,
             psi_token,
-            basset_farmer_config_contract,
+            basset_farmer_config_contract: basset_farmer_config_contract.clone(),
             stable_denom,
         };
 
@@ -82,7 +83,6 @@ fn repay_loan() {
     }
 
     let locked_basset_amount = Uint128::from(10_000u64);
-    //TODO: waaaaat? wtf is that
     let basset_farmer_loan_amount = Uint256::from(10_000u64);
     deps.querier.with_token_balances(&[(
         &custody_basset_contract,
@@ -100,6 +100,14 @@ fn repay_loan() {
                 pending_rewards: Decimal256::zero(),
             },
         )],
+    )]);
+    deps.querier.with_wasm_query_response(&[(
+        &basset_farmer_config_contract,
+        &to_binary(&BorrowerActionResponse::Repay {
+            amount: Uint256::from(10_000u64),
+            advised_buffer_size: Uint256::from(5_000u64),
+        })
+        .unwrap(),
     )]);
     // -= REBALANCE =-
     {
