@@ -35,12 +35,7 @@ pub enum BorrowerActionResponse {
 }
 ```
 
-The simplest config is to maintain bounds:
-* borrow to `aim_ltv` if `ltv` < `minimum_ltv` (75%)
-* repay to `aim_ltv` if `ltv` > `minimum_ltv` (85%)
-* do nothing otherwise
-
-`aim_ltv`: 80%
+[Rebalance config](#anchor-yield-optimizer-config)
 
 #### Repayment logic
 
@@ -63,6 +58,16 @@ Nothing bad will happen if we fail to borrow more, so no error handling here.
 Borrow UST from Anchor and use it in a sophisticated Mirror strategy.
 Be available in the future.
 
+### Anchor yield optimizer config
+
+The simplest config is to maintain bounds:
+* borrow to `aim_ltv` if `ltv` < `minimum_ltv` (75%)
+* repay to `aim_ltv` if `ltv` > `minimum_ltv` (85%)
+* do nothing otherwise
+
+`aim_ltv`: 80%
+
 ---
 
 [anchor-yield-optimizer](#anchor-yield-optimizer)
+[anchor-yield-optimizer-config](#anchor-yield-optimizer-config)
