@@ -55,8 +55,8 @@ Nothing bad will happen if we fail to borrow more, so no error handling here.
 
 ### v2
 
-Borrow UST from Anchor and use it in a sophisticated Mirror strategy.
-Be available in the future.
+Borrow UST from Anchor and use it in a sophisticated Mirror strategies.
+Will be available in the future.
 
 ### Anchor yield optimizer config
 
