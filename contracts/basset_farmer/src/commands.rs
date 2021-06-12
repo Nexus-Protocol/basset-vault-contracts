@@ -9,16 +9,16 @@ use terraswap::pair::ExecuteMsg as TerraswapExecuteMsg;
 
 use crate::{
     commands,
-    contract::SUBMSG_ID_REDEEM_STABLE,
+    contract::{SUBMSG_ID_FAKE_NO_REPLY, SUBMSG_ID_REDEEM_STABLE},
     queries,
-    state::{load_config, load_farmer_info, load_state, store_farmer_info, FarmerInfo, State},
-    utils::calculate_aterra_amount_to_sell,
+    state::{
+        load_config, load_farmer_info, load_repaying_loan_state, load_state, store_farmer_info,
+        store_repaying_loan_state, FarmerInfo, RepayingLoanState, State,
+    },
+    utils::{calc_aterra_redeem_error_handling_action, calculate_aterra_amount_to_sell},
 };
 use crate::{error::ContractError, response::MsgInstantiateContractResponse};
-use crate::{
-    state::{Config, CONFIG},
-    ContractResult,
-};
+use crate::{state::Config, ContractResult};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ReceiveMsg;
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
@@ -29,6 +29,7 @@ use yield_optimizer::{
     basset_farmer_config::{
         query_borrower_action, BorrowerActionResponse, ConfigResponse as FarmerConfigConfigResponse,
     },
+    get_tax_info,
     querier::{
         get_basset_in_custody, query_aterra_state, query_balance, query_borrower_info,
         query_supply, query_token_balance, AnchorMarketCw20Msg, AnchorMarketMsg,
@@ -58,7 +59,7 @@ pub fn receive_cw20_deposit(
 ) -> ContractResult<Response> {
     let basset_addr = info.sender;
     // only basset contract can execute this message
-    let config: Config = CONFIG.load(deps.storage)?;
+    let config: Config = load_config(deps.storage)?;
     if basset_addr != config.basset_token {
         return Err(ContractError::Unauthorized {});
     }
@@ -96,7 +97,7 @@ pub fn receive_cw20_withdraw(
 ) -> ContractResult<Response> {
     let contract_addr = info.sender;
     // only basset contract can execute this message
-    let config: Config = CONFIG.load(deps.storage)?;
+    let config: Config = load_config(deps.storage)?;
     if contract_addr != config.basset_token {
         return Err(ContractError::Unauthorized {});
     }
@@ -162,8 +163,9 @@ pub fn rebalance(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<R
             amount,
             advised_buffer_size,
         } => {
-            // repay_logic()
-            todo!()
+            let config = load_config(deps.storage)?;
+            let state = load_state(deps.storage)?;
+            repay_logic(deps, config, state, amount, advised_buffer_size)
         }
     }
 }
@@ -206,18 +208,16 @@ fn borrow_logic(
 }
 
 fn repay_logic(
-    deps: Deps,
-    contract: ContractInfo,
+    deps: DepsMut,
     config: Config,
     state: State,
     repay_amount: Uint256,
     aim_buffer_size: Uint256,
 ) -> ContractResult<Response> {
-    //TODO: handle 95% borrow error (use submessages)
     //TODO: handle stable taxes - how much you will repay if Send Xust?
 
     let aterra_exchange_rate: Decimal256 =
-        query_aterra_state(deps, &config.anchor_market_contract)?.exchange_rate;
+        query_aterra_state(deps.as_ref(), &config.anchor_market_contract)?.exchange_rate;
     let aterra_amount_to_sell = calculate_aterra_amount_to_sell(
         &state,
         aterra_exchange_rate,
@@ -225,7 +225,13 @@ fn repay_logic(
         aim_buffer_size,
     );
 
-    //TODO: save REPAYING_LOAN_STATE that you use in 'reply > SUBMSG_ID_REDEEM_STABLE'
+    let repaying_loan_state = RepayingLoanState {
+        iteration_index: 0,
+        aterra_amount_to_sell,
+        aterra_amount_in_selling: aterra_amount_to_sell,
+        aim_buffer_size,
+    };
+    store_repaying_loan_state(deps.storage, &repaying_loan_state)?;
 
     Ok(Response {
         //TODO: looks like we do not need this
@@ -251,12 +257,104 @@ fn repay_logic(
             reply_on: ReplyOn::Always,
         }],
         attributes: vec![
-            attr("action", "repay_loan"),
-            attr("amount", repay_amount),
+            attr("action", "start_repaying_loan"),
+            attr("aterra_amount_to_sell", aterra_amount_to_sell),
             attr("aim_buffer_size", aim_buffer_size),
         ],
         data: None,
     })
+}
+
+pub fn repay_reply_logic(deps: DepsMut, env: Env, on_success: bool) -> ContractResult<Response> {
+    let mut repaying_loan_state = load_repaying_loan_state(deps.storage)?;
+    //TODO: move '5' to const or config. Think about value. I think it is good idea to have
+    //some limit or iteration, cause of crazy gas price, but not sure about the value.
+    //to think
+    if repaying_loan_state.iteration_index >= 5 {
+        return Ok(Response::default());
+    }
+
+    if on_success {
+        repaying_loan_state.aterra_amount_to_sell = repaying_loan_state.aterra_amount_to_sell
+            - repaying_loan_state.aterra_amount_in_selling;
+    }
+
+    let config = load_config(deps.storage)?;
+    let current_buffer_balance: Uint256 = query_balance(
+        &deps.querier,
+        &env.contract.address,
+        config.stable_denom.to_string(),
+    )?
+    .into();
+    let aterra_exchange_rate: Decimal256 =
+        query_aterra_state(deps.as_ref(), &config.anchor_market_contract)?.exchange_rate;
+    let tax_info = get_tax_info(deps.as_ref(), &config.stable_denom)?;
+    let action_to_do = calc_aterra_redeem_error_handling_action(
+        repaying_loan_state.aterra_amount_to_sell,
+        aterra_exchange_rate,
+        current_buffer_balance,
+        repaying_loan_state.aim_buffer_size,
+        &tax_info,
+    );
+
+    if let Some(action_to_do) = action_to_do {
+        let mut submessages = Vec::with_capacity(2);
+
+        let repay_stable_coin = Coin {
+            denom: config.stable_denom.to_string(),
+            amount: action_to_do.repay_loan_amount.into(),
+        };
+        submessages.push(SubMsg {
+            //first message is to repay loan
+            msg: WasmMsg::Execute {
+                contract_addr: config.anchor_market_contract.to_string(),
+                msg: to_binary(&AnchorMarketMsg::RepayStable {})?,
+                send: vec![repay_stable_coin],
+            }
+            .into(),
+            gas_limit: None,
+            id: SUBMSG_ID_FAKE_NO_REPLY,
+            reply_on: ReplyOn::Success,
+        });
+
+        if action_to_do.aterra_amount_to_sell > Uint256::zero() {
+            submessages.push(SubMsg {
+                //second message is to redeem stables again, but only for the
+                //amount that was repayed
+                msg: WasmMsg::Execute {
+                    contract_addr: config.aterra_token.to_string(),
+                    msg: to_binary(&Cw20ExecuteMsg::Send {
+                        contract: config.anchor_market_contract.to_string(),
+                        amount: action_to_do.aterra_amount_to_sell.into(),
+                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
+                    })?,
+                    send: vec![],
+                }
+                .into(),
+                gas_limit: None,
+                id: SUBMSG_ID_REDEEM_STABLE,
+                //do not reply on error, have no idea what to do in that case
+                reply_on: ReplyOn::Success,
+            });
+        }
+
+        repaying_loan_state.aterra_amount_in_selling = action_to_do.aterra_amount_to_sell;
+        repaying_loan_state.iteration_index += 1;
+        store_repaying_loan_state(deps.storage, &repaying_loan_state)?;
+
+        Ok(Response {
+            messages: vec![],
+            submessages,
+            attributes: vec![
+                attr("action", "repay_loan_from_buffer"),
+                attr("loan_repayment_amount", action_to_do.repay_loan_amount),
+                attr("aterra_to_sell", action_to_do.aterra_amount_to_sell),
+            ],
+            data: None,
+        })
+    } else {
+        return Ok(Response::default());
+    }
 }
 
 /// Executor: overseer

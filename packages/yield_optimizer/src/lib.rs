@@ -8,9 +8,8 @@ pub mod basset_farmer_config;
 pub mod overseer;
 pub mod querier;
 
-//TODO: move me
 pub fn deduct_tax(deps: Deps, coin: Coin) -> StdResult<Coin> {
-    let tax_info = get_tax_info(deps, &coin)?;
+    let tax_info = get_tax_info(deps, &coin.denom)?;
     let coin_amount = Uint256::from(coin.amount);
     let result_amount = subtract_tax(coin_amount, &tax_info);
     Ok(Coin {
@@ -24,10 +23,10 @@ pub struct TaxInfo {
     pub cap: Uint256,
 }
 
-pub fn get_tax_info(deps: Deps, coin: &Coin) -> StdResult<TaxInfo> {
+pub fn get_tax_info(deps: Deps, coin_denom: &str) -> StdResult<TaxInfo> {
     let terra_querier = TerraQuerier::new(&deps.querier);
     let rate = Decimal256::from((terra_querier.query_tax_rate()?).rate);
-    let cap = Uint256::from((terra_querier.query_tax_cap(coin.denom.to_string())?).cap);
+    let cap = Uint256::from((terra_querier.query_tax_cap(coin_denom)?).cap);
     return Ok(TaxInfo { rate, cap });
 }
 

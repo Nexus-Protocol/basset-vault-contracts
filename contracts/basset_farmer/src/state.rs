@@ -37,17 +37,16 @@ pub struct State {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
 pub struct RepayingLoanState {
-    //TODO: don't need this field
-    pub to_repay: Uint256,
+    pub iteration_index: u8,
     pub aterra_amount_to_sell: Uint256,
-    pub aterra_exchange_rate: Decimal256,
     pub aterra_amount_in_selling: Uint256,
+    pub aim_buffer_size: Uint256,
 }
 
-pub const CONFIG: Item<Config> = Item::new("config");
-pub const STATE: Item<State> = Item::new("state");
-pub const REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
-pub const FARMERS: Map<&Addr, FarmerInfo> = Map::new("farmers");
+const CONFIG: Item<Config> = Item::new("config");
+const STATE: Item<State> = Item::new("state");
+const REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
+const FARMERS: Map<&Addr, FarmerInfo> = Map::new("farmers");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
 pub struct FarmerInfo {
@@ -59,6 +58,17 @@ pub struct FarmerInfo {
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
     CONFIG.load(storage)
+}
+
+pub fn store_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()> {
+    CONFIG.save(storage, config)
+}
+
+pub fn config_set_casset_token(storage: &mut dyn Storage, casset_token: Addr) -> StdResult<Config> {
+    CONFIG.update(storage, |mut config| -> StdResult<_> {
+        config.casset_token = casset_token;
+        Ok(config)
+    })
 }
 
 pub fn load_farmer_info(storage: &dyn Storage, farmer_addr: &Addr) -> StdResult<FarmerInfo> {
@@ -81,4 +91,11 @@ pub fn load_state(storage: &dyn Storage) -> StdResult<State> {
 
 pub fn load_repaying_loan_state(storage: &dyn Storage) -> StdResult<RepayingLoanState> {
     REPAYING_LOAN.load(storage)
+}
+
+pub fn store_repaying_loan_state(
+    storage: &mut dyn Storage,
+    repaying_loan_state: &RepayingLoanState,
+) -> StdResult<()> {
+    REPAYING_LOAN.save(storage, repaying_loan_state)
 }

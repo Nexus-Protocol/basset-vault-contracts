@@ -1,4 +1,4 @@
-use cosmwasm_bignumber::Uint256;
+use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
     attr, entry_point, from_binary, to_binary, Addr, Binary, CanonicalAddr, Coin, CosmosMsg, Deps,
     DepsMut, Env, MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Uint128,
@@ -6,14 +6,16 @@ use cosmwasm_std::{
 };
 
 use crate::{
-    commands, queries,
-    state::{load_config, load_repaying_loan_state, RepayingLoanState, REPAYING_LOAN},
+    commands::{self, repay_reply_logic},
+    queries,
+    state::{
+        config_set_casset_token, load_config, load_repaying_loan_state, store_config,
+        RepayingLoanState,
+    },
+    utils::calc_aterra_redeem_error_handling_action,
 };
 use crate::{error::ContractError, response::MsgInstantiateContractResponse};
-use crate::{
-    state::{Config, CONFIG},
-    ContractResult,
-};
+use crate::{state::Config, ContractResult};
 use cw20::{Cw20ReceiveMsg, MinterResponse};
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
@@ -23,12 +25,13 @@ use yield_optimizer::{
         AnyoneMsg, Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, OverseerMsg, QueryMsg,
         YourselfMsg,
     },
-    deduct_tax,
-    querier::{query_balance, AnchorMarketCw20Msg, AnchorMarketMsg},
+    deduct_tax, get_tax_info,
+    querier::{query_aterra_state, query_balance, AnchorMarketCw20Msg, AnchorMarketMsg},
 };
 
 pub const SUBMSG_ID_INIT_CASSET: u64 = 1;
 pub const SUBMSG_ID_REDEEM_STABLE: u64 = 2;
+pub const SUBMSG_ID_FAKE_NO_REPLY: u64 = 3;
 const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
 
 #[entry_point]
@@ -57,7 +60,7 @@ pub fn instantiate(
         stable_denom: "".to_string(),
     };
 
-    CONFIG.save(deps.storage, &config)?;
+    store_config(deps.storage, &config)?;
 
     Ok(Response {
         messages: vec![],
@@ -99,12 +102,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                 })?;
 
             let casset_token = res.get_contract_address();
-
-            let api = deps.api;
-            CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
-                config.casset_token = api.addr_validate(casset_token)?;
-                Ok(config)
-            })?;
+            config_set_casset_token(deps.storage, deps.api.addr_validate(casset_token)?)?;
 
             Ok(Response {
                 messages: vec![],
@@ -113,89 +111,13 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                 data: None,
             })
         }
+
         SUBMSG_ID_REDEEM_STABLE => {
             match msg.result {
                 cosmwasm_std::ContractResult::Err(err_msg) => {
                     if err_msg.contains(TOO_HIGH_BORROW_DEMAND_ERR_MSG) {
                         //we need to repay loan a bit, before redeem stables
-                        let repaying_loan_state = load_repaying_loan_state(deps.storage)?;
-                        let config = load_config(deps.storage)?;
-                        let current_buffer_balance: Uint256 = query_balance(
-                            &deps.querier,
-                            &env.contract.address,
-                            config.stable_denom.to_string(),
-                        )?
-                        .into();
-
-                        let how_much_to_get_from_buffer: Uint256 =
-                            current_buffer_balance.min(repaying_loan_state.to_repay);
-
-                        let repay_stable_coin = deduct_tax(
-                            deps.as_ref(),
-                            Coin {
-                                denom: config.stable_denom,
-                                //TODO: is it ok to convert Uint256 to Uint128 - it can throw runtime
-                                //exception
-                                amount: how_much_to_get_from_buffer.into(),
-                            },
-                        )?;
-                        let aterra_amount_to_sell: Uint256 =
-                            Uint256::from(repay_stable_coin.amount)
-                                / repaying_loan_state.aterra_exchange_rate;
-
-                        REPAYING_LOAN.update(
-                            deps.storage,
-                            |mut repaying_loan_state: RepayingLoanState| -> StdResult<_> {
-                                repaying_loan_state.aterra_amount_to_sell = repaying_loan_state
-                                    .aterra_amount_to_sell
-                                    - aterra_amount_to_sell;
-                                repaying_loan_state.to_repay =
-                                    repaying_loan_state.to_repay - repay_stable_coin.amount.into();
-
-                                Ok(repaying_loan_state)
-                            },
-                        )?;
-
-                        Ok(Response {
-                            messages: vec![],
-                            submessages: vec![
-                                SubMsg {
-                                    //first message is to repay loan
-                                    msg: WasmMsg::Execute {
-                                        contract_addr: config.anchor_market_contract.to_string(),
-                                        msg: to_binary(&AnchorMarketMsg::RepayStable {})?,
-                                        send: vec![repay_stable_coin.clone()],
-                                    }
-                                    .into(),
-                                    gas_limit: None,
-                                    id: SUBMSG_ID_REDEEM_STABLE,
-                                    reply_on: ReplyOn::Always,
-                                },
-                                SubMsg {
-                                    //second message is to redeem stables again, but only for the
-                                    //amount that was repayed
-                                    msg: WasmMsg::Execute {
-                                        contract_addr: config.aterra_token.to_string(),
-                                        msg: to_binary(&Cw20ExecuteMsg::Send {
-                                            contract: config.anchor_market_contract.to_string(),
-                                            amount: aterra_amount_to_sell.into(),
-                                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
-                                        })?,
-                                        send: vec![],
-                                    }
-                                    .into(),
-                                    gas_limit: None,
-                                    id: SUBMSG_ID_REDEEM_STABLE,
-                                    //do not reply on error, have no idea what to do in that case
-                                    reply_on: ReplyOn::Success,
-                                },
-                            ],
-                            attributes: vec![
-                                attr("action", "repay_loan_from_buffer"),
-                                attr("amount", repay_stable_coin.amount),
-                            ],
-                            data: None,
-                        })
+                        return repay_reply_logic(deps, env, false);
                     } else {
                         return Err(StdError::generic_err(format!(
                             "fail to redeem stable, reason: {}",
@@ -205,16 +127,14 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                     }
                 }
                 cosmwasm_std::ContractResult::Ok(_) => {
-                    let repaying_loan_state = load_repaying_loan_state(deps.storage)?;
-                    let config = load_config(deps.storage)?;
-                    //TODO
-                    //TODO: couple aterra_amount_to_sell and repay_amount together!!!
-                    //TODO
-                    todo!()
+                    return repay_reply_logic(deps, env, true);
                 }
             }
         }
 
+        //there is no way to use submessages with 'ReplyOn::Never'
+        //it is workaround
+        SUBMSG_ID_FAKE_NO_REPLY => Ok(Response::default()),
         unknown => {
             Err(StdError::generic_err(format!("unknown reply message id: {}", unknown)).into())
         }

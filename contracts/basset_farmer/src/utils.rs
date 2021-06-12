@@ -180,10 +180,6 @@ pub fn calc_aterra_redeem_error_handling_action(
         //sell last part of aterra
         let new_buffer_balance = current_buffer_balance + aterra_value;
         let repaying_loan_size_after_tax = if new_buffer_balance > aim_buffer_size {
-            println!(
-                ">>> new_buffer_balance: {}, aim_buffer_size: {}",
-                new_buffer_balance, aim_buffer_size
-            );
             subtract_tax(new_buffer_balance - aim_buffer_size, tax_info)
         } else {
             Uint256::zero()
