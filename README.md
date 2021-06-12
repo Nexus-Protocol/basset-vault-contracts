@@ -1,9 +1,9 @@
 # Yield optimizers
 
-1. [Anchor yield optimizer](#anchor_yield_optimizer)
+1. [Anchor yield optimizer](#anchor-yield-optimizer)
 2. Mirror UST stratege (todo)
 
-## Anchor yield optimizer {#anchor_yield_optimizer}
+## Anchor yield optimizer
 
 ### v1
 
@@ -65,4 +65,4 @@ Be available in the future.
 
 ---
 
-[anchor-yield-optimizer](#anchor_yield_optimizer)
+[anchor-yield-optimizer](#anchor-yield-optimizer)
