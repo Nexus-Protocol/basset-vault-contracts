@@ -50,6 +50,7 @@ In case of error we repaying loan from UST on balance, and then redeem aUST for 
 balance achieved.
 
 Take a look at [repay logic](./contracts/basset_farmer/src/commands.rs#L213).
+
 And on [reply handler](./contracts/basset_farmer/src/contract.rs#L115).
 
 #### Borrow logic
@@ -72,6 +73,5 @@ The simplest config is to maintain bounds:
 
 ---
 
-[anchor-yield-optimizer](#anchor-yield-optimizer)
-
-[anchor-yield-optimizer-config](#anchor-yield-optimizer-config)
+* [anchor-yield-optimizer](#anchor-yield-optimizer)
+* [anchor-yield-optimizer-config](#anchor-yield-optimizer-config)
