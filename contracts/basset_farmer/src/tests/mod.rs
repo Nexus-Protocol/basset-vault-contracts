@@ -2,9 +2,9 @@ mod deposit_basset;
 mod instantiate;
 mod repay_loan;
 
-use cosmwasm_bignumber::Uint256;
+use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
-    from_slice, to_binary, Addr, Api, CanonicalAddr, Coin, ContractResult, Decimal, Empty,
+    from_slice, to_binary, Addr, Api, Binary, CanonicalAddr, Coin, ContractResult, Decimal, Empty,
     OwnedDeps, Querier, QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
 };
 use cosmwasm_std::{
@@ -14,7 +14,7 @@ use cosmwasm_std::{
 use cosmwasm_storage::to_length_prefixed;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
-use yield_optimizer::querier::BorrowerResponse;
+use yield_optimizer::querier::{BorrowerInfoResponse, BorrowerResponse};
 
 use cw20::TokenInfoResponse;
 
@@ -35,7 +35,8 @@ pub fn mock_dependencies(
 }
 
 pub struct WasmMockQuerier {
-    borrowers_info: HashMap<String, HashMap<String, BorrowerResponse>>,
+    borrowers_info: HashMap<String, HashMap<String, BorrowerInfoResponse>>,
+    borrowers: HashMap<String, HashMap<String, BorrowerResponse>>,
     base: MockQuerier<Empty>,
     token_querier: TokenQuerier,
 }
@@ -49,24 +50,27 @@ pub struct TokenQuerier {
 impl TokenQuerier {
     pub fn new(balances: &[(&String, &[(&String, &Uint128)])]) -> Self {
         TokenQuerier {
-            balances: balances_to_map(balances),
+            balances: array_to_hashmap(balances),
         }
     }
 }
 
-pub(crate) fn balances_to_map(
-    balances: &[(&String, &[(&String, &Uint128)])],
-) -> HashMap<String, HashMap<String, Uint128>> {
-    let mut balances_map: HashMap<String, HashMap<String, Uint128>> = HashMap::new();
-    for (contract_addr, balances) in balances.iter() {
-        let mut contract_balances_map: HashMap<String, Uint128> = HashMap::new();
-        for (addr, balance) in balances.iter() {
-            contract_balances_map.insert(addr.to_string(), **balance);
+pub(crate) fn array_to_hashmap<T>(
+    balances: &[(&String, &[(&String, &T)])],
+) -> HashMap<String, HashMap<String, T>>
+where
+    T: Clone,
+{
+    let mut result_map: HashMap<String, HashMap<String, T>> = HashMap::new();
+    for (contract_addr, map_values) in balances.iter() {
+        let mut contract_balances_map: HashMap<String, T> = HashMap::new();
+        for (addr, value) in map_values.iter() {
+            contract_balances_map.insert(addr.to_string(), (**value).clone());
         }
 
-        balances_map.insert(contract_addr.to_string(), contract_balances_map);
+        result_map.insert(contract_addr.to_string(), contract_balances_map);
     }
-    balances_map
+    result_map
 }
 
 impl Querier for WasmMockQuerier {
@@ -90,38 +94,11 @@ impl WasmMockQuerier {
             QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
                 let key: &[u8] = key.as_slice();
 
-                let prefix_borrower_info = to_length_prefixed(b"borrower").to_vec();
-                if key[..prefix_borrower_info.len()].to_vec() == prefix_borrower_info {
-                    let key_address: &[u8] = &key[prefix_borrower_info.len()..];
-                    let address_raw: CanonicalAddr = CanonicalAddr::from(key_address);
-
-                    let api: MockApi = MockApi::default();
-                    let address: Addr = match api.addr_humanize(&address_raw) {
-                        Ok(v) => v,
-                        Err(e) => {
-                            return SystemResult::Err(SystemError::InvalidRequest {
-                                error: format!("Parsing query request: {}", e),
-                                request: key.into(),
-                            })
-                        }
-                    };
-
-                    let empty_borrowers = HashMap::new();
-                    let default_borrower = BorrowerResponse {
-                        borrower: address.to_string(),
-                        balance: Uint256::zero(),
-                        spendable: Uint256::zero(),
-                    };
-
-                    let borrowers_map = self
-                        .borrowers_info
-                        .get(contract_addr)
-                        .unwrap_or(&empty_borrowers);
-                    let borrower_info = borrowers_map
-                        .get(&address.to_string())
-                        .unwrap_or(&default_borrower);
-
-                    return SystemResult::Ok(ContractResult::from(to_binary(&borrower_info)));
+                if let Some(borrower_res) = self.try_get_borrower(key, contract_addr) {
+                    return borrower_res;
+                }
+                if let Some(borrower_info_res) = self.try_get_borrower_info(key, contract_addr) {
+                    return borrower_info_res;
                 }
 
                 let balances: &HashMap<String, Uint128> =
@@ -187,12 +164,93 @@ impl WasmMockQuerier {
             _ => self.base.handle_query(request),
         }
     }
+
+    fn try_get_borrower(&self, key: &[u8], contract_addr: &String) -> Option<QuerierResult> {
+        let prefix_borrower_info = to_length_prefixed(b"borrower").to_vec();
+        if key[..prefix_borrower_info.len()].to_vec() == prefix_borrower_info {
+            let key_address: &[u8] = &key[prefix_borrower_info.len()..];
+            let address_raw: CanonicalAddr = CanonicalAddr::from(key_address);
+
+            let api: MockApi = MockApi::default();
+            let address: Addr = match api.addr_humanize(&address_raw) {
+                Ok(v) => v,
+                Err(e) => {
+                    return Some(SystemResult::Err(SystemError::InvalidRequest {
+                        error: format!("Parsing query request: {}", e),
+                        request: key.into(),
+                    }))
+                }
+            };
+
+            let empty_borrowers = HashMap::new();
+            let default_borrower = BorrowerResponse {
+                borrower: address.to_string(),
+                balance: Uint256::zero(),
+                spendable: Uint256::zero(),
+            };
+
+            let borrowers_map = self
+                .borrowers
+                .get(contract_addr)
+                .unwrap_or(&empty_borrowers);
+            let borrower = borrowers_map
+                .get(&address.to_string())
+                .unwrap_or(&default_borrower);
+
+            return Some(SystemResult::Ok(ContractResult::from(to_binary(&borrower))));
+        } else {
+            return None;
+        }
+    }
+
+    fn try_get_borrower_info(&self, key: &[u8], contract_addr: &String) -> Option<QuerierResult> {
+        let prefix_borrower_info = to_length_prefixed(b"liability").to_vec();
+        if key[..prefix_borrower_info.len()].to_vec() == prefix_borrower_info {
+            let key_address: &[u8] = &key[prefix_borrower_info.len()..];
+            let address_raw: CanonicalAddr = CanonicalAddr::from(key_address);
+
+            let api: MockApi = MockApi::default();
+            let address: Addr = match api.addr_humanize(&address_raw) {
+                Ok(v) => v,
+                Err(e) => {
+                    return Some(SystemResult::Err(SystemError::InvalidRequest {
+                        error: format!("Parsing query request: {}", e),
+                        request: key.into(),
+                    }))
+                }
+            };
+
+            let empty_borrowers_info = HashMap::new();
+            let default_borrower_info = BorrowerInfoResponse {
+                borrower: address.to_string(),
+                interest_index: Decimal256::one(),
+                reward_index: Decimal256::zero(),
+                loan_amount: Uint256::zero(),
+                pending_rewards: Decimal256::zero(),
+            };
+
+            let borrowers_info_map = self
+                .borrowers_info
+                .get(contract_addr)
+                .unwrap_or(&empty_borrowers_info);
+            let borrower_info = borrowers_info_map
+                .get(&address.to_string())
+                .unwrap_or(&default_borrower_info);
+
+            return Some(SystemResult::Ok(ContractResult::from(to_binary(
+                &borrower_info,
+            ))));
+        } else {
+            return None;
+        }
+    }
 }
 
 impl WasmMockQuerier {
     pub fn new(base: MockQuerier) -> Self {
         WasmMockQuerier {
             borrowers_info: HashMap::new(),
+            borrowers: HashMap::new(),
             base,
             token_querier: TokenQuerier::default(),
         }
@@ -201,5 +259,9 @@ impl WasmMockQuerier {
     // configure the mint whitelist mock querier
     pub fn with_token_balances(&mut self, balances: &[(&String, &[(&String, &Uint128)])]) {
         self.token_querier = TokenQuerier::new(balances);
+    }
+
+    pub fn with_loan(&mut self, borrowers_info: &[(&String, &[(&String, &BorrowerInfoResponse)])]) {
+        self.borrowers_info = array_to_hashmap(borrowers_info);
     }
 }

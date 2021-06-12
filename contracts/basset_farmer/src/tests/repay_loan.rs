@@ -14,7 +14,10 @@ use cosmwasm_std::{
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, MinterResponse};
 use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
-use yield_optimizer::basset_farmer::{Cw20HookMsg, ExecuteMsg, OverseerMsg};
+use yield_optimizer::{
+    basset_farmer::{Cw20HookMsg, ExecuteMsg, OverseerMsg},
+    querier::BorrowerInfoResponse,
+};
 
 #[test]
 fn repay_loan() {
@@ -51,7 +54,7 @@ fn repay_loan() {
             overseer_addr: overseer_addr.clone(),
             governance_addr: governance_addr.to_string(),
             anchor_token,
-            anchor_market_contract,
+            anchor_market_contract: anchor_market_contract.clone(),
             anchor_ust_swap_contract,
             ust_psi_swap_contract,
             aterra_token,
@@ -78,8 +81,38 @@ fn repay_loan() {
         let _res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg.clone()).unwrap();
     }
 
+    let locked_basset_amount = Uint128::from(10_000u64);
+    //TODO: waaaaat? wtf is that
+    let basset_farmer_loan_amount = Uint256::from(10_000u64);
+    deps.querier.with_token_balances(&[(
+        &custody_basset_contract,
+        &[(&MOCK_CONTRACT_ADDR.to_string(), &locked_basset_amount)],
+    )]);
+    deps.querier.with_loan(&[(
+        &anchor_market_contract,
+        &[(
+            &MOCK_CONTRACT_ADDR.to_string(),
+            &BorrowerInfoResponse {
+                borrower: MOCK_CONTRACT_ADDR.to_string(),
+                interest_index: Decimal256::one(),
+                reward_index: Decimal256::zero(),
+                loan_amount: basset_farmer_loan_amount,
+                pending_rewards: Decimal256::zero(),
+            },
+        )],
+    )]);
     // -= REBALANCE =-
     {
-        let rebalance_msg = yield_optimizer::basset_farmer::AnyoneMsg::Rebalance {};
+        let rebalance_msg = yield_optimizer::basset_farmer::AnyoneMsg::Rebalance;
+        let info = mock_info("addr8888", &vec![]);
+        let _res = crate::contract::execute(
+            deps.as_mut(),
+            mock_env(),
+            info,
+            ExecuteMsg::Anyone {
+                anyone_msg: rebalance_msg,
+            },
+        )
+        .unwrap();
     }
 }
