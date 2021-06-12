@@ -70,4 +70,5 @@ The simplest config is to maintain bounds:
 ---
 
 [anchor-yield-optimizer](#anchor-yield-optimizer)
+
 [anchor-yield-optimizer-config](#anchor-yield-optimizer-config)
