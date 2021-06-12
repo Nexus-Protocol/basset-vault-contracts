@@ -1,5 +1,6 @@
 mod deposit_basset;
 mod instantiate;
+mod repay_loan;
 
 use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::{

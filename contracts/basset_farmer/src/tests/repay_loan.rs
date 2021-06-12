@@ -17,7 +17,7 @@ use protobuf::Message;
 use yield_optimizer::basset_farmer::{Cw20HookMsg, ExecuteMsg, OverseerMsg};
 
 #[test]
-fn deposit_basset() {
+fn repay_loan() {
     let cluna_contract_addr = "addr0001".to_string();
     let basset_token_addr = "addr0002".to_string();
     let custody_basset_contract = "addr0003".to_string();
@@ -49,7 +49,7 @@ fn deposit_basset() {
             basset_token_addr: basset_token_addr.clone(),
             custody_basset_contract: custody_basset_contract.clone(),
             overseer_addr: overseer_addr.clone(),
-            governance_addr: governance_addr.clone(),
+            governance_addr: governance_addr.to_string(),
             anchor_token,
             anchor_market_contract,
             anchor_ust_swap_contract,

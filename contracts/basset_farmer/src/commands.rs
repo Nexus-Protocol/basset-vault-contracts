@@ -124,7 +124,6 @@ pub fn withdrawn_basset(deps: DepsMut, farmer: Addr, amount: Uint256) -> Contrac
 /// Executor: anyone
 pub fn rebalance(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
     let config: Config = load_config(deps.storage)?;
-    let state: State = load_state(deps.storage)?;
 
     // basset balance in custody contract
     let basset_in_custody = get_basset_in_custody(
@@ -515,8 +514,6 @@ pub fn swap_anc(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Re
 //TODO: move stable denom to config?
 const STABLE_DENOM: &str = "uust";
 
-/// Expecting that our UST balance is always zero (all UST is in aUST).
-/// So, all UST that we have - comes from ANC -> UST swap
 pub fn buy_psi_tokens(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
     let config: Config = load_config(deps.storage)?;
     //TODO: should we care about Authorization here?
@@ -526,7 +523,8 @@ pub fn buy_psi_tokens(deps: DepsMut, env: Env, info: MessageInfo) -> ContractRes
         STABLE_DENOM.to_string(),
     )?;
 
-    let ust_to_buy_psi = ust_balance * Decimal::from_ratio(1u128, config.psi_part_in_rewards.0);
+    //TODO: subtract UST buffer balance!
+    let ust_to_buy_psi = ust_balance * config.psi_part_in_rewards;
 
     let swap_asset = Asset {
         info: AssetInfo::NativeToken {

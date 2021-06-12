@@ -47,17 +47,17 @@ pub fn instantiate(
         overseer_contract: deps.api.addr_validate(&msg.overseer_addr)?,
         custody_basset_contract: deps.api.addr_validate(&msg.custody_basset_contract)?,
         governance_contract: deps.api.addr_validate(&msg.governance_addr)?,
-
-        //TODO: get from InstantiateMsg
-        anchor_token: Addr::unchecked(""),
-        anchor_market_contract: Addr::unchecked(""),
-        anchor_ust_swap_contract: Addr::unchecked(""),
-        ust_psi_swap_contract: Addr::unchecked(""),
-        aterra_token: Addr::unchecked(""),
-        psi_part_in_rewards: Uint128::from(0u64),
-        psi_token: Addr::unchecked(""),
-        basset_farmer_config_contract: Addr::unchecked(""),
-        stable_denom: "".to_string(),
+        anchor_token: deps.api.addr_validate(&msg.anchor_token)?,
+        anchor_market_contract: deps.api.addr_validate(&msg.anchor_market_contract)?,
+        anchor_ust_swap_contract: deps.api.addr_validate(&msg.anchor_ust_swap_contract)?,
+        ust_psi_swap_contract: deps.api.addr_validate(&msg.ust_psi_swap_contract)?,
+        aterra_token: deps.api.addr_validate(&msg.aterra_token)?,
+        psi_part_in_rewards: msg.psi_part_in_rewards,
+        psi_token: deps.api.addr_validate(&msg.psi_token)?,
+        basset_farmer_config_contract: deps
+            .api
+            .addr_validate(&msg.basset_farmer_config_contract)?,
+        stable_denom: msg.stable_denom,
     };
 
     store_config(deps.storage, &config)?;

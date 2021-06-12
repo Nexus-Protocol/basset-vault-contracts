@@ -3,8 +3,8 @@ use crate::{
     state::{load_config, Config},
 };
 
-use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
+use cosmwasm_std::{testing::mock_dependencies, Decimal};
 use cosmwasm_std::{
     to_binary, Api, ContractResult, Reply, ReplyOn, SubMsg, SubcallResponse, WasmMsg,
 };
@@ -25,6 +25,15 @@ fn proper_initialization() {
         custody_basset_contract: "addr0003".to_string(),
         overseer_addr: "addr0004".to_string(),
         governance_addr: "addr0005".to_string(),
+        anchor_token: "addr0006".to_string(),
+        anchor_market_contract: "addr0007".to_string(),
+        anchor_ust_swap_contract: "addr0008".to_string(),
+        ust_psi_swap_contract: "addr0009".to_string(),
+        aterra_token: "addr0010".to_string(),
+        psi_part_in_rewards: Decimal::from_ratio(1u64, 100u64),
+        psi_token: "addr0011".to_string(),
+        basset_farmer_config_contract: "addr0012".to_string(),
+        stable_denom: "addr0013".to_string(),
     };
 
     let env = mock_env();

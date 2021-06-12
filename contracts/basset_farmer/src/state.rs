@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Addr, CanonicalAddr, StdResult, Storage, Uint128};
+use cosmwasm_std::{Addr, CanonicalAddr, Decimal, StdResult, Storage, Uint128};
 use cw_storage_plus::{Item, Map};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -18,7 +18,7 @@ pub struct Config {
     pub basset_token: Addr,
     pub aterra_token: Addr,
     //what part of UST from selling ANC spend to buy PSI
-    pub psi_part_in_rewards: Uint128,
+    pub psi_part_in_rewards: Decimal,
     pub psi_token: Addr,
     pub basset_farmer_config_contract: Addr,
     pub stable_denom: String,

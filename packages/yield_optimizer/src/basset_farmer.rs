@@ -1,4 +1,4 @@
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Decimal};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +16,15 @@ pub struct InstantiateMsg {
     pub overseer_addr: String,
     pub governance_addr: String,
     pub custody_basset_contract: String,
+    pub anchor_token: String,
+    pub anchor_market_contract: String,
+    pub anchor_ust_swap_contract: String,
+    pub ust_psi_swap_contract: String,
+    pub aterra_token: String,
+    pub psi_part_in_rewards: Decimal,
+    pub psi_token: String,
+    pub basset_farmer_config_contract: String,
+    pub stable_denom: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
