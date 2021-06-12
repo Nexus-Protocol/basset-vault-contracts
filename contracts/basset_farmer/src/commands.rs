@@ -44,9 +44,9 @@ pub fn receive_cw20(
     cw20_msg: Cw20ReceiveMsg,
 ) -> ContractResult<Response> {
     match from_binary(&cw20_msg.msg) {
-        Ok(Cw20HookMsg::Deposit {}) => commands::receive_cw20_deposit(deps, env, info, cw20_msg),
+        Ok(Cw20HookMsg::Deposit) => commands::receive_cw20_deposit(deps, env, info, cw20_msg),
         //TODO: withdraw should work straigthforward, without cw20
-        Ok(Cw20HookMsg::Withdraw {}) => commands::receive_cw20_withdraw(deps, env, info, cw20_msg),
+        Ok(Cw20HookMsg::Withdraw) => commands::receive_cw20_withdraw(deps, env, info, cw20_msg),
         Err(err) => Err(ContractError::Std(err)),
     }
 }
@@ -364,6 +364,7 @@ pub fn deposit_basset(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    //TODO: we trust Overseer, so this should be Address
     farmer: String,
     deposit_amount: Uint256,
 ) -> ContractResult<Response> {

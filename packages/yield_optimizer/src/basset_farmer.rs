@@ -53,12 +53,12 @@ pub enum YourselfMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AnyoneMsg {
-    Rebalance {},
-    Sweep {},
-    SwapAnc {},
-    BuyPsiTokens {},
-    DisributeRewards {},
-    ClaimRewards {},
+    Rebalance,
+    Sweep,
+    SwapAnc,
+    BuyPsiTokens,
+    DisributeRewards,
+    ClaimRewards,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -70,8 +70,8 @@ pub enum OverseerMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum Cw20HookMsg {
-    Deposit {},
-    Withdraw {},
+    Deposit,
+    Withdraw,
 }
 
 /// We currently take no arguments for migrations
@@ -81,7 +81,7 @@ pub struct MigrateMsg {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    Config {},
+    Config,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

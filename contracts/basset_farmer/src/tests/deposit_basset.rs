@@ -87,7 +87,7 @@ fn deposit_basset() {
             let cw20_deposit_msg = Cw20ReceiveMsg {
                 sender: user_1_address.clone(),
                 amount: deposit_1_amount,
-                msg: to_binary(&Cw20HookMsg::Deposit {}).unwrap(),
+                msg: to_binary(&Cw20HookMsg::Deposit).unwrap(),
             };
 
             let info = mock_info(&basset_token_addr, &vec![]);
@@ -151,7 +151,7 @@ fn deposit_basset() {
             let cw20_deposit_msg = Cw20ReceiveMsg {
                 sender: user_2_address.clone(),
                 amount: deposit_2_amount,
-                msg: to_binary(&Cw20HookMsg::Deposit {}).unwrap(),
+                msg: to_binary(&Cw20HookMsg::Deposit).unwrap(),
             };
 
             let info = mock_info(&basset_token_addr, &vec![]);
