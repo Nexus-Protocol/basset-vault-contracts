@@ -177,6 +177,9 @@ fn borrow_logic(
     buffer_size: Uint256,
 ) -> ContractResult<Response> {
     //TODO: handle 95% borrow error (use submessages)
+    //cause if flow comes from Rebalance - you will try to Borrow again
+    //on next Rebalance iteration...
+    //
     //TODO: handle stable taxes - how much you will receive if Borrow Xust?
     Ok(Response {
         messages: vec![
