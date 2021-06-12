@@ -49,6 +49,9 @@ and is used when redeeming aUST returns error.
 In case of error we repaying loan from UST on balance, and then redeem aUST for exactly the same amount. Repeat that cycle until
 balance achieved.
 
+Take a look at [repay logic](./contracts/basset_farmer/src/commands.rs::213)
+And on [reply handler](./contracts/basset_farmer/src/contract.rs::115)
+
 #### Borrow logic
 
 Nothing bad will happen if we fail to borrow more, so no error handling here.
