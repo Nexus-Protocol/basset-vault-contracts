@@ -7,9 +7,12 @@ use cosmwasm_std::{
 use terraswap::querier::{query_balance, query_supply};
 
 use crate::state::{load_config, Config, State};
-use yield_optimizer::querier::{
-    query_aterra_state, query_borrower_info, query_token_balance, AnchorMarketMsg,
-    BorrowerInfoResponse,
+use yield_optimizer::{
+    querier::{
+        query_aterra_state, query_borrower_info, query_token_balance, AnchorMarketMsg,
+        BorrowerInfoResponse,
+    },
+    subtract_tax, TaxInfo,
 };
 
 pub fn update_reward_index(deps: DepsMut, env: Env, state: &mut State) -> StdResult<()> {
@@ -109,7 +112,7 @@ pub fn calculate_aterra_amount_to_sell(
         //- repay as much as can
         //TODO: looks like we can't withdraw all users bAsset. Ignore that case for the moment
         state.aterra_balance
-    } else if (current_total_stable_balance - repay_amount) > aim_buffer_size {
+    } else if (current_total_stable_balance - repay_amount) <= aim_buffer_size {
         //means we need to sell all aterra and use rest as a buffer
         state.aterra_balance
     } else {
@@ -135,13 +138,75 @@ pub fn calculate_aterra_amount_to_sell(
     }
 }
 
+#[derive(PartialEq, Eq, Debug)]
+pub struct AterraRedeemErrorHandlingAction {
+    pub repay_loan_amount: Uint256,
+    pub aterra_amount_to_sell: Uint256,
+}
+
+pub fn calc_aterra_redeem_error_handling_action(
+    aterra_amount_to_sell: Uint256,
+    aterra_exchange_rate: Decimal256,
+    current_buffer_balance: Uint256,
+    aim_buffer_size: Uint256,
+    tax_info: &TaxInfo,
+) -> Option<AterraRedeemErrorHandlingAction> {
+    if aterra_amount_to_sell == Uint256::zero() {
+        if current_buffer_balance > aim_buffer_size {
+            //we do not need to sell aterra anymore, so repay remainder from buffer
+            let loan_to_repay = current_buffer_balance - aim_buffer_size;
+            let repaying_loan_size_after_tax = subtract_tax(loan_to_repay, tax_info);
+            let result = AterraRedeemErrorHandlingAction {
+                repay_loan_amount: repaying_loan_size_after_tax,
+                aterra_amount_to_sell,
+            };
+            return Some(result);
+        } else {
+            return None;
+        }
+    }
+
+    let aterra_value = aterra_amount_to_sell * aterra_exchange_rate;
+    if aterra_value >= current_buffer_balance {
+        //sell entire buffer, because we need to redeem more aterra
+        let loan_to_repay = current_buffer_balance;
+        let repaying_loan_size_after_tax = subtract_tax(loan_to_repay, tax_info);
+        let result = AterraRedeemErrorHandlingAction {
+            repay_loan_amount: repaying_loan_size_after_tax,
+            aterra_amount_to_sell: repaying_loan_size_after_tax / aterra_exchange_rate,
+        };
+        return Some(result);
+    } else {
+        //sell last part of aterra
+        let new_buffer_balance = current_buffer_balance + aterra_value;
+        let repaying_loan_size_after_tax = if new_buffer_balance > aim_buffer_size {
+            println!(
+                ">>> new_buffer_balance: {}, aim_buffer_size: {}",
+                new_buffer_balance, aim_buffer_size
+            );
+            subtract_tax(new_buffer_balance - aim_buffer_size, tax_info)
+        } else {
+            Uint256::zero()
+        };
+        let result = AterraRedeemErrorHandlingAction {
+            repay_loan_amount: repaying_loan_size_after_tax,
+            aterra_amount_to_sell,
+        };
+        return Some(result);
+    }
+}
+
 #[cfg(test)]
 mod test {
 
-    use super::{calculate_aterra_amount_to_sell, calculate_reward_index};
+    use super::{
+        calc_aterra_redeem_error_handling_action, calculate_aterra_amount_to_sell,
+        calculate_reward_index, AterraRedeemErrorHandlingAction,
+    };
     use crate::state::State;
     use cosmwasm_bignumber::{Decimal256, Uint256};
     use std::str::FromStr;
+    use yield_optimizer::TaxInfo;
 
     #[test]
     fn reward_calc_zero_state() {
@@ -491,5 +556,131 @@ mod test {
             aim_buffer_size,
         );
         assert_eq!(Uint256::from(75u64), aterra_to_sell);
+    }
+
+    #[test]
+    fn aterra_redeem_error_handling_action_do_nothing() {
+        let aterra_amount_to_sell = Uint256::zero();
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let current_buffer_balance = Uint256::from(100u64);
+        let aim_buffer_size = Uint256::from(100u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::from_str("0.01").unwrap(),
+            cap: Uint256::from(15u64),
+        };
+        let error_handling_action = calc_aterra_redeem_error_handling_action(
+            aterra_amount_to_sell,
+            aterra_exchange_rate,
+            current_buffer_balance,
+            aim_buffer_size,
+            &tax_info,
+        );
+        assert!(error_handling_action.is_none());
+    }
+
+    #[test]
+    fn aterra_redeem_error_handling_action_repay_from_buffer() {
+        let aterra_amount_to_sell = Uint256::zero();
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let current_buffer_balance = Uint256::from(100_000u64);
+        let aim_buffer_size = Uint256::from(80_000u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::from_str("0.6").unwrap(),
+            cap: Uint256::from(99999999u64),
+        };
+        let error_handling_action = calc_aterra_redeem_error_handling_action(
+            aterra_amount_to_sell,
+            aterra_exchange_rate,
+            current_buffer_balance,
+            aim_buffer_size,
+            &tax_info,
+        );
+        let expected_action = AterraRedeemErrorHandlingAction {
+            repay_loan_amount: Uint256::from(12_500u64), //0.6 tax means: 12_500 * 0.6 + 12_500 = 20_000
+            aterra_amount_to_sell: Uint256::zero(),
+        };
+
+        assert_eq!(expected_action, error_handling_action.unwrap());
+    }
+
+    #[test]
+    fn aterra_redeem_error_handling_action_sell_entire_buffer() {
+        let aterra_amount_to_sell = Uint256::from(300_000u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let current_buffer_balance = Uint256::from(100_000u64);
+        let aim_buffer_size = Uint256::from(80_000u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::from_str("0.01").unwrap(),
+            cap: Uint256::from(750u64),
+        };
+        let error_handling_action = calc_aterra_redeem_error_handling_action(
+            aterra_amount_to_sell,
+            aterra_exchange_rate,
+            current_buffer_balance,
+            aim_buffer_size,
+            &tax_info,
+        );
+        let expected_action = AterraRedeemErrorHandlingAction {
+            repay_loan_amount: Uint256::from(99_250u64), //minus 750 tax cap
+            aterra_amount_to_sell: Uint256::from(99_250u64) / aterra_exchange_rate,
+        };
+
+        assert_eq!(expected_action, error_handling_action.unwrap());
+    }
+
+    #[test]
+    fn aterra_redeem_error_handling_action_last_aterra_sell() {
+        let aterra_amount_to_sell = Uint256::from(20_000u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let current_buffer_balance = Uint256::from(100_000u64);
+        let aim_buffer_size = Uint256::from(80_000u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::from_str("0.02").unwrap(),
+            cap: Uint256::from(750u64),
+        };
+        let error_handling_action = calc_aterra_redeem_error_handling_action(
+            aterra_amount_to_sell,
+            aterra_exchange_rate,
+            current_buffer_balance,
+            aim_buffer_size,
+            &tax_info,
+        );
+        //24_000 get from selling aterra
+        //so, repay amount should be: 100_000 - 80_000 + 24_000 = 44_000
+        //tax: 44_000 * (1 - 1/(1+0.02)) ~= 862 which is bigger than cap
+        let expected_action = AterraRedeemErrorHandlingAction {
+            repay_loan_amount: Uint256::from(43_250u64), //minus 750 tax cap
+            aterra_amount_to_sell,
+        };
+
+        assert_eq!(expected_action, error_handling_action.unwrap());
+    }
+
+    #[test]
+    fn aterra_redeem_error_handling_action_last_aterra_sell_but_without_loan_repaying() {
+        let aterra_amount_to_sell = Uint256::from(20_000u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let current_buffer_balance = Uint256::from(40_000u64);
+        let aim_buffer_size = Uint256::from(80_000u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::from_str("0.01").unwrap(),
+            cap: Uint256::from(750u64),
+        };
+        let error_handling_action = calc_aterra_redeem_error_handling_action(
+            aterra_amount_to_sell,
+            aterra_exchange_rate,
+            current_buffer_balance,
+            aim_buffer_size,
+            &tax_info,
+        );
+        //24_000 get from selling aterra
+        //so, repay amount should be: 40_000 - 80_000 + 24_000 = -16_000
+        //no need to repaying loan
+        let expected_action = AterraRedeemErrorHandlingAction {
+            repay_loan_amount: Uint256::zero(),
+            aterra_amount_to_sell,
+        };
+
+        assert_eq!(expected_action, error_handling_action.unwrap());
     }
 }

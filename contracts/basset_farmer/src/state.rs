@@ -37,9 +37,11 @@ pub struct State {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
 pub struct RepayingLoanState {
+    //TODO: don't need this field
     pub to_repay: Uint256,
     pub aterra_amount_to_sell: Uint256,
     pub aterra_exchange_rate: Decimal256,
+    pub aterra_amount_in_selling: Uint256,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");

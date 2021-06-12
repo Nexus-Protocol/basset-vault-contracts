@@ -229,11 +229,12 @@ fn repay_logic(
 
     Ok(Response {
         //TODO: looks like we do not need this
-        messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: contract.address.to_string(),
-            msg: to_binary(&YourselfMsg::AfterAterraRedeem { repay_amount })?,
-            send: vec![],
-        })],
+        // messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+        //     contract_addr: contract.address.to_string(),
+        //     msg: to_binary(&YourselfMsg::AfterAterraRedeem { repay_amount })?,
+        //     send: vec![],
+        // })],
+        messages: vec![],
         submessages: vec![SubMsg {
             msg: WasmMsg::Execute {
                 contract_addr: config.aterra_token.to_string(),
