@@ -656,6 +656,7 @@ dependencies = [
  "protobuf",
  "schemars",
  "serde",
+ "terra-cosmwasm",
  "terraswap",
  "thiserror",
  "yield_optimizer",

@@ -288,6 +288,7 @@ pub fn repay_reply_logic(deps: DepsMut, env: Env, on_success: bool) -> ContractR
         config.stable_denom.to_string(),
     )?
     .into();
+
     let aterra_exchange_rate: Decimal256 =
         query_aterra_state(deps.as_ref(), &config.anchor_market_contract)?.exchange_rate;
     let tax_info = get_tax_info(deps.as_ref(), &config.stable_denom)?;
