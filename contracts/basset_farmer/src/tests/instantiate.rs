@@ -1,6 +1,7 @@
 use crate::{
+    contract::SUBMSG_ID_INIT_CASSET,
     response::MsgInstantiateContractResponse,
-    state::{load_config, Config},
+    state::{load_config, load_state, Config, State},
 };
 
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
@@ -61,7 +62,7 @@ fn proper_initialization() {
             }
             .into(),
             gas_limit: None,
-            id: 1,
+            id: SUBMSG_ID_INIT_CASSET,
             reply_on: ReplyOn::Success,
         }]
     );
@@ -71,7 +72,7 @@ fn proper_initialization() {
 
     // store cLuna token address
     let reply_msg = Reply {
-        id: 1,
+        id: SUBMSG_ID_INIT_CASSET,
         result: ContractResult::Ok(SubcallResponse {
             events: vec![],
             data: Some(cw20_instantiate_response.write_to_bytes().unwrap().into()),
@@ -83,4 +84,6 @@ fn proper_initialization() {
     // it worked, let's query the state
     let farmer_config: Config = load_config(&deps.storage).unwrap();
     assert_eq!(cluna_contract_addr, farmer_config.casset_token.to_string());
+    //state is there if no exception here
+    load_state(&deps.storage).unwrap();
 }

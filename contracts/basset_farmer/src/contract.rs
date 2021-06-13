@@ -9,8 +9,8 @@ use crate::{
     commands::{self, repay_reply_logic},
     queries,
     state::{
-        config_set_casset_token, load_config, load_repaying_loan_state, store_config,
-        RepayingLoanState,
+        config_set_casset_token, load_config, load_repaying_loan_state, store_config, store_state,
+        RepayingLoanState, State,
     },
     utils::calc_aterra_redeem_error_handling_action,
 };
@@ -59,8 +59,15 @@ pub fn instantiate(
             .addr_validate(&msg.basset_farmer_config_contract)?,
         stable_denom: msg.stable_denom,
     };
-
     store_config(deps.storage, &config)?;
+
+    let state = State {
+        global_reward_index: Decimal256::zero(),
+        last_reward_amount: Decimal256::zero(),
+        ust_buffer_balance: Uint256::zero(),
+        aterra_balance: Uint256::zero(),
+    };
+    store_state(deps.storage, &state)?;
 
     Ok(Response {
         messages: vec![],

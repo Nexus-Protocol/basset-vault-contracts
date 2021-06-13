@@ -1,6 +1,7 @@
 use crate::{
-    contract::{execute, instantiate, reply},
+    contract::{execute, instantiate, reply, SUBMSG_ID_INIT_CASSET, SUBMSG_ID_REDEEM_STABLE},
     response::MsgInstantiateContractResponse,
+    state::{load_repaying_loan_state, load_state, store_state},
 };
 use crate::{error::ContractError, state::load_farmer_info};
 
@@ -11,13 +12,15 @@ use cosmwasm_std::{
     attr, to_binary, Addr, BankMsg, Coin, ContractResult, CosmosMsg, Decimal, Reply, ReplyOn,
     Response, StdError, SubMsg, SubcallResponse, Uint128, WasmMsg,
 };
-use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, MinterResponse};
+use cw20::{Cw20ReceiveMsg, MinterResponse};
+use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
+use std::str::FromStr;
 use yield_optimizer::{
     basset_farmer::{Cw20HookMsg, ExecuteMsg, OverseerMsg},
     basset_farmer_config::BorrowerActionResponse,
-    querier::BorrowerInfoResponse,
+    querier::{AnchorMarketCw20Msg, AnchorMarketEpochStateResponse, BorrowerInfoResponse},
 };
 
 #[test]
@@ -58,7 +61,7 @@ fn repay_loan() {
             anchor_market_contract: anchor_market_contract.clone(),
             anchor_ust_swap_contract,
             ust_psi_swap_contract,
-            aterra_token,
+            aterra_token: aterra_token.to_string(),
             psi_part_in_rewards,
             psi_token,
             basset_farmer_config_contract: basset_farmer_config_contract.clone(),
@@ -72,7 +75,7 @@ fn repay_loan() {
 
         // store cLuna token address
         let reply_msg = Reply {
-            id: 1,
+            id: SUBMSG_ID_INIT_CASSET,
             result: ContractResult::Ok(SubcallResponse {
                 events: vec![],
                 data: Some(cw20_instantiate_response.write_to_bytes().unwrap().into()),
@@ -84,6 +87,7 @@ fn repay_loan() {
 
     let locked_basset_amount = Uint128::from(10_000u64);
     let basset_farmer_loan_amount = Uint256::from(10_000u64);
+    let advised_buffer_size = Uint256::from(5_000u64);
     deps.querier.with_token_balances(&[(
         &custody_basset_contract,
         &[(&MOCK_CONTRACT_ADDR.to_string(), &locked_basset_amount)],
@@ -101,19 +105,37 @@ fn repay_loan() {
             },
         )],
     )]);
-    deps.querier.with_wasm_query_response(&[(
-        &basset_farmer_config_contract,
-        &to_binary(&BorrowerActionResponse::Repay {
-            amount: Uint256::from(10_000u64),
-            advised_buffer_size: Uint256::from(5_000u64),
-        })
-        .unwrap(),
-    )]);
+    deps.querier.with_wasm_query_response(&[
+        (
+            &basset_farmer_config_contract,
+            &to_binary(&BorrowerActionResponse::Repay {
+                amount: Uint256::from(10_000u64),
+                advised_buffer_size,
+            })
+            .unwrap(),
+        ),
+        (
+            &anchor_market_contract,
+            &to_binary(&AnchorMarketEpochStateResponse {
+                exchange_rate: Decimal256::from_str("1.2").unwrap(),
+                aterra_supply: Uint256::from(1_000_000u64),
+            })
+            .unwrap(),
+        ),
+    ]);
+
+    //set some values to state
+    let aterra_balance = Uint256::from(200u64);
+    let ust_buffer_balance = Uint256::from(100u64);
+    let mut non_empty_state = load_state(&deps.storage).unwrap();
+    non_empty_state.aterra_balance = aterra_balance;
+    non_empty_state.ust_buffer_balance = ust_buffer_balance;
+    store_state(&mut deps.storage, &non_empty_state).unwrap();
     // -= REBALANCE =-
     {
         let rebalance_msg = yield_optimizer::basset_farmer::AnyoneMsg::Rebalance;
         let info = mock_info("addr8888", &vec![]);
-        let _res = crate::contract::execute(
+        let res = crate::contract::execute(
             deps.as_mut(),
             mock_env(),
             info,
@@ -122,5 +144,30 @@ fn repay_loan() {
             },
         )
         .unwrap();
+        assert_eq!(
+            res.submessages,
+            vec![SubMsg {
+                msg: WasmMsg::Execute {
+                    contract_addr: aterra_token.to_string(),
+                    msg: to_binary(&Cw20ExecuteMsg::Send {
+                        contract: anchor_market_contract.to_string(),
+                        //in state we have zero, so we need to sell all aterra we have
+                        amount: aterra_balance.into(),
+                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                    })
+                    .unwrap(),
+                    send: vec![],
+                }
+                .into(),
+                gas_limit: None,
+                id: SUBMSG_ID_REDEEM_STABLE,
+                reply_on: ReplyOn::Always,
+            }]
+        );
+        let rapaying_state = load_repaying_loan_state(&deps.storage).unwrap();
+        assert_eq!(rapaying_state.iteration_index, 0);
+        assert_eq!(rapaying_state.aterra_amount_to_sell, aterra_balance);
+        assert_eq!(rapaying_state.aterra_amount_in_selling, aterra_balance);
+        assert_eq!(rapaying_state.aim_buffer_size, advised_buffer_size);
     }
 }

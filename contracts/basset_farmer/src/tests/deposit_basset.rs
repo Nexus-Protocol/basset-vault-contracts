@@ -1,5 +1,5 @@
 use crate::{
-    contract::{execute, instantiate, reply},
+    contract::{execute, instantiate, reply, SUBMSG_ID_INIT_CASSET},
     response::MsgInstantiateContractResponse,
 };
 use crate::{error::ContractError, state::load_farmer_info};
@@ -68,7 +68,7 @@ fn deposit_basset() {
 
         // store cLuna token address
         let reply_msg = Reply {
-            id: 1,
+            id: SUBMSG_ID_INIT_CASSET,
             result: ContractResult::Ok(SubcallResponse {
                 events: vec![],
                 data: Some(cw20_instantiate_response.write_to_bytes().unwrap().into()),

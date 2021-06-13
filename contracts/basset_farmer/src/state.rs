@@ -89,6 +89,10 @@ pub fn load_state(storage: &dyn Storage) -> StdResult<State> {
     STATE.load(storage)
 }
 
+pub fn store_state(storage: &mut dyn Storage, state: &State) -> StdResult<()> {
+    STATE.save(storage, state)
+}
+
 pub fn load_repaying_loan_state(storage: &dyn Storage) -> StdResult<RepayingLoanState> {
     REPAYING_LOAN.load(storage)
 }

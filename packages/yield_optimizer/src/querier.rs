@@ -225,7 +225,7 @@ pub enum AnchorMarketQueryMsg {
 
 //TODO: Use Anchor as dependency
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct EpochStateResponse {
+pub struct AnchorMarketEpochStateResponse {
     pub exchange_rate: Decimal256,
     pub aterra_supply: Uint256,
 }
@@ -233,8 +233,8 @@ pub struct EpochStateResponse {
 pub fn query_aterra_state(
     deps: Deps,
     anchor_market_contract: &Addr,
-) -> StdResult<EpochStateResponse> {
-    let epoch_state: EpochStateResponse =
+) -> StdResult<AnchorMarketEpochStateResponse> {
+    let epoch_state: AnchorMarketEpochStateResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: anchor_market_contract.to_string(),
             msg: to_binary(&AnchorMarketQueryMsg::EpochState { block_height: None })?,
