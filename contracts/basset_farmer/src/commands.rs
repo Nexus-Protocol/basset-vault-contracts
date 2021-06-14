@@ -128,8 +128,8 @@ pub fn rebalance(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<R
     // basset balance in custody contract
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
-        config.custody_basset_contract,
-        env.contract.address.clone(),
+        &config.custody_basset_contract,
+        &env.contract.address.clone(),
     )?;
 
     let borrower_info: BorrowerInfoResponse = query_borrower_info(
@@ -161,11 +161,7 @@ pub fn rebalance(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<R
         BorrowerActionResponse::Repay {
             amount,
             advised_buffer_size,
-        } => {
-            let config = load_config(deps.storage)?;
-            let state = load_state(deps.storage)?;
-            repay_logic(deps, config, state, amount, advised_buffer_size)
-        }
+        } => repay_logic(deps, env, config, amount, advised_buffer_size),
     }
 }
 
@@ -209,19 +205,27 @@ fn borrow_logic(
     })
 }
 
-fn repay_logic(
+pub(crate) fn repay_logic(
     deps: DepsMut,
+    env: Env,
     config: Config,
-    state: State,
     repay_amount: Uint256,
     aim_buffer_size: Uint256,
 ) -> ContractResult<Response> {
     //TODO: handle stable taxes - how much you will repay if Send Xust?
 
+    let aterra_balance =
+        query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address)?;
     let aterra_exchange_rate: Decimal256 =
         query_aterra_state(deps.as_ref(), &config.anchor_market_contract)?.exchange_rate;
+    let stable_coin_balance = query_balance(
+        &deps.querier,
+        &env.contract.address,
+        config.stable_denom.clone(),
+    )?;
     let aterra_amount_to_sell = calculate_aterra_amount_to_sell(
-        &state,
+        aterra_balance.into(),
+        stable_coin_balance.into(),
         aterra_exchange_rate,
         repay_amount,
         aim_buffer_size,
@@ -236,12 +240,6 @@ fn repay_logic(
     store_repaying_loan_state(deps.storage, &repaying_loan_state)?;
 
     Ok(Response {
-        //TODO: looks like we do not need this
-        // messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
-        //     contract_addr: contract.address.to_string(),
-        //     msg: to_binary(&YourselfMsg::AfterAterraRedeem { repay_amount })?,
-        //     send: vec![],
-        // })],
         messages: vec![],
         submessages: vec![SubMsg {
             msg: WasmMsg::Execute {
@@ -390,8 +388,8 @@ pub fn deposit_basset(
     // basset balance in custody contract
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
-        config.custody_basset_contract,
-        env.contract.address.clone(),
+        &config.custody_basset_contract,
+        &env.contract.address,
     )?;
 
     // basset balance in cw20 contract
@@ -579,6 +577,8 @@ pub fn distribute_rewards(deps: DepsMut, env: Env, info: MessageInfo) -> Contrac
         },
         amount: ust_balance,
     };
+    //TODO: I have my own 'deduct_tax' - decide which is better!
+    //TODO: decide, maybe some part of UST should go to Buffer
     let ust_to_deposit = (send_asset.deduct_tax(&deps.querier)?).amount;
 
     let psi_balance = query_token_balance(deps.as_ref(), &config.psi_token, &env.contract.address)?;

@@ -49,7 +49,6 @@ fn repay_loan_without_problems() {
     let stable_coin_balance = Uint128::from(200u64);
     let mut deps = mock_dependencies(&[Coin {
         denom: stable_denom.to_string(),
-        //will be queried in 'repay_reply_logic'
         amount: stable_coin_balance,
     }]);
 
@@ -100,10 +99,17 @@ fn repay_loan_without_problems() {
     let basset_farmer_loan_amount = Uint256::from(10_000u64);
     let advised_buffer_size = Uint256::from(50u64);
 
-    deps.querier.with_token_balances(&[(
-        &custody_basset_contract,
-        &[(&MOCK_CONTRACT_ADDR.to_string(), &locked_basset_amount)],
-    )]);
+    let aterra_balance = Uint256::from(200u64);
+    deps.querier.with_token_balances(&[
+        (
+            &custody_basset_contract,
+            &[(&MOCK_CONTRACT_ADDR.to_string(), &locked_basset_amount)],
+        ),
+        (
+            &aterra_token,
+            &[(&MOCK_CONTRACT_ADDR.to_string(), &aterra_balance.into())],
+        ),
+    ]);
     deps.querier.with_loan(&[(
         &anchor_market_contract,
         &[(
@@ -141,13 +147,6 @@ fn repay_loan_without_problems() {
         &[(&stable_denom.to_string(), &Uint128::from(10u128))],
     );
 
-    //set some values to state
-    let aterra_balance = Uint256::from(200u64);
-    let ust_buffer_balance = Uint256::from(100u64);
-    let mut non_empty_state = load_state(&deps.storage).unwrap();
-    non_empty_state.aterra_balance = aterra_balance;
-    non_empty_state.ust_buffer_balance = ust_buffer_balance;
-    store_state(&mut deps.storage, &non_empty_state).unwrap();
     // -= REBALANCE =-
     {
         let rebalance_msg = yield_optimizer::basset_farmer::AnyoneMsg::Rebalance;
@@ -227,4 +226,86 @@ fn repay_loan_without_problems() {
         assert_eq!(rapaying_state.aterra_amount_in_selling, Uint256::zero());
         assert_eq!(rapaying_state.aim_buffer_size, advised_buffer_size);
     }
+}
+
+#[test]
+fn repay_loan_fail_to_redeem_aterra() {
+    let cluna_contract_addr = "addr0001".to_string();
+    let basset_token_addr = "addr0002".to_string();
+    let custody_basset_contract = "addr0003".to_string();
+    let overseer_addr = "addr0004".to_string();
+    let governance_addr = "addr0005".to_string();
+    let anchor_token = "addr0006".to_string();
+    let anchor_market_contract = "addr0007".to_string();
+    let anchor_ust_swap_contract = "addr0008".to_string();
+    let ust_psi_swap_contract = "addr0009".to_string();
+    let aterra_token = "addr0010".to_string();
+    let psi_part_in_rewards = Decimal::from_ratio(1u64, 100u64);
+    let psi_token = "addr0011".to_string();
+    let basset_farmer_config_contract = "addr0012".to_string();
+    let stable_denom = "addr0013".to_string();
+
+    let basset_farmer_config = crate::state::Config {
+        governance_contract: Addr::unchecked(governance_addr.clone()),
+        overseer_contract: Addr::unchecked(overseer_addr.clone()),
+        anchor_token: Addr::unchecked(anchor_token.clone()),
+        anchor_market_contract: Addr::unchecked(anchor_market_contract.clone()),
+        custody_basset_contract: Addr::unchecked(custody_basset_contract.clone()),
+        anchor_ust_swap_contract: Addr::unchecked(anchor_ust_swap_contract.clone()),
+        ust_psi_swap_contract: Addr::unchecked(ust_psi_swap_contract.clone()),
+        casset_token: Addr::unchecked(cluna_contract_addr.clone()),
+        basset_token: Addr::unchecked(basset_token_addr.clone()),
+        aterra_token: Addr::unchecked(aterra_token.clone()),
+        psi_part_in_rewards,
+        psi_token: Addr::unchecked(psi_token.clone()),
+        basset_farmer_config_contract: Addr::unchecked(basset_farmer_config_contract.clone()),
+        stable_denom,
+    };
+
+    let mut deps = mock_dependencies(&vec![]);
+    deps.querier.with_wasm_query_response(&[(
+        &anchor_market_contract,
+        &to_binary(&AnchorMarketEpochStateResponse {
+            exchange_rate: Decimal256::from_str("1.2").unwrap(),
+            aterra_supply: Uint256::from(1_000_000u64),
+        })
+        .unwrap(),
+    )]);
+    let aterra_balance = Uint256::from(8_000u64);
+    deps.querier.with_token_balances(&[(
+        &aterra_token,
+        &[(&MOCK_CONTRACT_ADDR.to_string(), &aterra_balance.into())],
+    )]);
+
+    let repay_amount = Uint256::from(10_000u64);
+    let aim_buffer_size = Uint256::from(1_000u64);
+    let repay_response = crate::commands::repay_logic(
+        deps.as_mut(),
+        mock_env(),
+        basset_farmer_config,
+        repay_amount,
+        aim_buffer_size,
+    )
+    .unwrap();
+
+    assert_eq!(
+        repay_response.submessages,
+        vec![SubMsg {
+            msg: WasmMsg::Execute {
+                contract_addr: aterra_token.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Send {
+                    contract: anchor_market_contract.to_string(),
+                    //in state we have zero, so we need to sell all aterra we have
+                    amount: aterra_balance.into(),
+                    msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                })
+                .unwrap(),
+                send: vec![],
+            }
+            .into(),
+            gas_limit: None,
+            id: SUBMSG_ID_REDEEM_STABLE,
+            reply_on: ReplyOn::Always,
+        }]
+    );
 }

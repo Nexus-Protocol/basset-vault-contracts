@@ -64,8 +64,6 @@ pub fn instantiate(
     let state = State {
         global_reward_index: Decimal256::zero(),
         last_reward_amount: Decimal256::zero(),
-        ust_buffer_balance: Uint256::zero(),
-        aterra_balance: Uint256::zero(),
     };
     store_state(deps.storage, &state)?;
 

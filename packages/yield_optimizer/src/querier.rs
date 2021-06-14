@@ -121,8 +121,8 @@ pub struct BorrowerResponse {
 
 pub fn get_basset_in_custody(
     deps: Deps,
-    custody_basset_addr: Addr,
-    account_addr: Addr,
+    custody_basset_addr: &Addr,
+    account_addr: &Addr,
 ) -> StdResult<Uint256> {
     let borrower_info: BorrowerResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {

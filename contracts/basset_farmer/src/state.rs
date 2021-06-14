@@ -29,10 +29,6 @@ pub struct State {
     // pub last_reward_updated: u64,
     pub global_reward_index: Decimal256,
     pub last_reward_amount: Decimal256,
-    //TODO: rename to avoid UST in naming
-    //TODO: better to query balance each time!
-    pub ust_buffer_balance: Uint256,
-    pub aterra_balance: Uint256,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
@@ -47,6 +43,7 @@ const CONFIG: Item<Config> = Item::new("config");
 const STATE: Item<State> = Item::new("state");
 const REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
 const FARMERS: Map<&Addr, FarmerInfo> = Map::new("farmers");
+const AIM_BUFFER_SIZE: Item<Uint256> = Item::new("aim_buf_size");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
 pub struct FarmerInfo {
@@ -102,4 +99,12 @@ pub fn store_repaying_loan_state(
     repaying_loan_state: &RepayingLoanState,
 ) -> StdResult<()> {
     REPAYING_LOAN.save(storage, repaying_loan_state)
+}
+
+pub fn load_aim_buffer_size(storage: &dyn Storage) -> StdResult<Uint256> {
+    AIM_BUFFER_SIZE.load(storage)
+}
+
+pub fn store_aim_buffer_size(storage: &mut dyn Storage, aim_buf_size: &Uint256) -> StdResult<()> {
+    AIM_BUFFER_SIZE.save(storage, aim_buf_size)
 }
