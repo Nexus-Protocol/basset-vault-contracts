@@ -1,19 +1,22 @@
 use crate::{
     contract::{
         execute, instantiate, reply, SUBMSG_ID_FAKE_NO_REPLY, SUBMSG_ID_INIT_CASSET,
-        SUBMSG_ID_REDEEM_STABLE,
+        SUBMSG_ID_REDEEM_STABLE, TOO_HIGH_BORROW_DEMAND_ERR_MSG,
     },
     response::MsgInstantiateContractResponse,
-    state::{load_repaying_loan_state, load_state, store_state},
+    state::{load_repaying_loan_state, load_state, store_config, store_state},
 };
 use crate::{error::ContractError, state::load_farmer_info};
 
 use crate::tests::mock_dependencies;
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
     attr, to_binary, Addr, BankMsg, Coin, ContractResult, CosmosMsg, Decimal, Reply, ReplyOn,
     Response, StdError, SubMsg, SubcallResponse, Uint128, WasmMsg,
+};
+use cosmwasm_std::{
+    testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR},
+    Empty,
 };
 use cw20::{Cw20ReceiveMsg, MinterResponse};
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
@@ -167,7 +170,6 @@ fn repay_loan_without_problems() {
                     contract_addr: aterra_token.to_string(),
                     msg: to_binary(&Cw20ExecuteMsg::Send {
                         contract: anchor_market_contract.to_string(),
-                        //in state we have zero, so we need to sell all aterra we have
                         amount: aterra_balance.into(),
                         msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
                     })
@@ -259,26 +261,37 @@ fn repay_loan_fail_to_redeem_aterra() {
         psi_part_in_rewards,
         psi_token: Addr::unchecked(psi_token.clone()),
         basset_farmer_config_contract: Addr::unchecked(basset_farmer_config_contract.clone()),
-        stable_denom,
+        stable_denom: stable_denom.clone(),
     };
 
-    let mut deps = mock_dependencies(&vec![]);
+    let stable_coin_initial_balance = Uint128::from(5_000u64);
+    let mut deps = mock_dependencies(&[Coin {
+        denom: stable_denom.clone(),
+        amount: stable_coin_initial_balance,
+    }]);
     deps.querier.with_wasm_query_response(&[(
         &anchor_market_contract,
         &to_binary(&AnchorMarketEpochStateResponse {
-            exchange_rate: Decimal256::from_str("1.2").unwrap(),
+            exchange_rate: Decimal256::from_str("1.25").unwrap(),
             aterra_supply: Uint256::from(1_000_000u64),
         })
         .unwrap(),
     )]);
-    let aterra_balance = Uint256::from(8_000u64);
+    let aterra_balance = Uint256::from(7_000u64);
     deps.querier.with_token_balances(&[(
         &aterra_token,
         &[(&MOCK_CONTRACT_ADDR.to_string(), &aterra_balance.into())],
     )]);
+    //no tax
+    deps.querier.with_tax(
+        Decimal::zero(),
+        &[(&stable_denom.to_string(), &Uint128::from(99999999999u128))],
+    );
+    store_config(&mut deps.storage, &basset_farmer_config).unwrap();
 
+    // -= asking for REPAY =-
     let repay_amount = Uint256::from(10_000u64);
-    let aim_buffer_size = Uint256::from(1_000u64);
+    let aim_buffer_size = Uint256::from(5_000u64);
     let repay_response = crate::commands::repay_logic(
         deps.as_mut(),
         mock_env(),
@@ -295,7 +308,6 @@ fn repay_loan_fail_to_redeem_aterra() {
                 contract_addr: aterra_token.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Send {
                     contract: anchor_market_contract.to_string(),
-                    //in state we have zero, so we need to sell all aterra we have
                     amount: aterra_balance.into(),
                     msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
                 })
@@ -306,6 +318,144 @@ fn repay_loan_fail_to_redeem_aterra() {
             gas_limit: None,
             id: SUBMSG_ID_REDEEM_STABLE,
             reply_on: ReplyOn::Always,
+        }]
+    );
+
+    // -= REDEEM failed =-
+    let reply_1_msg = Reply {
+        id: SUBMSG_ID_REDEEM_STABLE,
+        result: ContractResult::Err(format!(
+            "fail to redeem aterra, cause: {}",
+            TOO_HIGH_BORROW_DEMAND_ERR_MSG,
+        )),
+    };
+    let reply_1_response =
+        crate::contract::reply(deps.as_mut(), mock_env(), reply_1_msg.clone()).unwrap();
+    //now contract should repay loan with buffer and try to redeem aterra for that amount
+    assert_eq!(
+        reply_1_response.submessages,
+        vec![
+            SubMsg {
+                msg: WasmMsg::Execute {
+                    contract_addr: anchor_market_contract.clone(),
+                    msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
+                    send: vec![Coin {
+                        denom: stable_denom.clone(),
+                        amount: stable_coin_initial_balance,
+                    }],
+                }
+                .into(),
+                gas_limit: None,
+                id: SUBMSG_ID_FAKE_NO_REPLY,
+                reply_on: ReplyOn::Success,
+            },
+            SubMsg {
+                msg: WasmMsg::Execute {
+                    contract_addr: aterra_token.clone(),
+                    msg: to_binary(&Cw20ExecuteMsg::Send {
+                        contract: anchor_market_contract.clone(),
+                        //sell aterra for same value as repaying long (4000*1.25 = 5k)
+                        amount: Uint128::from(4_000u64),
+                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                    })
+                    .unwrap(),
+                    send: vec![],
+                }
+                .into(),
+                gas_limit: None,
+                id: SUBMSG_ID_REDEEM_STABLE,
+                reply_on: ReplyOn::Success,
+            }
+        ]
+    );
+
+    // -= REDEEM SUCCEEDED failed =-
+    let updated_aterra_balance = aterra_balance - Uint256::from(4_000u64);
+    deps.querier.with_token_balances(&[(
+        &aterra_token,
+        &[(
+            &MOCK_CONTRACT_ADDR.to_string(),
+            &updated_aterra_balance.into(),
+        )],
+    )]);
+    let reply_2_msg = Reply {
+        id: SUBMSG_ID_REDEEM_STABLE,
+        result: ContractResult::Ok(SubcallResponse {
+            events: vec![],
+            data: None,
+        }),
+    };
+    let reply_2_response =
+        crate::contract::reply(deps.as_mut(), mock_env(), reply_2_msg.clone()).unwrap();
+    assert_eq!(
+        reply_2_response.submessages,
+        vec![
+            SubMsg {
+                msg: WasmMsg::Execute {
+                    contract_addr: anchor_market_contract.clone(),
+                    msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
+                    send: vec![Coin {
+                        denom: stable_denom.clone(),
+                        //TODO: по идее тут могли бы сразу весь долг выплатить.
+                        //иначе же получается лишний шаг по выплате, когда поймём что
+                        //у нас 0 атерры
+                        amount: Uint128::from(3_750u64),
+                    }],
+                }
+                .into(),
+                gas_limit: None,
+                id: SUBMSG_ID_FAKE_NO_REPLY,
+                reply_on: ReplyOn::Success,
+            },
+            SubMsg {
+                msg: WasmMsg::Execute {
+                    contract_addr: aterra_token.clone(),
+                    msg: to_binary(&Cw20ExecuteMsg::Send {
+                        contract: anchor_market_contract.clone(),
+                        //sell rest of aterra 3k (3000*1.25 = 3750)
+                        amount: Uint128::from(3_000u64),
+                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                    })
+                    .unwrap(),
+                    send: vec![],
+                }
+                .into(),
+                gas_limit: None,
+                id: SUBMSG_ID_REDEEM_STABLE,
+                reply_on: ReplyOn::Success,
+            }
+        ]
+    );
+
+    // -= third step =-
+    deps.querier.with_token_balances(&[(
+        &aterra_token,
+        &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128::zero())],
+    )]);
+    let reply_3_msg = Reply {
+        id: SUBMSG_ID_REDEEM_STABLE,
+        result: ContractResult::Ok(SubcallResponse {
+            events: vec![],
+            data: None,
+        }),
+    };
+    let reply_3_response =
+        crate::contract::reply(deps.as_mut(), mock_env(), reply_3_msg.clone()).unwrap();
+    assert_eq!(
+        reply_3_response.submessages,
+        vec![SubMsg {
+            msg: WasmMsg::Execute {
+                contract_addr: anchor_market_contract.clone(),
+                msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
+                send: vec![Coin {
+                    denom: stable_denom.clone(),
+                    amount: Uint128::from(1_250u64),
+                }],
+            }
+            .into(),
+            gas_limit: None,
+            id: SUBMSG_ID_FAKE_NO_REPLY,
+            reply_on: ReplyOn::Success,
         }]
     );
 }

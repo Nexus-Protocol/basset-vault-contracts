@@ -142,6 +142,7 @@ pub struct AterraRedeemErrorHandlingAction {
     pub aterra_amount_to_sell: Uint256,
 }
 
+//TODO: тут должна учитываться инфа о том сколько надо долга выплатить!!!
 pub fn calc_aterra_redeem_error_handling_action(
     aterra_amount_to_sell: Uint256,
     aterra_exchange_rate: Decimal256,

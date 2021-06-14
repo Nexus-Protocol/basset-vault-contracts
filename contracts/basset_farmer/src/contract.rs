@@ -32,7 +32,7 @@ use yield_optimizer::{
 pub const SUBMSG_ID_INIT_CASSET: u64 = 1;
 pub const SUBMSG_ID_REDEEM_STABLE: u64 = 2;
 pub const SUBMSG_ID_FAKE_NO_REPLY: u64 = 3;
-const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
+pub const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
 
 #[entry_point]
 pub fn instantiate(
