@@ -277,7 +277,8 @@ pub fn get_repay_loan_action(
             //that means we can't sell more aterra than loan repaid
 
             let stables_to_fill_buffer = aim_buffer_size - stables_after_repaying;
-            let stables_to_repay_loan_remainder = total_repay_amount - repay_amount;
+            let stables_to_repay_loan_remainder =
+                tax_info.append_tax(total_repay_amount - repay_amount);
             let total_stables_needed = stables_to_repay_loan_remainder + stables_to_fill_buffer;
             let loan_amoun_that_will_be_repayed = tax_info.subtract_tax(repay_amount);
             let bounded_aterra_value = loan_amoun_that_will_be_repayed.min(total_stables_needed);
@@ -1221,12 +1222,12 @@ mod test {
         );
         assert_eq!(
             //repaying loan at limit = 99_250
-            //need to sell aterra to get: repay_remainder(750) + 80_000(for buffer)
-            //total = 80_000 + 750; plus 750 for tax to receive this:
-            // 81_500 / 1.25 = 65_200
+            //need to sell aterra to get: repay_remainder(750) + tax_for_repay_remainder(660) + 80_000(for buffer)
+            //total = 80_000 + 750 + 660; plus 750 for tax to receive this:
+            // 82_160 / 1.25 = 65_728
             RepayLoanAction::RepayLoanAndSellAterra {
                 repay_loan_amount: Uint256::from(99_250u64), //minus 750 tax cap
-                aterra_amount_to_sell: Uint256::from(65_200u64),
+                aterra_amount_to_sell: Uint256::from(65_728u64),
             },
             repay_action
         );
