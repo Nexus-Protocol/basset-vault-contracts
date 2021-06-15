@@ -239,6 +239,8 @@ pub(crate) fn repay_logic(
     };
     store_repaying_loan_state(deps.storage, &repaying_loan_state)?;
 
+    //TODO: try to ONLY sell Aterra here, if possible
+    //it will save one "repay_loan" message
     Ok(Response {
         messages: vec![],
         submessages: vec![SubMsg {
@@ -246,6 +248,7 @@ pub(crate) fn repay_logic(
                 contract_addr: config.aterra_token.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Send {
                     contract: config.anchor_market_contract.to_string(),
+                    //TODO: what if 'aterra_amount_to_sell' is zero?!
                     amount: aterra_amount_to_sell.into(),
                     msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
                 })?,

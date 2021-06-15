@@ -12,7 +12,7 @@ use yield_optimizer::{
         query_aterra_state, query_borrower_info, query_token_balance, AnchorMarketMsg,
         BorrowerInfoResponse,
     },
-    subtract_tax, TaxInfo,
+    TaxInfo,
 };
 
 pub fn update_reward_index(deps: DepsMut, env: Env, state: &mut State) -> StdResult<()> {
@@ -154,7 +154,7 @@ pub fn calc_aterra_redeem_error_handling_action(
         if current_buffer_balance > aim_buffer_size {
             //we do not need to sell aterra anymore, so repay remainder from buffer
             let loan_to_repay = current_buffer_balance - aim_buffer_size;
-            let repaying_loan_size_after_tax = subtract_tax(loan_to_repay, tax_info);
+            let repaying_loan_size_after_tax = tax_info.subtract_tax(loan_to_repay);
             let result = AterraRedeemErrorHandlingAction {
                 repay_loan_amount: repaying_loan_size_after_tax,
                 aterra_amount_to_sell,
@@ -169,7 +169,7 @@ pub fn calc_aterra_redeem_error_handling_action(
     if aterra_value >= current_buffer_balance {
         //sell entire buffer, because we need to redeem more aterra
         let loan_to_repay = current_buffer_balance;
-        let repaying_loan_size_after_tax = subtract_tax(loan_to_repay, tax_info);
+        let repaying_loan_size_after_tax = tax_info.subtract_tax(loan_to_repay);
         let result = AterraRedeemErrorHandlingAction {
             repay_loan_amount: repaying_loan_size_after_tax,
             aterra_amount_to_sell: repaying_loan_size_after_tax / aterra_exchange_rate,
@@ -179,7 +179,7 @@ pub fn calc_aterra_redeem_error_handling_action(
         //sell last part of aterra
         let new_buffer_balance = current_buffer_balance + aterra_value;
         let repaying_loan_size_after_tax = if new_buffer_balance > aim_buffer_size {
-            subtract_tax(new_buffer_balance - aim_buffer_size, tax_info)
+            tax_info.subtract_tax(new_buffer_balance - aim_buffer_size)
         } else {
             Uint256::zero()
         };
@@ -191,12 +191,140 @@ pub fn calc_aterra_redeem_error_handling_action(
     }
 }
 
+#[derive(PartialEq, Eq, Debug)]
+pub enum RepayLoanAction {
+    RepayLoanAndSellAterra {
+        repay_loan_amount: Uint256,
+        aterra_amount_to_sell: Uint256,
+    },
+    SellAterra {
+        amount: Uint256,
+    },
+    RepayLoan {
+        amount: Uint256,
+    },
+    Nothing,
+}
+
+pub fn get_repay_loan_action(
+    stable_coin_balance: Uint256,
+    aterra_balance: Uint256,
+    aterra_exchange_rate: Decimal256,
+    total_repay_amount: Uint256,
+    aim_buffer_size: Uint256,
+    tax_info: &TaxInfo,
+    is_first_try: bool,
+) -> RepayLoanAction {
+    if aterra_balance.is_zero() && stable_coin_balance.is_zero() {
+        return RepayLoanAction::Nothing;
+    }
+
+    //add tax to repay_amount
+    let wanted_stables = calc_wanted_stablecoins(
+        stable_coin_balance,
+        tax_info.append_tax(total_repay_amount),
+        aim_buffer_size,
+    );
+
+    let max_amount_to_send = tax_info.subtract_tax(stable_coin_balance);
+    let repay_amount = total_repay_amount.min(max_amount_to_send);
+
+    if wanted_stables.is_zero() {
+        if repay_amount.is_zero() {
+            return RepayLoanAction::Nothing;
+        } else {
+            return RepayLoanAction::RepayLoan {
+                amount: repay_amount,
+            };
+        }
+    }
+
+    //anchor will pay tax, so we will recieve lesser then assume
+    let aterra_value = tax_info.subtract_tax(aterra_balance * aterra_exchange_rate);
+    //on first try only selling aterra, cause with high probability we will repay loan
+    //in 'reply' handler, so don't need to do that twice
+    if is_first_try || repay_amount.is_zero() {
+        if aterra_value.is_zero() {
+            return RepayLoanAction::RepayLoan {
+                amount: repay_amount,
+            };
+        } else {
+            let stables_from_aterra_sell = aterra_value.min(wanted_stables);
+
+            let aterra_to_sell =
+                tax_info.append_tax(stables_from_aterra_sell) / aterra_exchange_rate;
+            //make sure that we do not redeem more then we have (in case if some issue with tax precision)
+            let aterra_to_sell = aterra_to_sell.min(aterra_balance);
+            return RepayLoanAction::SellAterra {
+                amount: aterra_to_sell,
+            };
+        }
+    }
+
+    if aterra_value.is_zero() {
+        return RepayLoanAction::RepayLoan {
+            amount: repay_amount,
+        };
+    } else {
+        let repay_amount_with_tax = tax_info.append_tax(repay_amount);
+        let stables_after_repaying = stable_coin_balance - repay_amount_with_tax;
+        if stables_after_repaying >= aim_buffer_size {
+            return RepayLoanAction::RepayLoan {
+                amount: repay_amount,
+            };
+        } else {
+            //it is not first try, so we are in error handling
+            //that means we can't sell more aterra than loan repaid
+
+            let stables_to_fill_buffer = aim_buffer_size - stables_after_repaying;
+            let stables_to_repay_loan_remainder = total_repay_amount - repay_amount;
+            let total_stables_needed = stables_to_repay_loan_remainder + stables_to_fill_buffer;
+            let loan_amoun_that_will_be_repayed = tax_info.subtract_tax(repay_amount);
+            let bounded_aterra_value = loan_amoun_that_will_be_repayed.min(total_stables_needed);
+            //adding tax that anchor contract will pay to send stable coins to us
+            let aterra_to_sell = tax_info.append_tax(bounded_aterra_value) / aterra_exchange_rate;
+            //make sure that we do not redeem more then we have (in case if some issue with tax precision)
+            let aterra_to_sell = aterra_to_sell.min(aterra_balance);
+            RepayLoanAction::RepayLoanAndSellAterra {
+                aterra_amount_to_sell: aterra_to_sell,
+                repay_loan_amount: repay_amount,
+            }
+        }
+    }
+}
+
+fn calc_wanted_stablecoins(
+    stable_coin_balance: Uint256,
+    repay_amount: Uint256,
+    aim_buffer_size: Uint256,
+) -> Uint256 {
+    //we have enough balance to repay loan without any additional stables
+    if stable_coin_balance >= repay_amount + aim_buffer_size {
+        return Uint256::zero();
+    }
+
+    //we can take some coins from buffer to repay loan
+    if stable_coin_balance >= aim_buffer_size {
+        let can_get_from_balance = stable_coin_balance - aim_buffer_size;
+        if repay_amount <= can_get_from_balance {
+            return Uint256::zero();
+        }
+
+        return repay_amount - can_get_from_balance;
+    }
+
+    //need to fill up buffer and repay loan
+    let add_to_buffer = aim_buffer_size - stable_coin_balance;
+    return repay_amount + add_to_buffer;
+}
+
 #[cfg(test)]
 mod test {
 
     use super::{
-        calc_aterra_redeem_error_handling_action, calculate_aterra_amount_to_sell,
-        calculate_reward_index, AterraRedeemErrorHandlingAction,
+        calc_aterra_redeem_error_handling_action, calc_wanted_stablecoins,
+        calculate_aterra_amount_to_sell, calculate_reward_index, get_repay_loan_action,
+        AterraRedeemErrorHandlingAction, RepayLoanAction,
     };
     use crate::state::State;
     use cosmwasm_bignumber::{Decimal256, Uint256};
@@ -634,5 +762,762 @@ mod test {
         };
 
         assert_eq!(expected_action, error_handling_action.unwrap());
+    }
+
+    // ===============================================================
+
+    #[test]
+    fn get_repay_loan_action_sell_all_1() {
+        let aterra_balance = Uint256::from(500u64);
+        let stable_coin_balance = Uint256::from(100u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let repay_amount = Uint256::from(1_000u64);
+        let aim_buffer_size = Uint256::from(100u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(100u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            true,
+        );
+        assert_eq!(
+            RepayLoanAction::SellAterra {
+                amount: aterra_balance
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_do_nothing_1() {
+        let aterra_balance = Uint256::zero();
+        let stable_coin_balance = Uint256::zero();
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let repay_amount = Uint256::from(1_000u64);
+        let aim_buffer_size = Uint256::from(100u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(100u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            true,
+        );
+        assert_eq!(RepayLoanAction::Nothing, repay_action);
+    }
+
+    #[test]
+    fn get_repay_loan_action_do_nothing_2() {
+        let aterra_balance = Uint256::zero();
+        let stable_coin_balance = Uint256::from(1_000u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let repay_amount = Uint256::zero();
+        let aim_buffer_size = Uint256::from(100u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(100u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            true,
+        );
+        assert_eq!(RepayLoanAction::Nothing, repay_action);
+    }
+
+    #[test]
+    fn get_repay_loan_action_do_nothing_3() {
+        let aterra_balance = Uint256::from(2_000u64);
+        let stable_coin_balance = Uint256::from(100u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let repay_amount = Uint256::zero();
+        let aim_buffer_size = Uint256::from(100u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(100u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            true,
+        );
+        assert_eq!(RepayLoanAction::Nothing, repay_action);
+    }
+
+    #[test]
+    fn get_repay_loan_action_do_sell_aterra_for_fee() {
+        let aterra_balance = Uint256::from(2_000u64);
+        let stable_coin_balance = Uint256::from(2_000_000u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.25").unwrap();
+        let repay_amount = Uint256::from(1_000_000u64);
+        let aim_buffer_size = Uint256::from(1_000_000u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(1000u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            true,
+        );
+        //need to sell aterra to get fees for repaying 1kk (which is 1000)
+        //(1000+10 for fee) / 1.25 = 808
+        assert_eq!(
+            RepayLoanAction::SellAterra {
+                amount: Uint256::from(808u64)
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_repay_stable_coins() {
+        let aterra_balance = Uint256::zero();
+        let stable_coin_balance = Uint256::from(200u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let repay_amount = Uint256::from(1_000u64);
+        let aim_buffer_size = Uint256::from(100u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(100u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            true,
+        );
+        assert_eq!(
+            RepayLoanAction::RepayLoan {
+                amount: tax_info.subtract_tax(stable_coin_balance)
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_sell_all_2() {
+        let aterra_balance = Uint256::from(200u64);
+        let stable_coin_balance = Uint256::zero();
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let repay_amount = Uint256::from(1_000u64);
+        let aim_buffer_size = Uint256::from(100u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(100u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            true,
+        );
+        assert_eq!(
+            RepayLoanAction::SellAterra {
+                //TODO: tax
+                amount: aterra_balance
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_fill_aim_buffer() {
+        let aterra_balance = Uint256::from(100u64);
+        let stable_coin_balance = Uint256::from(100u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let repay_amount = Uint256::from(200u64);
+        //total: 100+120
+        //total - repay = 220 - 200 = 20 which is less then we need to aim_buffer_size, so sell all
+        let aim_buffer_size = Uint256::from(100u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(100u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            true,
+        );
+        assert_eq!(
+            RepayLoanAction::SellAterra {
+                //TODO: tax
+                amount: aterra_balance
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_no_need_to_sell_aterra() {
+        let aterra_balance = Uint256::from(100u64);
+        let stable_coin_balance = Uint256::from(100u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let repay_amount = Uint256::from(50u64);
+        let aim_buffer_size = Uint256::from(50u64);
+        //ust_buffer >= repay + aim_buffer
+        //so no need to sell
+        let tax_info = TaxInfo {
+            rate: Decimal256::zero(),
+            cap: Uint256::from(100u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            true,
+        );
+        assert_eq!(
+            RepayLoanAction::RepayLoan {
+                amount: repay_amount
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_need_to_sell_cause_of_tax() {
+        let aterra_balance = Uint256::from(1000u64);
+        let stable_coin_balance = Uint256::from(1000u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.25").unwrap();
+        let repay_amount = Uint256::from(680u64);
+        let aim_buffer_size = Uint256::from(330u64);
+        //ust_buffer = repay + aim_buffer
+        //but in order to repay you need to pay tax
+        //so not enough balance to do that
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(25),
+            cap: Uint256::from(999999u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            true,
+        );
+        assert_eq!(
+            RepayLoanAction::SellAterra {
+                //to repay loan you need to send 680ust, but to send 680ust you need to pay 170:
+                //680 + 170 + 330(buffer) = 1180
+                //but you have only 1000, so need to sell aterra for 180
+                //180 + 180*0.25 = 225(ust amount to receive from anchor for selling aterra)
+                //225 - 225/1.25 = 180
+                amount: Uint256::from(180u64)
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_get_portion_from_buffer() {
+        let aterra_balance = Uint256::from(1000u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.1").unwrap();
+        let stable_coin_balance = Uint256::from(1000u64);
+        let repay_amount = Uint256::from(800u64);
+        let aim_buffer_size = Uint256::from(825u64);
+        //we can get 175 coins from buffer, cause aim_buffer < current_buffer
+        //so need to sell aterra only to get 800 - 175 = 625 coins, plus 100 for tax = 725
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(20),
+            cap: Uint256::from(100u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            true,
+        );
+        assert_eq!(
+            //725/1.1 + 100 = 750
+            RepayLoanAction::SellAterra {
+                amount: Uint256::from(750u64),
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_sell_to_add_to_buffer() {
+        let aterra_balance = Uint256::from(1000u64);
+        let stable_coin_balance = Uint256::from(100u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.25").unwrap();
+        let repay_amount = Uint256::from(70u64);
+        let aim_buffer_size = Uint256::from(120u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(99),
+            cap: Uint256::from(10u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            true,
+        );
+        assert_eq!(
+            RepayLoanAction::SellAterra {
+                //70 to repay with 10 tax: 80 coins
+                //120(aim_buffer) - (100(balance) - 80) = 100
+                //so sell aterra to get 100:
+                //(100 +10)/1.25 = 88
+                amount: Uint256::from(88u64),
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_repay_from_buffer() {
+        let aterra_balance = Uint256::zero();
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let repay_amount = Uint256::from(20u64);
+        let stable_coin_balance = Uint256::from(100u64);
+        let aim_buffer_size = Uint256::from(100u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(10),
+            cap: Uint256::from(15u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            true,
+        );
+        assert_eq!(
+            RepayLoanAction::RepayLoan {
+                amount: repay_amount
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_sell_aterra_only() {
+        let aterra_balance = Uint256::from(1000u64);
+        let aterra_exchange_rate = Decimal256::from_str("0.88").unwrap();
+        let repay_amount = Uint256::from(200u64);
+        let stable_coin_balance = Uint256::from(100u64);
+        let aim_buffer_size = Uint256::from(100u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(10),
+            cap: Uint256::from(150u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            true,
+        );
+        assert_eq!(
+            RepayLoanAction::SellAterra {
+                //we need to sell aterra to get stables for repay loan + tax
+                //plus tax that anchor pays to transfer stable to us
+                //so: 200 + 200*0.1 = 220 - amount that we need to repay loan
+                //to get it we need to sell aterra for: 220 + 220*0.1 = 242
+                //but aterra price is 0.88, so 242/0.88 = 275
+                amount: Uint256::from(275u64)
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_do_not_need_stables_just_repay_loan() {
+        let aterra_balance = Uint256::from(300_000u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let stable_coin_balance = Uint256::from(100_000u64);
+        let repay_amount = Uint256::from(1_000u64);
+        let aim_buffer_size = Uint256::from(8_000u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(99),
+            cap: Uint256::from(750u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            false,
+        );
+        assert_eq!(
+            RepayLoanAction::RepayLoan {
+                amount: repay_amount,
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_sell_entire_buffer() {
+        let aterra_balance = Uint256::from(300_000u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.25").unwrap();
+        let stable_coin_balance = Uint256::from(100_000u64);
+        let repay_amount = Uint256::from(100_000u64);
+        let aim_buffer_size = Uint256::from(80_000u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(88),
+            cap: Uint256::from(750u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            false,
+        );
+        assert_eq!(
+            //repaying loan at limit = 99_250
+            //need to sell aterra to get: repay_remainder(750) + 80_000(for buffer)
+            //total = 80_000 + 750; plus 750 for tax to receive this:
+            // 81_500 / 1.25 = 65_200
+            RepayLoanAction::RepayLoanAndSellAterra {
+                repay_loan_amount: Uint256::from(99_250u64), //minus 750 tax cap
+                aterra_amount_to_sell: Uint256::from(65_200u64),
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_last_aterra_sell() {
+        let aterra_balance = Uint256::from(20_000u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.25").unwrap();
+        let stable_coin_balance = Uint256::from(100_000u64);
+        let repay_amount = Uint256::from(20_000u64);
+        let aim_buffer_size = Uint256::from(80_000u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(90),
+            cap: Uint256::from(750u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            false,
+        );
+        assert_eq!(
+            RepayLoanAction::RepayLoanAndSellAterra {
+                repay_loan_amount: repay_amount,
+                //repay for 20k, but pay 750 tax
+                //so need to sell aterra for 750, to make aim_buffer
+                //plus 750 for anchor to pay tax
+                // (750 + 750*0.9) / 1.25 = 1140
+                aterra_amount_to_sell: Uint256::from(1_140u64)
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_sell_aterra_only_for_repayed_amount() {
+        let aterra_balance = Uint256::from(1_000_000u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.25").unwrap();
+        let stable_coin_balance = Uint256::from(100_000u64);
+        let repay_amount = Uint256::from(200_000u64);
+        let aim_buffer_size = Uint256::from(1_000_000u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(90),
+            cap: Uint256::from(750u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            false,
+        );
+        let repayed_loan_amoun = stable_coin_balance - tax_info.cap;
+        assert_eq!(
+            RepayLoanAction::RepayLoanAndSellAterra {
+                repay_loan_amount: repayed_loan_amoun,
+                //CAN'T SELL ATERRA TO GET 100K!!!
+                //because this is case where you repaying loan to be able to redeem aterra
+                //BUT tax will be payed by anchor contract, so you can sell aterra only for
+                //amount that was repayed: 100k - 750 = 99_250
+                //99_250 / 1.25 = 79_400
+                aterra_amount_to_sell: Uint256::from(79_400u64)
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_last_aterra_sell_but_without_loan_repaying() {
+        let aterra_balance = Uint256::from(20_000u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let stable_coin_balance = Uint256::from(40_000u64);
+        let repay_amount = Uint256::zero();
+        let aim_buffer_size = Uint256::from(80_000u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(750u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            false,
+        );
+        assert_eq!(
+            RepayLoanAction::SellAterra {
+                //need to add 40k to buffer, but we have only 20k aterra which is not enough
+                //so sell all
+                amount: aterra_balance,
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_not_enough_aterra_to_fill_buffer_after_repayment() {
+        let aterra_balance = Uint256::from(100u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let stable_coin_balance = Uint256::from(100_000u64);
+        let repay_amount = Uint256::from(20_000u64);
+        let aim_buffer_size = Uint256::from(80_000u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(99),
+            cap: Uint256::from(750u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            false,
+        );
+        assert_eq!(
+            RepayLoanAction::RepayLoanAndSellAterra {
+                repay_loan_amount: repay_amount,
+                //we spent 20k to repay loan + 750 to tax
+                //so need to sell aterra for 750, but we have only 100, so sell all
+                aterra_amount_to_sell: aterra_balance
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_repay_loan_only() {
+        let aterra_balance = Uint256::zero();
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let stable_coin_balance = Uint256::from(100_000u64);
+        let repay_amount = Uint256::from(1_000u64);
+        let aim_buffer_size = Uint256::from(80_000u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(750u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            false,
+        );
+        assert_eq!(
+            RepayLoanAction::RepayLoan {
+                amount: repay_amount,
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn get_repay_loan_action_repay_loan_only_not_enough_balance_for_fee() {
+        let aterra_balance = Uint256::zero();
+        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let stable_coin_balance = Uint256::from(1_000u64);
+        let repay_amount = Uint256::from(1_000u64);
+        let aim_buffer_size = Uint256::from(80_000u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(25),
+            cap: Uint256::from(750u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            false,
+        );
+        assert_eq!(
+            //need to repay 1k of loan, but we dont have enough cause of fee
+            //so send all
+            RepayLoanAction::RepayLoan {
+                amount: tax_info.subtract_tax(stable_coin_balance),
+            },
+            repay_action
+        );
+    }
+
+    #[test]
+    fn calc_wanted_stablecoins_1() {
+        let stable_coin_balance = Uint256::zero();
+        let repay_amount = Uint256::zero();
+        let aim_buffer_size = Uint256::zero();
+        let result = calc_wanted_stablecoins(stable_coin_balance, repay_amount, aim_buffer_size);
+        assert!(result.is_zero())
+    }
+
+    #[test]
+    fn calc_wanted_stablecoins_2() {
+        let stable_coin_balance = Uint256::from(100u64);
+        let repay_amount = Uint256::zero();
+        let aim_buffer_size = Uint256::zero();
+        let result = calc_wanted_stablecoins(stable_coin_balance, repay_amount, aim_buffer_size);
+        assert!(result.is_zero())
+    }
+
+    #[test]
+    fn calc_wanted_stablecoins_3() {
+        let stable_coin_balance = Uint256::zero();
+        let repay_amount = Uint256::from(100u64);
+        let aim_buffer_size = Uint256::zero();
+        let result = calc_wanted_stablecoins(stable_coin_balance, repay_amount, aim_buffer_size);
+        assert_eq!(repay_amount, result)
+    }
+
+    #[test]
+    fn calc_wanted_stablecoins_4() {
+        let stable_coin_balance = Uint256::zero();
+        let repay_amount = Uint256::zero();
+        let aim_buffer_size = Uint256::from(100u64);
+        let result = calc_wanted_stablecoins(stable_coin_balance, repay_amount, aim_buffer_size);
+        assert_eq!(aim_buffer_size, result)
+    }
+
+    #[test]
+    fn calc_wanted_stablecoins_5() {
+        let stable_coin_balance = Uint256::zero();
+        let repay_amount = Uint256::from(100u64);
+        let aim_buffer_size = Uint256::from(100u64);
+        let result = calc_wanted_stablecoins(stable_coin_balance, repay_amount, aim_buffer_size);
+        assert_eq!(repay_amount + aim_buffer_size, result)
+    }
+
+    #[test]
+    fn calc_wanted_stablecoins_6() {
+        let stable_coin_balance = Uint256::from(200u64);
+        let repay_amount = Uint256::from(100u64);
+        let aim_buffer_size = Uint256::from(100u64);
+        let result = calc_wanted_stablecoins(stable_coin_balance, repay_amount, aim_buffer_size);
+        assert!(result.is_zero())
+    }
+
+    #[test]
+    fn calc_wanted_stablecoins_7() {
+        let stable_coin_balance = Uint256::from(200u64);
+        let repay_amount = Uint256::from(120u64);
+        let aim_buffer_size = Uint256::from(100u64);
+        let result = calc_wanted_stablecoins(stable_coin_balance, repay_amount, aim_buffer_size);
+        assert_eq!(
+            aim_buffer_size - (stable_coin_balance - repay_amount),
+            result
+        )
+    }
+
+    #[test]
+    fn calc_wanted_stablecoins_8() {
+        let stable_coin_balance = Uint256::from(20u64);
+        let repay_amount = Uint256::zero();
+        let aim_buffer_size = Uint256::from(100u64);
+        let result = calc_wanted_stablecoins(stable_coin_balance, repay_amount, aim_buffer_size);
+        assert_eq!(aim_buffer_size - stable_coin_balance, result)
+    }
+
+    #[test]
+    fn calc_wanted_stablecoins_9() {
+        let stable_coin_balance = Uint256::from(20u64);
+        let repay_amount = Uint256::from(50u64);
+        let aim_buffer_size = Uint256::zero();
+        let result = calc_wanted_stablecoins(stable_coin_balance, repay_amount, aim_buffer_size);
+        assert_eq!(repay_amount - stable_coin_balance, result)
+    }
+
+    #[test]
+    fn calc_wanted_stablecoins_10() {
+        let stable_coin_balance = Uint256::from(20u64);
+        let repay_amount = Uint256::from(50u64);
+        let aim_buffer_size = Uint256::from(50u64);
+        let result = calc_wanted_stablecoins(stable_coin_balance, repay_amount, aim_buffer_size);
+        assert_eq!(repay_amount + aim_buffer_size - stable_coin_balance, result)
+    }
+
+    #[test]
+    fn calc_wanted_stablecoins_11() {
+        let stable_coin_balance = Uint256::from(200u64);
+        let repay_amount = Uint256::from(120u64);
+        let aim_buffer_size = Uint256::from(50u64);
+        let result = calc_wanted_stablecoins(stable_coin_balance, repay_amount, aim_buffer_size);
+        assert!(result.is_zero())
     }
 }
