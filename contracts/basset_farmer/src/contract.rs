@@ -1,3 +1,4 @@
+use commands::repay_logic_on_reply;
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
     attr, entry_point, from_binary, to_binary, Addr, Binary, CanonicalAddr, Coin, CosmosMsg, Deps,
@@ -6,13 +7,11 @@ use cosmwasm_std::{
 };
 
 use crate::{
-    commands::{self, repay_reply_logic},
-    queries,
+    commands, queries,
     state::{
         config_set_casset_token, load_config, load_repaying_loan_state, store_config, store_state,
-        RepayingLoanState, State,
+        update_loan_state_part_of_loan_repaid, RepayingLoanState, State,
     },
-    utils::calc_aterra_redeem_error_handling_action,
 };
 use crate::{error::ContractError, response::MsgInstantiateContractResponse};
 use crate::{state::Config, ContractResult};
@@ -31,7 +30,7 @@ use yield_optimizer::{
 
 pub const SUBMSG_ID_INIT_CASSET: u64 = 1;
 pub const SUBMSG_ID_REDEEM_STABLE: u64 = 2;
-pub const SUBMSG_ID_FAKE_NO_REPLY: u64 = 3;
+pub const SUBMSG_ID_REPAY_LOAN: u64 = 3;
 pub const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
 
 #[entry_point]
@@ -117,29 +116,26 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
             })
         }
 
-        SUBMSG_ID_REDEEM_STABLE => {
-            match msg.result {
-                cosmwasm_std::ContractResult::Err(err_msg) => {
-                    if err_msg.contains(TOO_HIGH_BORROW_DEMAND_ERR_MSG) {
-                        //we need to repay loan a bit, before redeem stables
-                        return repay_reply_logic(deps, env, false);
-                    } else {
-                        return Err(StdError::generic_err(format!(
-                            "fail to redeem stable, reason: {}",
-                            err_msg
-                        ))
-                        .into());
-                    }
-                }
-                cosmwasm_std::ContractResult::Ok(_) => {
-                    return repay_reply_logic(deps, env, true);
+        SUBMSG_ID_REDEEM_STABLE => match msg.result {
+            cosmwasm_std::ContractResult::Err(err_msg) => {
+                if err_msg.contains(TOO_HIGH_BORROW_DEMAND_ERR_MSG) {
+                    //we need to repay loan a bit, before redeem stables
+                    commands::repay_logic_on_reply(deps, env)
+                } else {
+                    return Err(StdError::generic_err(format!(
+                        "fail to redeem stable, reason: {}",
+                        err_msg
+                    ))
+                    .into());
                 }
             }
-        }
+            cosmwasm_std::ContractResult::Ok(_) => commands::repay_logic_on_reply(deps, env),
+        },
 
-        //there is no way to use submessages with 'ReplyOn::Never'
-        //it is workaround
-        SUBMSG_ID_FAKE_NO_REPLY => Ok(Response::default()),
+        SUBMSG_ID_REPAY_LOAN => {
+            let _ = update_loan_state_part_of_loan_repaid(deps.storage)?;
+            Ok(Response::default())
+        }
         unknown => {
             Err(StdError::generic_err(format!("unknown reply message id: {}", unknown)).into())
         }

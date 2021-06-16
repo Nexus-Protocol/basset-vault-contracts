@@ -1,10 +1,10 @@
 use crate::{
     contract::{
-        execute, instantiate, reply, SUBMSG_ID_FAKE_NO_REPLY, SUBMSG_ID_INIT_CASSET,
-        SUBMSG_ID_REDEEM_STABLE, TOO_HIGH_BORROW_DEMAND_ERR_MSG,
+        execute, instantiate, reply, SUBMSG_ID_INIT_CASSET, SUBMSG_ID_REDEEM_STABLE,
+        SUBMSG_ID_REPAY_LOAN, TOO_HIGH_BORROW_DEMAND_ERR_MSG,
     },
     response::MsgInstantiateContractResponse,
-    state::{load_repaying_loan_state, load_state, store_config, store_state},
+    state::{load_repaying_loan_state, load_state, store_config, store_state, RepayingLoanState},
 };
 use crate::{error::ContractError, state::load_farmer_info};
 
@@ -50,6 +50,13 @@ fn repay_loan_without_problems() {
     let stable_denom = "addr0013".to_string();
 
     let stable_coin_balance = Uint128::from(200u64);
+    let loan_to_repay = Uint256::from(10_000u64);
+    let locked_basset_amount = Uint128::from(10_000u64);
+    let basset_farmer_loan_amount = Uint256::from(10_000u64);
+    let advised_buffer_size = Uint256::from(50u64);
+    let aterra_balance = Uint256::from(200u64);
+    let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+
     let mut deps = mock_dependencies(&[Coin {
         denom: stable_denom.to_string(),
         amount: stable_coin_balance,
@@ -98,11 +105,6 @@ fn repay_loan_without_problems() {
         let _res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg.clone()).unwrap();
     }
 
-    let locked_basset_amount = Uint128::from(10_000u64);
-    let basset_farmer_loan_amount = Uint256::from(10_000u64);
-    let advised_buffer_size = Uint256::from(50u64);
-
-    let aterra_balance = Uint256::from(200u64);
     deps.querier.with_token_balances(&[
         (
             &custody_basset_contract,
@@ -130,7 +132,7 @@ fn repay_loan_without_problems() {
         (
             &basset_farmer_config_contract,
             &to_binary(&BorrowerActionResponse::Repay {
-                amount: Uint256::from(10_000u64),
+                amount: loan_to_repay,
                 advised_buffer_size,
             })
             .unwrap(),
@@ -138,7 +140,7 @@ fn repay_loan_without_problems() {
         (
             &anchor_market_contract,
             &to_binary(&AnchorMarketEpochStateResponse {
-                exchange_rate: Decimal256::from_str("1.2").unwrap(),
+                exchange_rate: aterra_exchange_rate,
                 aterra_supply: Uint256::from(1_000_000u64),
             })
             .unwrap(),
@@ -184,8 +186,8 @@ fn repay_loan_without_problems() {
         );
         let rapaying_state = load_repaying_loan_state(&deps.storage).unwrap();
         assert_eq!(rapaying_state.iteration_index, 0);
-        assert_eq!(rapaying_state.aterra_amount_to_sell, aterra_balance);
-        assert_eq!(rapaying_state.aterra_amount_in_selling, aterra_balance);
+        assert_eq!(rapaying_state.to_repay_amount, loan_to_repay);
+        assert_eq!(rapaying_state.repaying_amount, Uint256::zero());
         assert_eq!(rapaying_state.aim_buffer_size, advised_buffer_size);
 
         //sending Ok reply, means aterra was successfuly redeemed
@@ -198,11 +200,30 @@ fn repay_loan_without_problems() {
             }),
         };
 
+        //anchor send stables for selling aterra
+        deps.querier.update_base_balance(
+            MOCK_CONTRACT_ADDR,
+            vec![Coin {
+                denom: stable_denom.to_string(),
+                // 10 is a cap tax
+                amount: (Uint256::from(stable_coin_balance)
+                    + aterra_balance * aterra_exchange_rate
+                    - Uint256::from(10u64))
+                .into(),
+            }],
+        );
+        //all aterra was redeemed
+        deps.querier.with_token_balances(&[(
+            &aterra_token,
+            &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128::zero())],
+        )]);
+
         let repay_stable_coin = Coin {
             denom: stable_denom.to_string(),
-            // 10 is a cap tax
-            amount: (Uint256::from(stable_coin_balance)
-                - advised_buffer_size
+            // 10 is a cap tax to repay loan
+            // 10 is a cap tax that anchor pay to send stables to us
+            amount: (Uint256::from(stable_coin_balance) + aterra_balance * aterra_exchange_rate
+                - Uint256::from(10u64)
                 - Uint256::from(10u64))
             .into(),
         };
@@ -213,19 +234,22 @@ fn repay_loan_without_problems() {
                 msg: WasmMsg::Execute {
                     contract_addr: anchor_market_contract.to_string(),
                     msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
-                    send: vec![repay_stable_coin],
+                    send: vec![repay_stable_coin.clone()],
                 }
                 .into(),
                 gas_limit: None,
-                id: SUBMSG_ID_FAKE_NO_REPLY,
+                id: SUBMSG_ID_REPAY_LOAN,
                 reply_on: ReplyOn::Success,
             }]
         );
 
         let rapaying_state = load_repaying_loan_state(&deps.storage).unwrap();
         assert_eq!(rapaying_state.iteration_index, 1);
-        assert_eq!(rapaying_state.aterra_amount_to_sell, Uint256::zero());
-        assert_eq!(rapaying_state.aterra_amount_in_selling, Uint256::zero());
+        assert_eq!(rapaying_state.to_repay_amount, loan_to_repay);
+        assert_eq!(
+            rapaying_state.repaying_amount,
+            repay_stable_coin.amount.into()
+        );
         assert_eq!(rapaying_state.aim_buffer_size, advised_buffer_size);
     }
 }
@@ -290,14 +314,20 @@ fn repay_loan_fail_to_redeem_aterra() {
     store_config(&mut deps.storage, &basset_farmer_config).unwrap();
 
     // -= asking for REPAY =-
-    let repay_amount = Uint256::from(10_000u64);
+    let to_repay_amount = Uint256::from(10_000u64);
     let aim_buffer_size = Uint256::from(5_000u64);
+    let repaying_loan_state = RepayingLoanState {
+        iteration_index: 0,
+        to_repay_amount,
+        repaying_amount: Uint256::zero(),
+        aim_buffer_size,
+    };
+
     let repay_response = crate::commands::repay_logic(
         deps.as_mut(),
         mock_env(),
         basset_farmer_config,
-        repay_amount,
-        aim_buffer_size,
+        repaying_loan_state,
     )
     .unwrap();
 
@@ -346,7 +376,7 @@ fn repay_loan_fail_to_redeem_aterra() {
                 }
                 .into(),
                 gas_limit: None,
-                id: SUBMSG_ID_FAKE_NO_REPLY,
+                id: SUBMSG_ID_REPAY_LOAN,
                 reply_on: ReplyOn::Success,
             },
             SubMsg {
@@ -369,7 +399,7 @@ fn repay_loan_fail_to_redeem_aterra() {
         ]
     );
 
-    // -= REDEEM SUCCEEDED failed =-
+    // -= REDEEM SUCCEEDED =-
     let updated_aterra_balance = aterra_balance - Uint256::from(4_000u64);
     deps.querier.with_token_balances(&[(
         &aterra_token,
@@ -379,16 +409,31 @@ fn repay_loan_fail_to_redeem_aterra() {
         )],
     )]);
     let reply_2_msg = Reply {
+        id: SUBMSG_ID_REPAY_LOAN,
+        result: ContractResult::Ok(SubcallResponse {
+            events: vec![],
+            data: None,
+        }),
+    };
+    let _reply_2_response =
+        crate::contract::reply(deps.as_mut(), mock_env(), reply_2_msg.clone()).unwrap();
+    let updated_repaying_state = load_repaying_loan_state(deps.as_mut().storage).unwrap();
+    assert_eq!(
+        updated_repaying_state.to_repay_amount,
+        Uint256::from(5_000u64)
+    );
+
+    let reply_3_msg = Reply {
         id: SUBMSG_ID_REDEEM_STABLE,
         result: ContractResult::Ok(SubcallResponse {
             events: vec![],
             data: None,
         }),
     };
-    let reply_2_response =
-        crate::contract::reply(deps.as_mut(), mock_env(), reply_2_msg.clone()).unwrap();
+    let reply_3_response =
+        crate::contract::reply(deps.as_mut(), mock_env(), reply_3_msg.clone()).unwrap();
     assert_eq!(
-        reply_2_response.submessages,
+        reply_3_response.submessages,
         vec![
             SubMsg {
                 msg: WasmMsg::Execute {
@@ -396,15 +441,12 @@ fn repay_loan_fail_to_redeem_aterra() {
                     msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
                     send: vec![Coin {
                         denom: stable_denom.clone(),
-                        //TODO: по идее тут могли бы сразу весь долг выплатить.
-                        //иначе же получается лишний шаг по выплате, когда поймём что
-                        //у нас 0 атерры
-                        amount: Uint128::from(3_750u64),
+                        amount: Uint128::from(5_000u64),
                     }],
                 }
                 .into(),
                 gas_limit: None,
-                id: SUBMSG_ID_FAKE_NO_REPLY,
+                id: SUBMSG_ID_REPAY_LOAN,
                 reply_on: ReplyOn::Success,
             },
             SubMsg {
@@ -432,30 +474,25 @@ fn repay_loan_fail_to_redeem_aterra() {
         &aterra_token,
         &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128::zero())],
     )]);
-    let reply_3_msg = Reply {
+    let reply_4_msg = Reply {
+        id: SUBMSG_ID_REPAY_LOAN,
+        result: ContractResult::Ok(SubcallResponse {
+            events: vec![],
+            data: None,
+        }),
+    };
+    let _reply_4_response =
+        crate::contract::reply(deps.as_mut(), mock_env(), reply_4_msg.clone()).unwrap();
+    let updated_repaying_state = load_repaying_loan_state(deps.as_mut().storage).unwrap();
+    assert_eq!(updated_repaying_state.to_repay_amount, Uint256::zero());
+    let reply_5_msg = Reply {
         id: SUBMSG_ID_REDEEM_STABLE,
         result: ContractResult::Ok(SubcallResponse {
             events: vec![],
             data: None,
         }),
     };
-    let reply_3_response =
-        crate::contract::reply(deps.as_mut(), mock_env(), reply_3_msg.clone()).unwrap();
-    assert_eq!(
-        reply_3_response.submessages,
-        vec![SubMsg {
-            msg: WasmMsg::Execute {
-                contract_addr: anchor_market_contract.clone(),
-                msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
-                send: vec![Coin {
-                    denom: stable_denom.clone(),
-                    amount: Uint128::from(1_250u64),
-                }],
-            }
-            .into(),
-            gas_limit: None,
-            id: SUBMSG_ID_FAKE_NO_REPLY,
-            reply_on: ReplyOn::Success,
-        }]
-    );
+    let reply_5_response =
+        crate::contract::reply(deps.as_mut(), mock_env(), reply_5_msg.clone()).unwrap();
+    assert_eq!(reply_5_response, Response::default());
 }

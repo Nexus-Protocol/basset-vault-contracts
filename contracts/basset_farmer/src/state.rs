@@ -34,8 +34,8 @@ pub struct State {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
 pub struct RepayingLoanState {
     pub iteration_index: u8,
-    pub aterra_amount_to_sell: Uint256,
-    pub aterra_amount_in_selling: Uint256,
+    pub to_repay_amount: Uint256,
+    pub repaying_amount: Uint256,
     pub aim_buffer_size: Uint256,
 }
 
@@ -91,7 +91,9 @@ pub fn store_state(storage: &mut dyn Storage, state: &State) -> StdResult<()> {
 }
 
 pub fn load_repaying_loan_state(storage: &dyn Storage) -> StdResult<RepayingLoanState> {
-    REPAYING_LOAN.load(storage)
+    REPAYING_LOAN
+        .may_load(storage)
+        .map(|res| res.unwrap_or_default())
 }
 
 pub fn store_repaying_loan_state(
@@ -99,6 +101,15 @@ pub fn store_repaying_loan_state(
     repaying_loan_state: &RepayingLoanState,
 ) -> StdResult<()> {
     REPAYING_LOAN.save(storage, repaying_loan_state)
+}
+
+pub fn update_loan_state_part_of_loan_repaid(
+    storage: &mut dyn Storage,
+) -> StdResult<RepayingLoanState> {
+    REPAYING_LOAN.update(storage, |mut rep_loan| -> StdResult<_> {
+        rep_loan.to_repay_amount = rep_loan.to_repay_amount - rep_loan.repaying_amount;
+        Ok(rep_loan)
+    })
 }
 
 pub fn load_aim_buffer_size(storage: &dyn Storage) -> StdResult<Uint256> {

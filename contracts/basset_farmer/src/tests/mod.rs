@@ -350,7 +350,7 @@ impl WasmMockQuerier {
         self.tax_querier = TaxQuerier::new(rate, caps);
     }
 
-    pub fn update_base_balance(&mut self, addr: &String, balance: Vec<Coin>) -> Option<Vec<Coin>> {
+    pub fn update_base_balance(&mut self, addr: &str, balance: Vec<Coin>) -> Option<Vec<Coin>> {
         self.base.update_balance(addr, balance)
     }
 }
