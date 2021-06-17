@@ -82,6 +82,7 @@ pub struct MigrateMsg {}
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     Config,
+    Rebalance,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -91,4 +92,18 @@ pub struct ConfigResponse {
     pub custody_basset_contract: String,
     pub casset_token: String,
     pub basset_token: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub enum RebalanceResponse {
+    Nothing,
+    Borrow {
+        amount: Uint256,
+        advised_buffer_size: Uint256,
+        is_possible: bool,
+    },
+    Repay {
+        amount: Uint256,
+        advised_buffer_size: Uint256,
+    },
 }

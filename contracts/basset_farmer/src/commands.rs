@@ -13,8 +13,8 @@ use crate::{
     queries,
     state::{
         load_aim_buffer_size, load_config, load_farmer_info, load_repaying_loan_state, load_state,
-        store_aim_buffer_size, store_borrowing_state, store_farmer_info, store_repaying_loan_state,
-        BorrowingSource, BorrowingState, FarmerInfo, RepayingLoanState, State,
+        store_aim_buffer_size, store_farmer_info, store_repaying_loan_state, FarmerInfo,
+        RepayingLoanState, State,
     },
     utils::{calc_after_borrow_action, get_repay_loan_action, RepayLoanAction},
 };
@@ -157,13 +157,7 @@ pub fn rebalance(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<R
             advised_buffer_size,
         } => {
             store_aim_buffer_size(deps.storage, &advised_buffer_size)?;
-            borrow_logic(
-                deps,
-                config,
-                amount,
-                advised_buffer_size,
-                BorrowingSource::Rebalace,
-            )
+            borrow_logic(deps, config, amount, advised_buffer_size)
         }
 
         BorrowerActionResponse::Repay {
@@ -184,21 +178,7 @@ fn borrow_logic(
     config: Config,
     borrow_amount: Uint256,
     aim_buffer_size: Uint256,
-    borrowing_source: BorrowingSource,
 ) -> ContractResult<Response> {
-    //TODO: if it comes from user Depositing bLuna - return error on Anchor error
-    //TODO: if it comes from Rebalace and Anchor return error - what to do?
-    //TODO: handle 95% borrow error (use submessages)
-    //cause if flow comes from Rebalance - you will try to Borrow again
-    //on next Rebalance iteration...
-    //
-    //TODO: handle stable taxes - how much you will receive if Borrow Xust?
-
-    let borrowing_state = BorrowingState {
-        source: borrowing_source,
-    };
-    store_borrowing_state(deps.storage, &borrowing_state)?;
-
     Ok(Response {
         messages: vec![],
         submessages: vec![SubMsg {
@@ -213,7 +193,7 @@ fn borrow_logic(
             .into(),
             gas_limit: None,
             id: SUBMSG_ID_BORROWING,
-            reply_on: ReplyOn::Always,
+            reply_on: ReplyOn::Success,
         }],
         attributes: vec![
             attr("action", "borrow_stable"),

@@ -1,8 +1,8 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
-    to_binary, Addr, AllBalanceResponse, Api, BalanceResponse, BankQuery, Binary, Coin, Deps,
-    Querier, QuerierWrapper, QueryRequest, StdError, StdResult, Storage, Timestamp, Uint128,
-    WasmQuery,
+    to_binary, Addr, AllBalanceResponse, Api, BalanceResponse, BankQuery, Binary, CanonicalAddr,
+    Coin, Deps, Querier, QuerierWrapper, QueryRequest, StdError, StdResult, Storage, Timestamp,
+    Uint128, WasmQuery,
 };
 use cosmwasm_storage::to_length_prefixed;
 use cw20::Cw20QueryMsg;
@@ -221,6 +221,8 @@ pub enum AnchorMarketCw20Msg {
 #[serde(rename_all = "snake_case")]
 pub enum AnchorMarketQueryMsg {
     EpochState { block_height: Option<u64> },
+    // using Raw query to ask for state
+    // State { block_height: Option<u64> },
 }
 
 //TODO: Use Anchor as dependency
@@ -241,4 +243,58 @@ pub fn query_aterra_state(
         }))?;
 
     Ok(epoch_state)
+}
+
+//TODO: Use Anchor as dependency
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct AnchorMarketStateResponse {
+    pub total_liabilities: Decimal256,
+    pub total_reserves: Decimal256,
+    pub last_interest_updated: u64,
+    pub last_reward_updated: u64,
+    pub global_interest_index: Decimal256,
+    pub global_reward_index: Decimal256,
+    pub anc_emission_rate: Decimal256,
+}
+
+pub fn query_market_state(
+    deps: Deps,
+    anchor_market_contract: &Addr,
+) -> StdResult<AnchorMarketStateResponse> {
+    let market_state: AnchorMarketStateResponse =
+        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
+            contract_addr: anchor_market_contract.to_string(),
+            key: Binary::from(to_length_prefixed(b"state").to_vec()),
+        }))?;
+
+    Ok(market_state)
+}
+
+//TODO: Use Anchor as dependency
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct AnchorMarketConfigResponse {
+    pub contract_addr: CanonicalAddr,
+    pub owner_addr: CanonicalAddr,
+    pub aterra_contract: CanonicalAddr,
+    pub interest_model: CanonicalAddr,
+    pub distribution_model: CanonicalAddr,
+    pub overseer_contract: CanonicalAddr,
+    pub collector_contract: CanonicalAddr,
+    pub distributor_contract: CanonicalAddr,
+    pub stable_denom: String,
+    pub reserve_factor: Decimal256,
+    pub max_borrow_factor: Decimal256,
+}
+
+pub fn query_market_config(
+    deps: Deps,
+    anchor_market_contract: &Addr,
+) -> StdResult<AnchorMarketConfigResponse> {
+    let market_config: AnchorMarketConfigResponse =
+        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
+            contract_addr: anchor_market_contract.to_string(),
+            key: Binary::from(to_length_prefixed(b"config").to_vec()),
+        }))?;
+
+    Ok(market_config)
 }

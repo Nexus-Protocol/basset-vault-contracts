@@ -68,7 +68,7 @@ pub struct ConfigResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub enum BorrowerActionResponse {
-    Nothing {},
+    Nothing,
     Borrow {
         amount: Uint256,
         advised_buffer_size: Uint256,
@@ -91,7 +91,7 @@ impl BorrowerActionResponse {
     }
 
     pub fn nothing() -> Self {
-        BorrowerActionResponse::Nothing {}
+        BorrowerActionResponse::Nothing
     }
 }
 
