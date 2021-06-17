@@ -39,9 +39,21 @@ pub struct RepayingLoanState {
     pub aim_buffer_size: Uint256,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub enum BorrowingSource {
+    Rebalace,
+    BassetDeposit,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct BorrowingState {
+    pub source: BorrowingSource,
+}
+
 const CONFIG: Item<Config> = Item::new("config");
 const STATE: Item<State> = Item::new("state");
 const REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
+const BORROWING: Item<BorrowingState> = Item::new("borrowing");
 const FARMERS: Map<&Addr, FarmerInfo> = Map::new("farmers");
 const AIM_BUFFER_SIZE: Item<Uint256> = Item::new("aim_buf_size");
 
@@ -101,6 +113,17 @@ pub fn store_repaying_loan_state(
     repaying_loan_state: &RepayingLoanState,
 ) -> StdResult<()> {
     REPAYING_LOAN.save(storage, repaying_loan_state)
+}
+
+pub fn load_borrowing_state(storage: &dyn Storage) -> StdResult<BorrowingState> {
+    BORROWING.load(storage)
+}
+
+pub fn store_borrowing_state(
+    storage: &mut dyn Storage,
+    borrowing_state: &BorrowingState,
+) -> StdResult<()> {
+    BORROWING.save(storage, borrowing_state)
 }
 
 pub fn update_loan_state_part_of_loan_repaid(

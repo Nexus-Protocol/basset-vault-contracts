@@ -10,8 +10,9 @@ use terraswap::pair::ExecuteMsg as TerraswapExecuteMsg;
 use crate::{
     commands, queries,
     state::{
-        load_config, load_farmer_info, load_repaying_loan_state, load_state, store_farmer_info,
-        store_repaying_loan_state, FarmerInfo, RepayingLoanState, State,
+        load_config, load_farmer_info, load_repaying_loan_state, load_state, store_borrowing_state,
+        store_farmer_info, store_repaying_loan_state, BorrowingSource, BorrowingState, FarmerInfo,
+        RepayingLoanState, State,
     },
     utils::{get_repay_loan_action, RepayLoanAction},
 };
@@ -169,16 +170,26 @@ pub fn rebalance(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<R
 }
 
 fn borrow_logic(
-    contract: ContractInfo,
+    deps: DepsMut,
+    env: Env,
     config: Config,
     borrow_amount: Uint256,
-    buffer_size: Uint256,
+    aim_buffer_size: Uint256,
+    borrowing_source: BorrowingSource,
 ) -> ContractResult<Response> {
+    //TODO: if it comes from user Depositing bLuna - return error on Anchor error
+    //TODO: if it comes from Rebalace and Anchor return error - what to do?
     //TODO: handle 95% borrow error (use submessages)
     //cause if flow comes from Rebalance - you will try to Borrow again
     //on next Rebalance iteration...
     //
     //TODO: handle stable taxes - how much you will receive if Borrow Xust?
+
+    let borrowing_state = BorrowingState {
+        source: borrowing_source,
+    };
+    store_borrowing_state(deps.storage, &borrowing_state)?;
+
     Ok(Response {
         messages: vec![
             CosmosMsg::Wasm(WasmMsg::Execute {
@@ -193,7 +204,7 @@ fn borrow_logic(
                 contract_addr: contract.address.to_string(),
                 msg: to_binary(&YourselfMsg::AfterBorrow {
                     borrowed_amount: borrow_amount,
-                    buffer_size,
+                    aim_buffer_size,
                 })?,
                 send: vec![],
             }),
@@ -237,6 +248,7 @@ pub(crate) fn repay_logic(
 
     repaying_loan_state.repaying_amount = repay_action.repaying_loan_amount();
     store_repaying_loan_state(deps.storage, &repaying_loan_state)?;
+
     repay_action.to_response(&config)
 }
 

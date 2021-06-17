@@ -9,8 +9,9 @@ use cosmwasm_std::{
 use crate::{
     commands, queries,
     state::{
-        config_set_casset_token, load_config, load_repaying_loan_state, store_config, store_state,
-        update_loan_state_part_of_loan_repaid, RepayingLoanState, State,
+        config_set_casset_token, load_borrowing_state, load_config, load_repaying_loan_state,
+        store_config, store_state, update_loan_state_part_of_loan_repaid, BorrowingSource,
+        RepayingLoanState, State,
     },
 };
 use crate::{error::ContractError, response::MsgInstantiateContractResponse};
@@ -31,7 +32,11 @@ use yield_optimizer::{
 pub const SUBMSG_ID_INIT_CASSET: u64 = 1;
 pub const SUBMSG_ID_REDEEM_STABLE: u64 = 2;
 pub const SUBMSG_ID_REPAY_LOAN: u64 = 3;
+pub const SUBMSG_ID_BORROWING: u64 = 4;
+//withdrawing from Anchor Deposit error
 pub const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
+//borrowing error
+pub const TOO_HIGH_BORROW_AMOUNT_ERR_MSG: &str = "borrow amount too high";
 
 #[entry_point]
 pub fn instantiate(
@@ -118,12 +123,15 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
 
         SUBMSG_ID_REDEEM_STABLE => match msg.result {
             cosmwasm_std::ContractResult::Err(err_msg) => {
-                if err_msg.contains(TOO_HIGH_BORROW_DEMAND_ERR_MSG) {
+                if err_msg
+                    .to_lowercase()
+                    .contains(TOO_HIGH_BORROW_DEMAND_ERR_MSG)
+                {
                     //we need to repay loan a bit, before redeem stables
                     commands::repay_logic_on_reply(deps, env)
                 } else {
                     return Err(StdError::generic_err(format!(
-                        "fail to redeem stable, reason: {}",
+                        "fail to redeem stables, reason: {}",
                         err_msg
                     ))
                     .into());
@@ -136,6 +144,38 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
             let _ = update_loan_state_part_of_loan_repaid(deps.storage)?;
             Ok(Response::default())
         }
+
+        SUBMSG_ID_BORROWING => match msg.result {
+            cosmwasm_std::ContractResult::Err(err_msg) => {
+                if err_msg
+                    .to_lowercase()
+                    .contains(TOO_HIGH_BORROW_AMOUNT_ERR_MSG)
+                {
+                    let borrowing_state = load_borrowing_state(deps.as_ref().storage)?;
+                    if borrowing_state.source == BorrowingSource::BassetDeposit {
+                        return Err(StdError::generic_err(format!("Borrow limit reached")).into());
+                    } else {
+                        //TODO: set some flag in database
+                        //next - you will have Query that ask about rebalance
+                        //and if it needed AND BorrowerAction::Borrow then we check for
+                        //that flag - it if is true AND anchor in the same liability state
+                        //(same or less deposit amount and same or higher borrow amount)
+                        //then return that no action needed
+                        todo!()
+                    }
+                } else {
+                    return Err(StdError::generic_err(format!(
+                        "fail to borrow stables, reason: {}",
+                        err_msg
+                    ))
+                    .into());
+                }
+            }
+            cosmwasm_std::ContractResult::Ok(_) => {
+                todo!()
+            }
+        },
+
         unknown => {
             Err(StdError::generic_err(format!("unknown reply message id: {}", unknown)).into())
         }
