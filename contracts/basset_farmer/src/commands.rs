@@ -8,13 +8,15 @@ use terraswap::pair::Cw20HookMsg as TerraswapCw20HookMsg;
 use terraswap::pair::ExecuteMsg as TerraswapExecuteMsg;
 
 use crate::{
-    commands, queries,
+    commands,
+    contract::SUBMSG_ID_BORROWING,
+    queries,
     state::{
-        load_config, load_farmer_info, load_repaying_loan_state, load_state, store_borrowing_state,
-        store_farmer_info, store_repaying_loan_state, BorrowingSource, BorrowingState, FarmerInfo,
-        RepayingLoanState, State,
+        load_aim_buffer_size, load_config, load_farmer_info, load_repaying_loan_state, load_state,
+        store_aim_buffer_size, store_borrowing_state, store_farmer_info, store_repaying_loan_state,
+        BorrowingSource, BorrowingState, FarmerInfo, RepayingLoanState, State,
     },
-    utils::{get_repay_loan_action, RepayLoanAction},
+    utils::{calc_after_borrow_action, get_repay_loan_action, RepayLoanAction},
 };
 use crate::{error::ContractError, response::MsgInstantiateContractResponse};
 use crate::{state::Config, ContractResult};
@@ -154,13 +156,21 @@ pub fn rebalance(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<R
             amount,
             advised_buffer_size,
         } => {
-            // borrow_logic(config, amount, advised_buffer_size);
-            todo!()
+            store_aim_buffer_size(deps.storage, &advised_buffer_size)?;
+            borrow_logic(
+                deps,
+                config,
+                amount,
+                advised_buffer_size,
+                BorrowingSource::Rebalace,
+            )
         }
+
         BorrowerActionResponse::Repay {
             amount,
             advised_buffer_size,
         } => {
+            store_aim_buffer_size(deps.storage, &advised_buffer_size)?;
             let mut repaying_loan_state = load_repaying_loan_state(deps.as_ref().storage)?;
             repaying_loan_state.to_repay_amount = amount;
             repaying_loan_state.aim_buffer_size = advised_buffer_size;
@@ -171,7 +181,6 @@ pub fn rebalance(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<R
 
 fn borrow_logic(
     deps: DepsMut,
-    env: Env,
     config: Config,
     borrow_amount: Uint256,
     aim_buffer_size: Uint256,
@@ -191,32 +200,42 @@ fn borrow_logic(
     store_borrowing_state(deps.storage, &borrowing_state)?;
 
     Ok(Response {
-        messages: vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
+        messages: vec![],
+        submessages: vec![SubMsg {
+            msg: WasmMsg::Execute {
                 contract_addr: config.anchor_market_contract.to_string(),
                 msg: to_binary(&AnchorMarketMsg::BorrowStable {
-                    borrow_amount: todo!(),
+                    borrow_amount,
                     to: None,
                 })?,
                 send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: contract.address.to_string(),
-                msg: to_binary(&YourselfMsg::AfterBorrow {
-                    borrowed_amount: borrow_amount,
-                    aim_buffer_size,
-                })?,
-                send: vec![],
-            }),
-        ],
-        submessages: vec![],
+            }
+            .into(),
+            gas_limit: None,
+            id: SUBMSG_ID_BORROWING,
+            reply_on: ReplyOn::Always,
+        }],
         attributes: vec![
             attr("action", "borrow_stable"),
             attr("amount", borrow_amount),
-            attr("buffer_size", buffer_size),
+            attr("aim_buffer_size", aim_buffer_size),
         ],
         data: None,
     })
+}
+
+pub(crate) fn borrow_logic_on_reply(deps: DepsMut, env: Env) -> ContractResult<Response> {
+    let config = load_config(deps.storage)?;
+    let tax_info = get_tax_info(deps.as_ref(), &config.stable_denom)?;
+    let aim_buf_size = load_aim_buffer_size(deps.as_ref().storage)?;
+    let stable_coin_balance = query_balance(
+        &deps.querier,
+        &env.contract.address,
+        config.stable_denom.clone(),
+    )?;
+    let after_borrow_action =
+        calc_after_borrow_action(stable_coin_balance.into(), aim_buf_size, &tax_info);
+    after_borrow_action.to_response(&config)
 }
 
 pub(crate) fn repay_logic(

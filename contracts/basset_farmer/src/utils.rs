@@ -4,9 +4,10 @@ use cosmwasm_std::{
     DepsMut, Env, MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Uint128,
     WasmMsg,
 };
+use schemars::_serde_json::map;
 use terraswap::querier::{query_balance, query_supply};
 
-use crate::contract::{SUBMSG_ID_REDEEM_STABLE, SUBMSG_ID_REPAY_LOAN};
+use crate::contract::{SUBMSG_ID_BORROWING, SUBMSG_ID_REDEEM_STABLE, SUBMSG_ID_REPAY_LOAN};
 use crate::state::{load_config, Config, State};
 use crate::ContractResult;
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
@@ -338,11 +339,55 @@ fn calc_wanted_stablecoins(
     return repay_amount + add_to_buffer;
 }
 
+#[derive(PartialEq, Eq, Debug)]
+pub enum AfterBorrowAction {
+    Deposit { amount: Uint256 },
+    Nothing,
+}
+
+impl AfterBorrowAction {
+    pub fn to_response(&self, config: &Config) -> ContractResult<Response> {
+        match self {
+            AfterBorrowAction::Nothing => Ok(Response::default()),
+
+            &AfterBorrowAction::Deposit { amount } => Ok(Response {
+                messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: config.anchor_market_contract.to_string(),
+                    msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
+                    send: vec![Coin {
+                        denom: config.stable_denom.to_string(),
+                        amount: amount.into(),
+                    }],
+                })],
+                submessages: vec![],
+                attributes: vec![attr("action", "deposit"), attr("amount", amount)],
+                data: None,
+            }),
+        }
+    }
+}
+
+pub fn calc_after_borrow_action(
+    stable_coin_balance: Uint256,
+    aim_buf_size: Uint256,
+    tax_info: &TaxInfo,
+) -> AfterBorrowAction {
+    if aim_buf_size >= stable_coin_balance {
+        return AfterBorrowAction::Nothing;
+    }
+
+    let accessible_amount = stable_coin_balance - aim_buf_size;
+    AfterBorrowAction::Deposit {
+        amount: tax_info.subtract_tax(accessible_amount),
+    }
+}
+
 #[cfg(test)]
 mod test {
 
     use super::{
-        calc_wanted_stablecoins, calculate_reward_index, get_repay_loan_action, RepayLoanAction,
+        calc_after_borrow_action, calc_wanted_stablecoins, calculate_reward_index,
+        get_repay_loan_action, AfterBorrowAction, RepayLoanAction,
     };
     use crate::state::State;
     use cosmwasm_bignumber::{Decimal256, Uint256};
@@ -1322,5 +1367,74 @@ mod test {
         let aim_buffer_size = Uint256::from(50u64);
         let result = calc_wanted_stablecoins(stable_coin_balance, repay_amount, aim_buffer_size);
         assert!(result.is_zero())
+    }
+
+    #[test]
+    fn calc_after_borrow_action_zeroes() {
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(750u64),
+        };
+        let action = calc_after_borrow_action(Uint256::zero(), Uint256::zero(), &tax_info);
+        assert_eq!(AfterBorrowAction::Nothing, action)
+    }
+
+    #[test]
+    fn calc_after_borrow_action_balance_bigger_than_zero_buffer() {
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(750u64),
+        };
+        let balance = Uint256::from(1_000_000u64);
+        let action = calc_after_borrow_action(balance, Uint256::zero(), &tax_info);
+        assert_eq!(
+            AfterBorrowAction::Deposit {
+                amount: balance - tax_info.cap
+            },
+            action
+        )
+    }
+
+    #[test]
+    fn calc_after_borrow_action_balance_bigger_than_buffer() {
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(750u64),
+        };
+
+        let balance = Uint256::from(1_000_000u64);
+        let buffer = Uint256::from(1_000u64);
+        let action = calc_after_borrow_action(balance, buffer, &tax_info);
+        assert_eq!(
+            AfterBorrowAction::Deposit {
+                amount: tax_info.subtract_tax(balance - buffer)
+            },
+            action
+        )
+    }
+
+    #[test]
+    fn calc_after_borrow_action_buffer_bigger_than_zero_balance() {
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(750u64),
+        };
+
+        let buffer = Uint256::from(1_000_000u64);
+        let action = calc_after_borrow_action(Uint256::zero(), buffer, &tax_info);
+        assert_eq!(AfterBorrowAction::Nothing, action)
+    }
+
+    #[test]
+    fn calc_after_borrow_action_buffer_bigger_than_balance() {
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(1),
+            cap: Uint256::from(750u64),
+        };
+
+        let balance = Uint256::from(1_000u64);
+        let buffer = Uint256::from(1_000_000u64);
+        let action = calc_after_borrow_action(balance, buffer, &tax_info);
+        assert_eq!(AfterBorrowAction::Nothing, action)
     }
 }

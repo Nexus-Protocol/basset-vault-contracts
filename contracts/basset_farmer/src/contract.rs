@@ -9,9 +9,9 @@ use cosmwasm_std::{
 use crate::{
     commands, queries,
     state::{
-        config_set_casset_token, load_borrowing_state, load_config, load_repaying_loan_state,
-        store_config, store_state, update_loan_state_part_of_loan_repaid, BorrowingSource,
-        RepayingLoanState, State,
+        config_set_casset_token, load_aim_buffer_size, load_borrowing_state, load_config,
+        load_repaying_loan_state, store_config, store_state, update_loan_state_part_of_loan_repaid,
+        BorrowingSource, RepayingLoanState, State,
     },
 };
 use crate::{error::ContractError, response::MsgInstantiateContractResponse};
@@ -159,7 +159,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                         //next - you will have Query that ask about rebalance
                         //and if it needed AND BorrowerAction::Borrow then we check for
                         //that flag - it if is true AND anchor in the same liability state
-                        //(same or less deposit amount and same or higher borrow amount)
+                        //(same or higher deposit amount and same or less borrow amount)
                         //then return that no action needed
                         todo!()
                     }
@@ -171,9 +171,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                     .into());
                 }
             }
-            cosmwasm_std::ContractResult::Ok(_) => {
-                todo!()
-            }
+
+            cosmwasm_std::ContractResult::Ok(_) => commands::borrow_logic_on_reply(deps, env),
         },
 
         unknown => {
