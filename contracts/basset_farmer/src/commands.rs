@@ -12,9 +12,10 @@ use crate::{
     contract::SUBMSG_ID_BORROWING,
     queries,
     state::{
-        load_aim_buffer_size, load_config, load_farmer_info, load_repaying_loan_state, load_state,
-        store_aim_buffer_size, store_farmer_info, store_repaying_loan_state, FarmerInfo,
-        RepayingLoanState, State,
+        load_aim_buffer_size, load_config, load_farmer_info, load_repaying_loan_state,
+        load_stable_balance_before_selling_anc, load_state, store_aim_buffer_size,
+        store_farmer_info, store_repaying_loan_state, store_stable_balance_before_selling_anc,
+        FarmerInfo, RepayingLoanState, State,
     },
     utils::{calc_after_borrow_action, get_repay_loan_action, RepayLoanAction},
 };
@@ -149,9 +150,14 @@ pub fn rebalance(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<R
 
     match borrower_action {
         BorrowerActionResponse::Nothing {} => {
-            //TODO: is it the best choice to return error here?
-            return Err(StdError::generic_err("no rebalance needed").into());
+            return Ok(Response {
+                messages: vec![],
+                submessages: vec![],
+                attributes: vec![attr("action", "rebalance_not_needed")],
+                data: None,
+            })
         }
+
         BorrowerActionResponse::Borrow {
             amount,
             advised_buffer_size,
@@ -346,13 +352,13 @@ pub fn deposit_basset(
     })
 }
 
-/// Anyone can execute sweep function to claim
+/// Anyone can execute claim_anc_rewards function to claim
 /// ANC rewards, swap ANC => UST token, swap
 /// part of UST => PSI token and distribute
 /// result PSI token to gov contract
-pub fn sweep(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+pub fn claim_anc_rewards(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+    //TODO: maybe add some Delay to not allow claiming 1000times per second
     let config: Config = load_config(deps.storage)?;
-    //TODO: should we care about Authorization here?
 
     Ok(Response {
         messages: vec![
@@ -363,14 +369,14 @@ pub fn sweep(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Respo
             }),
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: env.contract.address.to_string(),
-                msg: to_binary(&ExecuteMsg::Anyone {
-                    anyone_msg: AnyoneMsg::SwapAnc {},
+                msg: to_binary(&ExecuteMsg::Yourself {
+                    yourself_msg: YourselfMsg::SwapAnc,
                 })?,
                 send: vec![],
             }),
         ],
         submessages: vec![],
-        attributes: vec![attr("action", "sweep")],
+        attributes: vec![attr("action", "claim_anc_rewards")],
         data: None,
     })
 
@@ -380,17 +386,24 @@ pub fn sweep(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Respo
     //4. 5% is for Psi stakers, swap UST to Psi and send them to Governance contract.
 }
 
-pub fn swap_anc(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+pub fn swap_anc(deps: DepsMut, env: Env) -> ContractResult<Response> {
     let config: Config = load_config(deps.storage)?;
-    //TODO: should we care about Authorization here?
 
-    let amount = query_token_balance(deps.as_ref(), &config.anchor_token, &env.contract.address)?;
+    let stable_coin_balance = query_balance(
+        &deps.querier,
+        &env.contract.address,
+        config.stable_denom.clone(),
+    )?;
+    store_stable_balance_before_selling_anc(deps.storage, &stable_coin_balance)?;
+
+    let anc_amount =
+        query_token_balance(deps.as_ref(), &config.anchor_token, &env.contract.address)?;
     Ok(Response {
         messages: vec![
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.anchor_token.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Send {
-                    amount,
+                    amount: anc_amount,
                     contract: config.anchor_ust_swap_contract.to_string(),
                     msg: to_binary(&TerraswapCw20HookMsg::Swap {
                         belief_price: None,
@@ -402,116 +415,75 @@ pub fn swap_anc(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Re
             }),
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: env.contract.address.to_string(),
-                msg: to_binary(&ExecuteMsg::Anyone {
-                    anyone_msg: AnyoneMsg::DisributeRewards {},
+                msg: to_binary(&ExecuteMsg::Yourself {
+                    yourself_msg: YourselfMsg::DisributeRewards {},
                 })?,
                 send: vec![],
             }),
         ],
         submessages: vec![],
-        attributes: vec![
-            attr("action", "swap_anc"),
-            attr("anc_swapped", format!("{:?}", amount.to_string())),
-        ],
+        attributes: vec![attr("action", "swap_anc"), attr("anc_swapped", anc_amount)],
         data: None,
     })
 }
 
-//TODO: move stable denom to config?
-const STABLE_DENOM: &str = "uust";
-
-pub fn buy_psi_tokens(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
     let config: Config = load_config(deps.storage)?;
-    //TODO: should we care about Authorization here?
-    let ust_balance = query_balance(
+    let stable_coin_balance = query_balance(
         &deps.querier,
         &env.contract.address,
-        STABLE_DENOM.to_string(),
+        config.stable_denom.clone(),
     )?;
+    let stable_coin_balance_before_sell_anc =
+        load_stable_balance_before_selling_anc(deps.as_ref().storage)?;
 
-    //TODO: subtract UST buffer balance!
-    let ust_to_buy_psi = ust_balance * config.psi_part_in_rewards;
+    let selling_anc_profit =
+        stable_coin_balance.checked_sub(stable_coin_balance_before_sell_anc)?;
 
+    let tax_info = get_tax_info(deps.as_ref(), &config.stable_denom)?;
+    let stable_coin_to_buy_psi = selling_anc_profit * config.psi_part_in_rewards;
+    let stable_coin_to_buy_psi: Uint128 =
+        tax_info.subtract_tax(stable_coin_to_buy_psi.into()).into();
     let swap_asset = Asset {
         info: AssetInfo::NativeToken {
-            denom: STABLE_DENOM.to_string(),
+            denom: config.stable_denom.clone(),
         },
-        amount: ust_to_buy_psi,
+        amount: stable_coin_to_buy_psi,
     };
 
-    // deduct tax first
-    let ust_to_buy_psi = (swap_asset.deduct_tax(&deps.querier)?).amount;
+    let stable_coin_to_lending = selling_anc_profit.checked_sub(stable_coin_to_buy_psi)?;
+    let stable_coin_to_lending: Uint128 =
+        tax_info.subtract_tax(stable_coin_to_lending.into()).into();
 
-    Ok(Response {
-        messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: config.ust_psi_swap_contract.to_string(),
-            msg: to_binary(&TerraswapExecuteMsg::Swap {
-                offer_asset: Asset {
-                    amount: ust_to_buy_psi,
-                    ..swap_asset
-                },
-                max_spread: None,
-                belief_price: None,
-                to: None,
-            })?,
-            send: vec![Coin {
-                denom: STABLE_DENOM.to_string(),
-                amount: ust_to_buy_psi,
-            }],
-        })],
-        submessages: vec![],
-        attributes: vec![
-            attr("action", "buy_psi_tokens"),
-            attr("ust_spent", format!("{:?}", ust_to_buy_psi.to_string())),
-        ],
-        data: None,
-    })
-}
-
-pub fn distribute_rewards(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
-    //TODO: should we care about Authorization here?
-
-    let config: Config = load_config(deps.storage)?;
-    let ust_balance = query_balance(
-        &deps.querier,
-        &env.contract.address,
-        STABLE_DENOM.to_string(),
-    )?;
-    let send_asset = Asset {
-        info: AssetInfo::NativeToken {
-            denom: STABLE_DENOM.to_string(),
-        },
-        amount: ust_balance,
-    };
-    //TODO: I have my own 'deduct_tax' - decide which is better!
-    //TODO: decide, maybe some part of UST should go to Buffer
-    let ust_to_deposit = (send_asset.deduct_tax(&deps.querier)?).amount;
-
-    let psi_balance = query_token_balance(deps.as_ref(), &config.psi_token, &env.contract.address)?;
     Ok(Response {
         messages: vec![
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.anchor_market_contract.to_string(),
                 msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
                 send: vec![Coin {
-                    denom: STABLE_DENOM.to_string(),
-                    amount: ust_to_deposit,
+                    denom: config.stable_denom.clone(),
+                    amount: stable_coin_to_lending,
                 }],
             }),
             CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: config.psi_token.to_string(),
-                msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                    recipient: config.governance_contract.to_string(),
-                    amount: psi_balance,
+                contract_addr: config.ust_psi_swap_contract.to_string(),
+                msg: to_binary(&TerraswapExecuteMsg::Swap {
+                    offer_asset: swap_asset,
+                    max_spread: None,
+                    belief_price: None,
+                    to: Some(config.governance_contract.to_string()),
                 })?,
-                send: vec![],
+                send: vec![Coin {
+                    denom: config.stable_denom.clone(),
+                    amount: stable_coin_to_buy_psi,
+                }],
             }),
         ],
         submessages: vec![],
         attributes: vec![
             attr("action", "distribute_rewards"),
-            attr("ust_to_deposit", ust_to_deposit),
-            attr("psi_to_governance", psi_balance),
+            attr("stable_to_lending", stable_coin_to_lending),
+            attr("bying_psi", stable_coin_to_buy_psi),
         ],
         data: None,
     })

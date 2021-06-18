@@ -33,31 +33,24 @@ pub enum ExecuteMsg {
     Anyone { anyone_msg: AnyoneMsg },
     OverseerMsg { overseer_msg: OverseerMsg },
     Receive(Cw20ReceiveMsg),
-    Yourself { yourself_msg: YourselfMsg }, // WithdrawTokens {
-                                            //     depositor: Addr,
-                                            //     amount: Uint256,
-                                            // }
+    Yourself { yourself_msg: YourselfMsg },
+    // WithdrawTokens {
+    //     depositor: Addr,
+    //     amount: Uint256,
+    // }
 }
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum YourselfMsg {
-    AfterBorrow {
-        borrowed_amount: Uint256,
-        buffer_size: Uint256,
-    },
-    AfterAterraRedeem {
-        repay_amount: Uint256,
-    },
+    SwapAnc,
+    DisributeRewards,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AnyoneMsg {
+    HonestWork,
     Rebalance,
-    Sweep,
-    SwapAnc,
-    BuyPsiTokens,
-    DisributeRewards,
     ClaimRewards,
 }
 

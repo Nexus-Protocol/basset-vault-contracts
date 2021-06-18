@@ -161,36 +161,14 @@ pub fn execute(
 ) -> ContractResult<Response> {
     match msg {
         ExecuteMsg::Receive(msg) => commands::receive_cw20(deps, env, info, msg),
-        ExecuteMsg::Yourself { yourself_msg } => match yourself_msg {
-            YourselfMsg::AfterBorrow {
-                borrowed_amount,
-                buffer_size,
-            } => {
-                todo!()
-            }
-            YourselfMsg::AfterAterraRedeem { repay_amount } => {
-                //TODO: this is how to repay anchor loan
-                //
-                //CosmosMsg::Wasm(WasmMsg::Execute {
-                //    contract_addr: anchor_market_contract,
-                //    msg: to_binary(&AnchorMarketMsg::RepayStable {})?,
-                //    send: vec![Coin {
-                //        denom: stable_denom,
-                //        //TODO: is it ok to convert Uint256 to Uint128 - it can throw runtime
-                //        //exception
-                //        amount: repay_amount.into(),
-                //    }],
-                //}),
-                todo!()
-            }
-        },
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
             AnyoneMsg::Rebalance => commands::rebalance(deps, env, info),
-            AnyoneMsg::Sweep => commands::sweep(deps, env, info),
-            AnyoneMsg::SwapAnc => commands::swap_anc(deps, env, info),
-            AnyoneMsg::BuyPsiTokens => commands::buy_psi_tokens(deps, env, info),
-            AnyoneMsg::DisributeRewards => commands::distribute_rewards(deps, env, info),
+            AnyoneMsg::HonestWork => commands::claim_anc_rewards(deps, env, info),
             AnyoneMsg::ClaimRewards => commands::claim_rewards(deps, env, info),
+        },
+        ExecuteMsg::Yourself { yourself_msg } => match yourself_msg {
+            YourselfMsg::SwapAnc => commands::swap_anc(deps, env),
+            YourselfMsg::DisributeRewards => commands::distribute_rewards(deps, env),
         },
         ExecuteMsg::OverseerMsg { overseer_msg } => match overseer_msg {
             OverseerMsg::Deposit { farmer, amount } => {

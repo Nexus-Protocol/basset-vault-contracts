@@ -12,7 +12,9 @@ pub struct Config {
     pub anchor_token: Addr,
     pub anchor_market_contract: Addr,
     pub custody_basset_contract: Addr,
+    //remove UST from name
     pub anchor_ust_swap_contract: Addr,
+    //remove UST from name
     pub ust_psi_swap_contract: Addr,
     pub casset_token: Addr,
     pub basset_token: Addr,
@@ -44,6 +46,7 @@ const STATE: Item<State> = Item::new("state");
 const REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
 const FARMERS: Map<&Addr, FarmerInfo> = Map::new("farmers");
 const AIM_BUFFER_SIZE: Item<Uint256> = Item::new("aim_buf_size");
+const STABLE_BALANCE_BEFORE_SELL_ANC: Item<Uint128> = Item::new("balance_before_sell_anc");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
 pub struct FarmerInfo {
@@ -118,4 +121,15 @@ pub fn load_aim_buffer_size(storage: &dyn Storage) -> StdResult<Uint256> {
 
 pub fn store_aim_buffer_size(storage: &mut dyn Storage, aim_buf_size: &Uint256) -> StdResult<()> {
     AIM_BUFFER_SIZE.save(storage, aim_buf_size)
+}
+
+pub fn load_stable_balance_before_selling_anc(storage: &dyn Storage) -> StdResult<Uint128> {
+    STABLE_BALANCE_BEFORE_SELL_ANC.load(storage)
+}
+
+pub fn store_stable_balance_before_selling_anc(
+    storage: &mut dyn Storage,
+    balance: &Uint128,
+) -> StdResult<()> {
+    STABLE_BALANCE_BEFORE_SELL_ANC.save(storage, balance)
 }
