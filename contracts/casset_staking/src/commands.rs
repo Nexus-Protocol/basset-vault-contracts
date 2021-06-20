@@ -121,8 +121,12 @@ pub fn unstake_casset(
     utils::update_staker_reward(&state, &mut staker_state);
 
     let claim_amount = staker_state.pending_rewards * Uint256::one();
-    staker_state.pending_rewards =
-        staker_state.pending_rewards - Decimal256::from_uint256(claim_amount);
+    let decimal_claim_amount = Decimal256::from_uint256(claim_amount);
+    staker_state.pending_rewards = staker_state.pending_rewards - decimal_claim_amount;
+
+    //TODO: write test on: Stake -> wait for reward -> Unstake -> Stake. Rewards amount for user
+    // after second 'Stake' should be zero!
+    state.last_reward_amount = state.last_reward_amount - decimal_claim_amount;
 
     store_state(deps.storage, &state)?;
     store_staker_state(deps.storage, &staker, &staker_state)?;
