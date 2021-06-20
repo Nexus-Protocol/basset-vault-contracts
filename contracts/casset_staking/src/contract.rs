@@ -1,3 +1,5 @@
+use std::default;
+
 use commands::repay_logic_on_reply;
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
@@ -17,7 +19,7 @@ use crate::{error::ContractError, response::MsgInstantiateContractResponse};
 use crate::{state::Config, ContractResult};
 use cw20::{Cw20ReceiveMsg, MinterResponse};
 use protobuf::Message;
-use yield_optimizer::casset_staking::{AnyoneMsg, QueryMsg};
+use yield_optimizer::casset_staking::{AnyoneMsg, ExecuteMsg, MigrateMsg, QueryMsg};
 
 #[entry_point]
 pub fn instantiate(
@@ -83,55 +85,7 @@ pub fn instantiate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
-    match msg.id {
-        SUBMSG_ID_INIT_CASSET => {
-            let data = msg.result.unwrap().data.unwrap();
-            let res: MsgInstantiateContractResponse = Message::parse_from_bytes(data.as_slice())
-                .map_err(|_| {
-                    StdError::parse_err("MsgInstantiateContractResponse", "failed to parse data")
-                })?;
-
-            let casset_token = res.get_contract_address();
-            config_set_casset_token(deps.storage, deps.api.addr_validate(casset_token)?)?;
-
-            Ok(Response {
-                messages: vec![],
-                submessages: vec![],
-                attributes: vec![attr("casset_token_addr", casset_token)],
-                data: None,
-            })
-        }
-
-        SUBMSG_ID_REDEEM_STABLE => match msg.result {
-            cosmwasm_std::ContractResult::Err(err_msg) => {
-                if err_msg
-                    .to_lowercase()
-                    .contains(TOO_HIGH_BORROW_DEMAND_ERR_MSG)
-                {
-                    //we need to repay loan a bit, before redeem stables
-                    commands::repay_logic_on_reply(deps, env)
-                } else {
-                    return Err(StdError::generic_err(format!(
-                        "fail to redeem stables, reason: {}",
-                        err_msg
-                    ))
-                    .into());
-                }
-            }
-            cosmwasm_std::ContractResult::Ok(_) => commands::repay_logic_on_reply(deps, env),
-        },
-
-        SUBMSG_ID_REPAY_LOAN => {
-            let _ = update_loan_state_part_of_loan_repaid(deps.storage)?;
-            Ok(Response::default())
-        }
-
-        SUBMSG_ID_BORROWING => commands::borrow_logic_on_reply(deps, env),
-
-        unknown => {
-            Err(StdError::generic_err(format!("unknown reply message id: {}", unknown)).into())
-        }
-    }
+    Ok(Response::default())
 }
 
 #[entry_point]
@@ -144,12 +98,14 @@ pub fn execute(
     match msg {
         ExecuteMsg::Receive(msg) => commands::receive_cw20(deps, env, info, msg),
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
-            AnyoneMsg::UpdateIndex => {
-                todo!()
-            }
+            AnyoneMsg::UpdateIndex => commands::update_global_index(deps, env, info),
 
             AnyoneMsg::ClaimRewards => {
                 todo!()
+            }
+
+            AnyoneMsg::Unstake { amount, to } => {
+                commands::unstake_casset(deps, env, info.sender, amount, to)
             }
         },
     }

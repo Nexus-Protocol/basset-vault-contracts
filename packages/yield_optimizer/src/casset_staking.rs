@@ -11,6 +11,7 @@ pub struct InstantiateMsg {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    Receive(Cw20ReceiveMsg),
     Anyone { anyone_msg: AnyoneMsg },
 }
 
@@ -18,6 +19,8 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum AnyoneMsg {
     UpdateIndex,
+    ClaimRewards,
+    Unstake { amount: Uint256, to: Option<String> },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -25,3 +28,13 @@ pub enum AnyoneMsg {
 pub enum QueryMsg {
     Config,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum Cw20HookMsg {
+    Stake,
+}
+
+/// We currently take no arguments for migrations
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct MigrateMsg {}
