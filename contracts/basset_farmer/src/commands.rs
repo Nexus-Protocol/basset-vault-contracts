@@ -111,6 +111,10 @@ pub fn deposit_basset(
         casset_supply * farmer_basset_share / (Decimal256::one() - farmer_basset_share)
     };
 
+    //1. lock basset
+    //2. mint casset
+    //3. rebalance
+    //4. update reward index
     Ok(Response {
         //TODO: first Mint and then UpdateReward?
         //OR
@@ -132,16 +136,16 @@ pub fn deposit_basset(
                 send: vec![],
             }),
             CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: config.casset_staking_contract.to_string(),
-                msg: to_binary(&CAssetStakingMsg::Anyone {
-                    anyone_msg: CAssetStakingAnyoneMsg::UpdateIndex,
+                contract_addr: env.contract.address.to_string(),
+                msg: to_binary(&ExecuteMsg::Anyone {
+                    anyone_msg: AnyoneMsg::Rebalance,
                 })?,
                 send: vec![],
             }),
             CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: env.contract.address.to_string(),
-                msg: to_binary(&ExecuteMsg::Anyone {
-                    anyone_msg: AnyoneMsg::Rebalance,
+                contract_addr: config.casset_staking_contract.to_string(),
+                msg: to_binary(&CAssetStakingMsg::Anyone {
+                    anyone_msg: CAssetStakingAnyoneMsg::UpdateIndex,
                 })?,
                 send: vec![],
             }),
@@ -196,6 +200,11 @@ pub fn withdraw_basset(
     );
     let basset_to_withdraw: Uint256 = basset_in_custody * share_to_withdraw;
 
+    //1. rebalance in a way you don't have basset_to_withdraw
+    //2. unlock basset from custody
+    //3. send basset to farmer
+    //4. burn casset
+    //5. update reward index
     let mut rebalance_response = rebalance(
         deps,
         env,
@@ -203,10 +212,7 @@ pub fn withdraw_basset(
         basset_in_custody,
         Some(basset_to_withdraw),
     )?;
-    //1. rebalance in a way you don't have basset_to_withdraw
-    //2. unlock basset from custody
-    //3. send basset to farmer
-    //4. burn casset
+
     rebalance_response
         .messages
         .push(CosmosMsg::Wasm(WasmMsg::Execute {
