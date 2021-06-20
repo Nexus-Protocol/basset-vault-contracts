@@ -16,28 +16,8 @@ use crate::{
 use crate::{error::ContractError, response::MsgInstantiateContractResponse};
 use crate::{state::Config, ContractResult};
 use cw20::{Cw20ReceiveMsg, MinterResponse};
-use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
-use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
-use yield_optimizer::{
-    basset_farmer::{
-        AnyoneMsg, Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, YourselfMsg,
-    },
-    deduct_tax, get_tax_info,
-    querier::{
-        get_basset_in_custody, query_aterra_state, query_balance, AnchorMarketCw20Msg,
-        AnchorMarketMsg,
-    },
-};
-
-pub const SUBMSG_ID_INIT_CASSET: u64 = 1;
-pub const SUBMSG_ID_REDEEM_STABLE: u64 = 2;
-pub const SUBMSG_ID_REPAY_LOAN: u64 = 3;
-pub const SUBMSG_ID_BORROWING: u64 = 4;
-//withdrawing from Anchor Deposit error
-pub const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
-//borrowing error
-pub const TOO_HIGH_BORROW_AMOUNT_ERR_MSG: &str = "borrow amount too high";
+use yield_optimizer::casset_staking::{AnyoneMsg, QueryMsg};
 
 #[entry_point]
 pub fn instantiate(
@@ -164,30 +144,14 @@ pub fn execute(
     match msg {
         ExecuteMsg::Receive(msg) => commands::receive_cw20(deps, env, info, msg),
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
-            AnyoneMsg::Rebalance => {
-                let config: Config = load_config(deps.storage)?;
-
-                // basset balance in custody contract
-                let basset_in_custody = get_basset_in_custody(
-                    deps.as_ref(),
-                    &config.custody_basset_contract,
-                    &env.contract.address.clone(),
-                )?;
-
-                commands::rebalance(deps, env, config, basset_in_custody, None)
+            AnyoneMsg::UpdateIndex => {
+                todo!()
             }
-            AnyoneMsg::HonestWork => commands::claim_anc_rewards(deps, env, info),
+
+            AnyoneMsg::ClaimRewards => {
+                todo!()
+            }
         },
-        ExecuteMsg::Yourself { yourself_msg } => {
-            if info.sender != env.contract.address {
-                return Err(ContractError::Unauthorized {});
-            }
-
-            match yourself_msg {
-                YourselfMsg::SwapAnc => commands::swap_anc(deps, env),
-                YourselfMsg::DisributeRewards => commands::distribute_rewards(deps, env),
-            }
-        }
     }
 }
 
@@ -195,7 +159,6 @@ pub fn execute(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config => to_binary(&queries::query_config(deps)?),
-        QueryMsg::Rebalance => to_binary(&queries::query_rebalance(deps, env)?),
     }
 }
 

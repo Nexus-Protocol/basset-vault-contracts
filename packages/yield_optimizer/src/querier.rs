@@ -298,3 +298,10 @@ pub fn query_market_config(
 
     Ok(market_config)
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AnchorOverseerMsg {
+    LockCollateral { collaterals: Vec<(String, Uint256)> },
+    UnlockCollateral { collaterals: Vec<(String, Uint256)> },
+}

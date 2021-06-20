@@ -25,13 +25,13 @@ pub struct InstantiateMsg {
     pub psi_token: String,
     pub basset_farmer_config_contract: String,
     pub stable_denom: String,
+    pub casset_staking_contract: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     Anyone { anyone_msg: AnyoneMsg },
-    OverseerMsg { overseer_msg: OverseerMsg },
     Receive(Cw20ReceiveMsg),
     Yourself { yourself_msg: YourselfMsg },
     // WithdrawTokens {
@@ -51,13 +51,6 @@ pub enum YourselfMsg {
 pub enum AnyoneMsg {
     HonestWork,
     Rebalance,
-    ClaimRewards,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum OverseerMsg {
-    Deposit { farmer: String, amount: Uint256 },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

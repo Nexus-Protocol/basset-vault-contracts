@@ -5,6 +5,7 @@ use terra_cosmwasm::TerraQuerier;
 // pub mod asset;
 pub mod basset_farmer;
 pub mod basset_farmer_config;
+pub mod casset_staking;
 pub mod overseer;
 pub mod querier;
 
