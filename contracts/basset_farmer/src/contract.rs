@@ -218,7 +218,8 @@ pub fn execute(
 
                 commands::rebalance(deps, env, &config, basset_in_custody, None)
             }
-            AnyoneMsg::HonestWork => commands::claim_anc_rewards(deps, env, info),
+
+            AnyoneMsg::HonestWork => commands::claim_anc_rewards(deps, env),
         },
 
         ExecuteMsg::Yourself { yourself_msg } => {

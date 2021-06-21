@@ -302,7 +302,7 @@ pub fn rebalance(
             advised_buffer_size,
         } => {
             store_aim_buffer_size(deps.storage, &advised_buffer_size)?;
-            borrow_logic(deps, config, amount, advised_buffer_size)
+            borrow_logic(config, amount, advised_buffer_size)
         }
 
         BorrowerActionResponse::Repay {
@@ -319,7 +319,6 @@ pub fn rebalance(
 }
 
 fn borrow_logic(
-    deps: DepsMut,
     config: &Config,
     borrow_amount: Uint256,
     aim_buffer_size: Uint256,
@@ -413,7 +412,7 @@ pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> ContractResult<Re
 /// ANC rewards, swap ANC => UST token, swap
 /// part of UST => PSI token and distribute
 /// result PSI token to gov contract
-pub fn claim_anc_rewards(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
     //TODO: maybe add some Delay to not allow claiming 1000times per second
     let config: Config = load_config(deps.storage)?;
 
