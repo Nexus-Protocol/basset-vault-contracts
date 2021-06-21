@@ -16,6 +16,7 @@ pub struct Config {
     pub borrow_ltv_aim: Decimal256,
     pub basset_max_ltv: Decimal256,
     //(max_ltv - aim_ltv)*0.35
+    //(0.85-0.8) * 0.36 = 0.018
     //to be able to repay loan in 3 iterations (in case of aterra locked)
     pub buffer_part: Decimal256,
 }
