@@ -1,5 +1,5 @@
 use crate::{
-    contract::SUBMSG_ID_INIT_CASSET,
+    contract::{SUBMSG_ID_INIT_CASSET, SUBMSG_ID_INIT_CASSET_STAKER},
     response::MsgInstantiateContractResponse,
     state::{load_config, Config},
 };
@@ -12,11 +12,17 @@ use cosmwasm_std::{
 use cw20::MinterResponse;
 use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
+use yield_optimizer::casset_staking::InstantiateMsg as CAssetStakerInstantiateMsg;
 
 #[test]
 fn proper_initialization() {
     let cluna_contract_addr = "addr0001".to_string();
     let token_code_id = 10u64; //cw20 contract code
+    let casset_staking_code_id = 11u64; //contract code
+    let aterra_token = "addr0010".to_string();
+    let stable_denom = "uust".to_string();
+    let anchor_market_contract = "addr0007".to_string();
+    let casset_staking_contract = "addr0014".to_string();
     let mut deps = mock_dependencies(&[]);
 
     let msg = yield_optimizer::basset_farmer::InstantiateMsg {
@@ -27,15 +33,15 @@ fn proper_initialization() {
         anchor_overseer_contract: "addr0004".to_string(),
         governance_addr: "addr0005".to_string(),
         anchor_token: "addr0006".to_string(),
-        anchor_market_contract: "addr0007".to_string(),
+        anchor_market_contract: anchor_market_contract.clone(),
         anchor_ust_swap_contract: "addr0008".to_string(),
         ust_psi_swap_contract: "addr0009".to_string(),
-        aterra_token: "addr0010".to_string(),
+        aterra_token: aterra_token.clone(),
         psi_part_in_rewards: Decimal::from_ratio(1u64, 100u64),
         psi_token: "addr0011".to_string(),
         basset_farmer_config_contract: "addr0012".to_string(),
-        stable_denom: "addr0013".to_string(),
-        casset_staking_code_id: 11u64,
+        stable_denom: stable_denom.clone(),
+        casset_staking_code_id,
     };
 
     let env = mock_env();
@@ -80,9 +86,46 @@ fn proper_initialization() {
         }),
     };
 
-    let _res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg.clone()).unwrap();
+    let res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg.clone()).unwrap();
+    assert_eq!(
+        res.submessages,
+        vec![SubMsg {
+            msg: WasmMsg::Instantiate {
+                code_id: casset_staking_code_id,
+                msg: to_binary(&CAssetStakerInstantiateMsg {
+                    casset_token: cluna_contract_addr.clone(),
+                    aterra_token: aterra_token.clone(),
+                    stable_denom: stable_denom.clone(),
+                    basset_farmer_contract: MOCK_CONTRACT_ADDR.to_string(),
+                    anchor_market_contract: anchor_market_contract.clone(),
+                })
+                .unwrap(),
+                send: vec![],
+                label: "".to_string(),
+                admin: None,
+            }
+            .into(),
+            gas_limit: None,
+            id: SUBMSG_ID_INIT_CASSET_STAKER,
+            reply_on: ReplyOn::Success,
+        }]
+    );
 
     // it worked, let's query the state
     let farmer_config: Config = load_config(&deps.storage).unwrap();
     assert_eq!(cluna_contract_addr, farmer_config.casset_token.to_string());
+
+    let mut cw20_instantiate_response_2 = MsgInstantiateContractResponse::new();
+    cw20_instantiate_response_2.set_contract_address(casset_staking_contract.clone());
+    // store casset_staker contract address
+    let reply_msg_2 = Reply {
+        id: SUBMSG_ID_INIT_CASSET_STAKER,
+        result: ContractResult::Ok(SubcallResponse {
+            events: vec![],
+            data: Some(cw20_instantiate_response_2.write_to_bytes().unwrap().into()),
+        }),
+    };
+    let res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg_2.clone()).unwrap();
+    assert!(res.submessages.is_empty());
+    assert!(res.messages.is_empty());
 }

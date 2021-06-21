@@ -22,6 +22,8 @@ use yield_optimizer::{
     querier::AnchorOverseerMsg,
 };
 
+use super::math::decimal_subtraction;
+
 #[test]
 fn deposit_basset() {
     let casset_contract_addr = "addr0001".to_string();
@@ -101,7 +103,7 @@ fn deposit_basset() {
 
     //first farmer come
     let user_1_address = "addr9999".to_string();
-    let deposit_1_amount: Uint128 = 1000_000_000u128.into();
+    let deposit_1_amount: Uint128 = 2_000_000_000u128.into();
     {
         // -= USER SEND bAsset tokens to basset_farmer =-
         {
@@ -177,7 +179,7 @@ fn deposit_basset() {
 
     //second farmer come
     let user_2_address = "addr6666".to_string();
-    let deposit_2_amount: Uint128 = 2000_000_000u128.into();
+    let deposit_2_amount: Uint128 = 6_000_000_000u128.into();
     {
         deps.querier.with_token_balances(&[
             (
@@ -209,13 +211,6 @@ fn deposit_basset() {
             )
             .unwrap();
 
-            let casset_supply = deposit_1_amount;
-            let farmer_share =
-                Decimal::from_ratio(deposit_2_amount, deposit_2_amount + deposit_1_amount);
-            let casset_to_mint = Decimal::from_ratio(
-                casset_supply * farmer_share,
-                Uint128::from(1u64).checked_sub(deposit_2_amount).unwrap(),
-            );
             assert_eq!(
                 res.messages,
                 vec![
@@ -234,7 +229,7 @@ fn deposit_basset() {
                         contract_addr: casset_contract_addr.clone(),
                         msg: to_binary(&Cw20ExecuteMsg::Mint {
                             recipient: user_2_address.clone(),
-                            amount: casset_to_mint * Uint128::from(1u64),
+                            amount: Uint128::from(6_000_000_000u64), //2B * (6B/8B) / (1 - (6B/8B)) = 6B
                         })
                         .unwrap(),
                         send: vec![],
