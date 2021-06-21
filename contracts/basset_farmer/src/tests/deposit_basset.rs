@@ -1,6 +1,6 @@
 use crate::error::ContractError;
 use crate::{
-    contract::{execute, instantiate, reply, SUBMSG_ID_INIT_CASSET},
+    contract::{execute, instantiate, reply, SUBMSG_ID_INIT_CASSET, SUBMSG_ID_INIT_CASSET_STAKER},
     response::MsgInstantiateContractResponse,
 };
 
@@ -14,11 +14,17 @@ use cosmwasm_std::{
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, MinterResponse};
 use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
-use yield_optimizer::basset_farmer::{Cw20HookMsg, ExecuteMsg};
+use yield_optimizer::casset_staking::{
+    AnyoneMsg as CAssetStakingAnyoneMsg, ExecuteMsg as CAssetStakingMsg,
+};
+use yield_optimizer::{
+    basset_farmer::{AnyoneMsg, Cw20HookMsg, ExecuteMsg},
+    querier::AnchorOverseerMsg,
+};
 
 #[test]
 fn deposit_basset() {
-    let cluna_contract_addr = "addr0001".to_string();
+    let casset_contract_addr = "addr0001".to_string();
     let basset_token_addr = "addr0002".to_string();
     let custody_basset_contract = "addr0003".to_string();
     let anchor_overseer_contract = "addr0004".to_string();
@@ -34,11 +40,12 @@ fn deposit_basset() {
     let psi_token = "addr0011".to_string();
     let basset_farmer_config_contract = "addr0012".to_string();
     let stable_denom = "addr0013".to_string();
+    let casset_staking_contract = "addr0014".to_string();
     let mut deps = mock_dependencies(&[]);
 
     //basset_farmer and custody_bluna have zero 'cluna' coins
     deps.querier.with_token_balances(&[(
-        &cluna_contract_addr,
+        &casset_contract_addr,
         &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128(0))],
     )]);
 
@@ -50,7 +57,7 @@ fn deposit_basset() {
             basset_token_addr: basset_token_addr.clone(),
             custody_basset_contract: custody_basset_contract.clone(),
             governance_addr: governance_addr.clone(),
-            anchor_overseer_contract,
+            anchor_overseer_contract: anchor_overseer_contract.clone(),
             anchor_token,
             anchor_market_contract,
             anchor_ust_swap_contract,
@@ -66,7 +73,7 @@ fn deposit_basset() {
         let info = mock_info("addr0000", &[]);
         let _res = crate::contract::instantiate(deps.as_mut(), mock_env(), info, init_msg).unwrap();
         let mut cw20_instantiate_response = MsgInstantiateContractResponse::new();
-        cw20_instantiate_response.set_contract_address(cluna_contract_addr.clone());
+        cw20_instantiate_response.set_contract_address(casset_contract_addr.clone());
 
         // store cLuna token address
         let reply_msg = Reply {
@@ -78,6 +85,18 @@ fn deposit_basset() {
         };
 
         let _res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg.clone()).unwrap();
+
+        let mut cw20_instantiate_response_2 = MsgInstantiateContractResponse::new();
+        cw20_instantiate_response_2.set_contract_address(casset_staking_contract.clone());
+        // store casset_staker contract address
+        let reply_msg_2 = Reply {
+            id: SUBMSG_ID_INIT_CASSET_STAKER,
+            result: ContractResult::Ok(SubcallResponse {
+                events: vec![],
+                data: Some(cw20_instantiate_response_2.write_to_bytes().unwrap().into()),
+            }),
+        };
+        let _res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg_2.clone()).unwrap();
     }
 
     //first farmer come
@@ -88,7 +107,7 @@ fn deposit_basset() {
         {
             deps.querier.with_token_balances(&[
                 (
-                    &cluna_contract_addr,
+                    &casset_contract_addr,
                     &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128(0))],
                 ),
                 (
@@ -104,13 +123,55 @@ fn deposit_basset() {
             };
 
             let info = mock_info(&basset_token_addr, &vec![]);
-            let _res = crate::contract::execute(
+            let res = crate::contract::execute(
                 deps.as_mut(),
                 mock_env(),
                 info,
                 ExecuteMsg::Receive(cw20_deposit_msg),
             )
             .unwrap();
+
+            assert_eq!(
+                res.messages,
+                vec![
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: anchor_overseer_contract.clone(),
+                        msg: to_binary(&AnchorOverseerMsg::LockCollateral {
+                            collaterals: vec![(
+                                basset_token_addr.to_string(),
+                                Uint256::from(deposit_1_amount)
+                            )],
+                        })
+                        .unwrap(),
+                        send: vec![],
+                    }),
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: casset_contract_addr.clone(),
+                        msg: to_binary(&Cw20ExecuteMsg::Mint {
+                            recipient: user_1_address.clone(),
+                            amount: deposit_1_amount, //first depositer have same amount
+                        })
+                        .unwrap(),
+                        send: vec![],
+                    }),
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: MOCK_CONTRACT_ADDR.to_string(),
+                        msg: to_binary(&ExecuteMsg::Anyone {
+                            anyone_msg: AnyoneMsg::Rebalance,
+                        })
+                        .unwrap(),
+                        send: vec![],
+                    }),
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: casset_staking_contract.clone(),
+                        msg: to_binary(&CAssetStakingMsg::Anyone {
+                            anyone_msg: CAssetStakingAnyoneMsg::UpdateIndex,
+                        })
+                        .unwrap(),
+                        send: vec![],
+                    }),
+                ]
+            );
         }
     }
 
@@ -120,7 +181,7 @@ fn deposit_basset() {
     {
         deps.querier.with_token_balances(&[
             (
-                &cluna_contract_addr,
+                &casset_contract_addr,
                 &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
             ),
             (
@@ -140,13 +201,62 @@ fn deposit_basset() {
             };
 
             let info = mock_info(&basset_token_addr, &vec![]);
-            let _res = crate::contract::execute(
+            let res = crate::contract::execute(
                 deps.as_mut(),
                 mock_env(),
                 info,
                 ExecuteMsg::Receive(cw20_deposit_msg),
             )
             .unwrap();
+
+            let casset_supply = deposit_1_amount;
+            let farmer_share =
+                Decimal::from_ratio(deposit_2_amount, deposit_2_amount + deposit_1_amount);
+            let casset_to_mint = Decimal::from_ratio(
+                casset_supply * farmer_share,
+                Uint128::from(1u64).checked_sub(deposit_2_amount).unwrap(),
+            );
+            assert_eq!(
+                res.messages,
+                vec![
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: anchor_overseer_contract.clone(),
+                        msg: to_binary(&AnchorOverseerMsg::LockCollateral {
+                            collaterals: vec![(
+                                basset_token_addr.to_string(),
+                                Uint256::from(deposit_2_amount)
+                            )],
+                        })
+                        .unwrap(),
+                        send: vec![],
+                    }),
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: casset_contract_addr.clone(),
+                        msg: to_binary(&Cw20ExecuteMsg::Mint {
+                            recipient: user_2_address.clone(),
+                            amount: casset_to_mint * Uint128::from(1u64),
+                        })
+                        .unwrap(),
+                        send: vec![],
+                    }),
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: MOCK_CONTRACT_ADDR.to_string(),
+                        msg: to_binary(&ExecuteMsg::Anyone {
+                            anyone_msg: AnyoneMsg::Rebalance,
+                        })
+                        .unwrap(),
+                        send: vec![],
+                    }),
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: casset_staking_contract.clone(),
+                        msg: to_binary(&CAssetStakingMsg::Anyone {
+                            anyone_msg: CAssetStakingAnyoneMsg::UpdateIndex,
+                        })
+                        .unwrap(),
+                        send: vec![],
+                    }),
+                ]
+            );
         }
     }
 }
