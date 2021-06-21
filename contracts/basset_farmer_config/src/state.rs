@@ -15,6 +15,9 @@ pub struct Config {
     pub borrow_ltv_min: Decimal256,
     pub borrow_ltv_aim: Decimal256,
     pub basset_max_ltv: Decimal256,
+    //(max_ltv - aim_ltv)*0.35
+    //to be able to repay loan in 3 iterations (in case of aterra locked)
+    pub buffer_part: Decimal256,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");

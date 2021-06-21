@@ -17,6 +17,7 @@ pub struct InstantiateMsg {
     pub borrow_ltv_min: Decimal256,
     pub borrow_ltv_aim: Decimal256,
     pub basset_max_ltv: Decimal256,
+    pub buffer_part: Decimal256,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -46,7 +47,7 @@ pub struct MigrateMsg {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    Config {},
+    Config,
     BorrowerAction {
         borrowed_amount: Uint256,
         locked_basset_amount: Uint256,
@@ -64,6 +65,7 @@ pub struct ConfigResponse {
     pub borrow_ltv_min: Decimal256,
     pub borrow_ltv_aim: Decimal256,
     pub basset_max_ltv: Decimal256,
+    pub buffer_part: Decimal256,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -80,14 +82,18 @@ pub enum BorrowerActionResponse {
 }
 
 impl BorrowerActionResponse {
-    pub fn repay(amount: Uint256) -> Self {
-        // BorrowerActionResponse::Repay { amount }
-        todo!()
+    pub fn repay(amount: Uint256, advised_buffer_size: Uint256) -> Self {
+        BorrowerActionResponse::Repay {
+            amount,
+            advised_buffer_size,
+        }
     }
 
-    pub fn borrow(amount: Uint256) -> Self {
-        // BorrowerActionResponse::Borrow { amount }
-        todo!()
+    pub fn borrow(amount: Uint256, advised_buffer_size: Uint256) -> Self {
+        BorrowerActionResponse::Borrow {
+            amount,
+            advised_buffer_size,
+        }
     }
 
     pub fn nothing() -> Self {

@@ -197,13 +197,13 @@ mod test {
 
     #[test]
     fn reward_calc_borrowed_amount_bigger_then_aterra_amount() {
+        let last_reward_amount = Decimal256::from_str("14500").unwrap();
+        let global_reward_index =
+            Decimal256::from_ratio(Uint256::from(24_500u64).0, Uint256::from(100u64).0);
         //get from 'first reward' test
         let mut state = State {
-            global_reward_index: Decimal256::from_ratio(
-                Uint256::from(24_500u64).0,
-                Uint256::from(100u64).0,
-            ),
-            last_reward_amount: Decimal256::from_str("14500").unwrap(),
+            global_reward_index,
+            last_reward_amount,
             last_reward_updated: 0u64,
         };
         let borrowed_amount = Uint256::from(300_000u64);
@@ -212,7 +212,7 @@ mod test {
         let ust_amount = Uint256::from(10_000u64);
         let casset_token_supply = Uint256::from(100u64);
         //200 * 1.2 = 240; 240 + 10 - 300 = -50
-        //so borrowed_amount is less than UST balance, means drop all rewards to zero
+        //so borrowed_amount is less than UST balance, means do not change rewards
 
         calculate_reward_index(
             &mut state,
@@ -222,19 +222,19 @@ mod test {
             ust_amount,
             casset_token_supply,
         );
-        assert_eq!(state.last_reward_amount, Decimal256::zero());
-        assert_eq!(state.global_reward_index, Decimal256::zero());
+        assert_eq!(state.last_reward_amount, last_reward_amount);
+        assert_eq!(state.global_reward_index, global_reward_index);
     }
 
     #[test]
     fn reward_calc_negative_reward() {
+        let last_reward_amount = Decimal256::from_str("14500").unwrap();
+        let global_reward_index =
+            Decimal256::from_ratio(Uint256::from(24_500u64).0, Uint256::from(100u64).0);
         //get from 'first reward' test
         let mut state = State {
-            global_reward_index: Decimal256::from_ratio(
-                Uint256::from(24_500u64).0,
-                Uint256::from(100u64).0,
-            ),
-            last_reward_amount: Decimal256::from_str("14500").unwrap(),
+            global_reward_index,
+            last_reward_amount,
             last_reward_updated: 0u64,
         };
         let borrowed_amount = Uint256::from(300_000u64);
@@ -243,9 +243,8 @@ mod test {
         let ust_amount = Uint256::from(10_000u64);
         let casset_token_supply = Uint256::from(100u64);
         //275 * 1.1 = 302.5; 302.5 + 10 - 300 = 12.5
-        //12.5 is less then previous reward amount, means we need to deduct reward_index
+        //12.5 is less then previous reward amount, means do not change rewards
 
-        let prev_global_reward_index = state.global_reward_index;
         calculate_reward_index(
             &mut state,
             borrowed_amount,
@@ -254,15 +253,7 @@ mod test {
             ust_amount,
             casset_token_supply,
         );
-        assert_eq!(
-            state.last_reward_amount,
-            Decimal256::from_str("12500").unwrap()
-        );
-        // 12_500 - 14_500 = -2_000 (new_reward)
-        assert_eq!(
-            state.global_reward_index,
-            prev_global_reward_index
-                - Decimal256::from_ratio(Uint256::from(2_000u64).0, Uint256::from(100u64).0)
-        );
+        assert_eq!(state.last_reward_amount, last_reward_amount);
+        assert_eq!(state.global_reward_index, global_reward_index);
     }
 }

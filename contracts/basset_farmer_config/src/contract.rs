@@ -29,6 +29,7 @@ pub fn instantiate(
         borrow_ltv_min: msg.borrow_ltv_min,
         borrow_ltv_aim: msg.borrow_ltv_aim,
         basset_max_ltv: msg.basset_max_ltv,
+        buffer_part: msg.buffer_part,
     };
 
     save_config(deps.storage, &config)?;
@@ -78,7 +79,7 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Config {} => to_binary(&queries::query_config(deps)?),
+        QueryMsg::Config => to_binary(&queries::query_config(deps)?),
         QueryMsg::BorrowerAction {
             borrowed_amount,
             locked_basset_amount,

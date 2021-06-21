@@ -18,6 +18,7 @@ fn proper_initialization() {
         borrow_ltv_min: Decimal256::from_str("0.75").unwrap(),
         borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         basset_max_ltv: Decimal256::from_str("0.5").unwrap(),
+        buffer_part: Decimal256::from_str("0.018").unwrap(),
     };
 
     let env = mock_env();
@@ -40,4 +41,5 @@ fn proper_initialization() {
         msg.governance_contract_addr,
         config.governance_contract_addr
     );
+    assert_eq!(msg.buffer_part, config.buffer_part);
 }
