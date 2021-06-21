@@ -8,7 +8,7 @@ use schemars::_serde_json::map;
 use terraswap::querier::{query_balance, query_supply};
 
 use crate::contract::{SUBMSG_ID_BORROWING, SUBMSG_ID_REDEEM_STABLE, SUBMSG_ID_REPAY_LOAN};
-use crate::state::{load_config, Config, State};
+use crate::state::{load_config, Config};
 use crate::ContractResult;
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use yield_optimizer::{

@@ -55,7 +55,7 @@ pub fn query_token_balance(
 }
 
 //TODO: if you have `terraswap` as dependency - use it from there!
-pub fn query_supply(querier: &QuerierWrapper, contract_addr: Addr) -> StdResult<Uint128> {
+pub fn query_supply(querier: &QuerierWrapper, contract_addr: &Addr) -> StdResult<Uint128> {
     let token_info: TokenInfoResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
         contract_addr: contract_addr.to_string(),
         key: Binary::from(to_length_prefixed(b"token_info")),

@@ -1,12 +1,12 @@
+use crate::error::ContractError;
 use crate::{
     contract::{
         execute, instantiate, reply, SUBMSG_ID_INIT_CASSET, SUBMSG_ID_REDEEM_STABLE,
         SUBMSG_ID_REPAY_LOAN, TOO_HIGH_BORROW_DEMAND_ERR_MSG,
     },
     response::MsgInstantiateContractResponse,
-    state::{load_repaying_loan_state, load_state, store_config, store_state, RepayingLoanState},
+    state::{load_repaying_loan_state, store_config, RepayingLoanState},
 };
-use crate::{error::ContractError, state::load_farmer_info};
 
 use crate::tests::mock_dependencies;
 use cosmwasm_bignumber::{Decimal256, Uint256};
@@ -24,7 +24,7 @@ use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
 use std::str::FromStr;
 use yield_optimizer::{
-    basset_farmer::{Cw20HookMsg, ExecuteMsg, OverseerMsg},
+    basset_farmer::{Cw20HookMsg, ExecuteMsg},
     basset_farmer_config::BorrowerActionResponse,
     querier::{
         AnchorMarketCw20Msg, AnchorMarketEpochStateResponse, AnchorMarketMsg, BorrowerInfoResponse,
@@ -36,10 +36,11 @@ fn repay_loan_without_problems() {
     let cluna_contract_addr = "addr0001".to_string();
     let basset_token_addr = "addr0002".to_string();
     let custody_basset_contract = "addr0003".to_string();
-    let overseer_addr = "addr0004".to_string();
     let governance_addr = "addr0005".to_string();
     let token_code_id = 10u64; //cw20 contract code
+    let casset_staking_code_id = 10u64; //contract code
     let anchor_token = "addr0006".to_string();
+    let anchor_overseer_contract = "addr0004".to_string();
     let anchor_market_contract = "addr0007".to_string();
     let anchor_ust_swap_contract = "addr0008".to_string();
     let ust_psi_swap_contract = "addr0009".to_string();
@@ -75,8 +76,8 @@ fn repay_loan_without_problems() {
             collateral_token_symbol: "Luna".to_string(),
             basset_token_addr: basset_token_addr.clone(),
             custody_basset_contract: custody_basset_contract.clone(),
-            overseer_addr: overseer_addr.clone(),
             governance_addr: governance_addr.to_string(),
+            anchor_overseer_contract,
             anchor_token,
             anchor_market_contract: anchor_market_contract.clone(),
             anchor_ust_swap_contract,
@@ -86,6 +87,7 @@ fn repay_loan_without_problems() {
             psi_token,
             basset_farmer_config_contract: basset_farmer_config_contract.clone(),
             stable_denom: stable_denom.to_string(),
+            casset_staking_code_id,
         };
 
         let info = mock_info("addr0000", &[]);
@@ -259,7 +261,7 @@ fn repay_loan_fail_to_redeem_aterra() {
     let cluna_contract_addr = "addr0001".to_string();
     let basset_token_addr = "addr0002".to_string();
     let custody_basset_contract = "addr0003".to_string();
-    let overseer_addr = "addr0004".to_string();
+    let anchor_overseer_contract = "addr0004".to_string();
     let governance_addr = "addr0005".to_string();
     let anchor_token = "addr0006".to_string();
     let anchor_market_contract = "addr0007".to_string();
@@ -270,10 +272,11 @@ fn repay_loan_fail_to_redeem_aterra() {
     let psi_token = "addr0011".to_string();
     let basset_farmer_config_contract = "addr0012".to_string();
     let stable_denom = "addr0013".to_string();
+    let casset_staking_contract = "addr0012".to_string();
 
     let basset_farmer_config = crate::state::Config {
         governance_contract: Addr::unchecked(governance_addr.clone()),
-        overseer_contract: Addr::unchecked(overseer_addr.clone()),
+        anchor_overseer_contract: Addr::unchecked(anchor_overseer_contract.clone()),
         anchor_token: Addr::unchecked(anchor_token.clone()),
         anchor_market_contract: Addr::unchecked(anchor_market_contract.clone()),
         custody_basset_contract: Addr::unchecked(custody_basset_contract.clone()),
@@ -286,6 +289,7 @@ fn repay_loan_fail_to_redeem_aterra() {
         psi_token: Addr::unchecked(psi_token.clone()),
         basset_farmer_config_contract: Addr::unchecked(basset_farmer_config_contract.clone()),
         stable_denom: stable_denom.clone(),
+        casset_staking_contract: Addr::unchecked(casset_staking_contract.clone()),
     };
 
     let stable_coin_initial_balance = Uint128::from(5_000u64);
@@ -326,7 +330,7 @@ fn repay_loan_fail_to_redeem_aterra() {
     let repay_response = crate::commands::repay_logic(
         deps.as_mut(),
         mock_env(),
-        basset_farmer_config,
+        &basset_farmer_config,
         repaying_loan_state,
     )
     .unwrap();

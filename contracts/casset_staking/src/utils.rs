@@ -2,20 +2,19 @@ use crate::state::Config;
 use crate::state::StakerState;
 use crate::{error::ContractError, state::State};
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{DepsMut, Env};
+use cosmwasm_std::{Deps, Env};
 use yield_optimizer::querier::{
     query_aterra_state, query_balance, query_borrower_info, query_token_balance,
     BorrowerInfoResponse,
 };
 
 pub fn update_global_reward(
-    deps: DepsMut,
+    deps: Deps,
     env: Env,
-    config: Config,
+    config: &Config,
     state: &mut State,
-    block_height: u64,
 ) -> Result<(), ContractError> {
-    if state.last_reward_updated >= block_height {
+    if state.last_reward_updated >= env.block.height {
         return Ok(());
     }
 
@@ -26,37 +25,34 @@ pub fn update_global_reward(
     // 5. (aUST_amount * aUST_ration) + UST_amount - borrowed_ust = rewards
 
     let borrower_info: BorrowerInfoResponse = query_borrower_info(
-        deps.as_ref(),
+        deps,
         &config.anchor_market_contract,
         &config.basset_farmer_contract,
     )?;
-    let borrowed_ust = borrower_info.loan_amount;
+    let borrowed_amount = borrower_info.loan_amount;
 
-    let aust_balance = query_token_balance(
-        deps.as_ref(),
-        &config.aterra_token,
-        &config.basset_farmer_contract,
-    )?;
+    let aterra_balance =
+        query_token_balance(deps, &config.aterra_token, &config.basset_farmer_contract)?;
     let casset_staked_amount =
-        query_token_balance(deps.as_ref(), &config.casset_token, &env.contract.address)?;
-    let ust_balance = query_balance(
+        query_token_balance(deps, &config.casset_token, &env.contract.address)?;
+    let stable_coin_balance = query_balance(
         &deps.querier,
         &config.basset_farmer_contract,
         config.stable_denom.clone(),
     )?;
 
-    let aust_state = query_aterra_state(deps.as_ref(), &config.anchor_market_contract)?;
+    let aterra_state = query_aterra_state(deps, &config.anchor_market_contract)?;
 
     calculate_reward_index(
         state,
-        borrowed_ust,
-        aust_balance.into(),
-        aust_state.exchange_rate,
-        ust_balance.into(),
+        borrowed_amount,
+        aterra_balance.into(),
+        aterra_state.exchange_rate,
+        stable_coin_balance.into(),
         casset_staked_amount.into(),
     );
 
-    state.last_reward_updated = block_height;
+    state.last_reward_updated = env.block.height;
 
     Ok(())
 }

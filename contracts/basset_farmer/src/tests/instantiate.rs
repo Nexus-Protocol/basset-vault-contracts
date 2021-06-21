@@ -1,7 +1,7 @@
 use crate::{
     contract::SUBMSG_ID_INIT_CASSET,
     response::MsgInstantiateContractResponse,
-    state::{load_config, load_state, Config, State},
+    state::{load_config, Config},
 };
 
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
@@ -24,7 +24,7 @@ fn proper_initialization() {
         collateral_token_symbol: "Luna".to_string(),
         basset_token_addr: "addr0002".to_string(),
         custody_basset_contract: "addr0003".to_string(),
-        overseer_addr: "addr0004".to_string(),
+        anchor_overseer_contract: "addr0004".to_string(),
         governance_addr: "addr0005".to_string(),
         anchor_token: "addr0006".to_string(),
         anchor_market_contract: "addr0007".to_string(),
@@ -35,6 +35,7 @@ fn proper_initialization() {
         psi_token: "addr0011".to_string(),
         basset_farmer_config_contract: "addr0012".to_string(),
         stable_denom: "addr0013".to_string(),
+        casset_staking_code_id: 11u64,
     };
 
     let env = mock_env();
@@ -84,6 +85,4 @@ fn proper_initialization() {
     // it worked, let's query the state
     let farmer_config: Config = load_config(&deps.storage).unwrap();
     assert_eq!(cluna_contract_addr, farmer_config.casset_token.to_string());
-    //state is there if no exception here
-    load_state(&deps.storage).unwrap();
 }

@@ -9,8 +9,8 @@ use cw_storage_plus::{Item, Map};
 pub struct Config {
     pub governance_contract: Addr,
     pub casset_staking_contract: Addr,
-    pub overseer_contract: Addr,
     pub anchor_token: Addr,
+    pub anchor_overseer_contract: Addr,
     pub anchor_market_contract: Addr,
     pub custody_basset_contract: Addr,
     //remove UST from name
@@ -27,13 +27,6 @@ pub struct Config {
     pub stable_denom: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct State {
-    // pub last_reward_updated: u64,
-    pub global_reward_index: Decimal256,
-    pub last_reward_amount: Decimal256,
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
 pub struct RepayingLoanState {
     pub iteration_index: u8,
@@ -43,19 +36,11 @@ pub struct RepayingLoanState {
 }
 
 const CONFIG: Item<Config> = Item::new("config");
-const STATE: Item<State> = Item::new("state");
 const REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
-const FARMERS: Map<&Addr, FarmerInfo> = Map::new("farmers");
 const AIM_BUFFER_SIZE: Item<Uint256> = Item::new("aim_buf_size");
 const STABLE_BALANCE_BEFORE_SELL_ANC: Item<Uint128> = Item::new("balance_before_sell_anc");
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
-pub struct FarmerInfo {
-    //TODO: probably I don't need that field. We know balance from cAsset contract address
-    //but I leave it here for some time
-    pub balance_casset: Uint256,
-    pub spendable_basset: Uint256,
-}
+//need that only for instantiating
+const CASSET_STAKING_CODE_ID: Item<u64> = Item::new("casset_staking_code_id");
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
     CONFIG.load(storage)
@@ -72,26 +57,14 @@ pub fn config_set_casset_token(storage: &mut dyn Storage, casset_token: Addr) ->
     })
 }
 
-pub fn load_farmer_info(storage: &dyn Storage, farmer_addr: &Addr) -> StdResult<FarmerInfo> {
-    FARMERS
-        .may_load(storage, farmer_addr)
-        .map(|res| res.unwrap_or_default())
-}
-
-pub fn store_farmer_info(
+pub fn config_set_casset_staker(
     storage: &mut dyn Storage,
-    farmer_addr: &Addr,
-    farmer_info: &FarmerInfo,
-) -> StdResult<()> {
-    FARMERS.save(storage, farmer_addr, farmer_info)
-}
-
-pub fn load_state(storage: &dyn Storage) -> StdResult<State> {
-    STATE.load(storage)
-}
-
-pub fn store_state(storage: &mut dyn Storage, state: &State) -> StdResult<()> {
-    STATE.save(storage, state)
+    casset_staker: Addr,
+) -> StdResult<Config> {
+    CONFIG.update(storage, |mut config| -> StdResult<_> {
+        config.casset_staking_contract = casset_staker;
+        Ok(config)
+    })
 }
 
 pub fn load_repaying_loan_state(storage: &dyn Storage) -> StdResult<RepayingLoanState> {
@@ -133,4 +106,16 @@ pub fn store_stable_balance_before_selling_anc(
     balance: &Uint128,
 ) -> StdResult<()> {
     STABLE_BALANCE_BEFORE_SELL_ANC.save(storage, balance)
+}
+
+pub fn load_casset_staking_code_id(storage: &dyn Storage) -> StdResult<u64> {
+    CASSET_STAKING_CODE_ID.load(storage)
+}
+
+pub fn store_casset_staking_code_id(storage: &mut dyn Storage, code_id: &u64) -> StdResult<()> {
+    CASSET_STAKING_CODE_ID.save(storage, code_id)
+}
+
+pub fn remove_casset_staking_code_id(storage: &mut dyn Storage) {
+    CASSET_STAKING_CODE_ID.remove(storage)
 }

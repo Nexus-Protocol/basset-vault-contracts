@@ -1,7 +1,7 @@
 use cosmwasm_std::{
-    attr, entry_point, from_binary, to_binary, Addr, Binary, CanonicalAddr, Coin, ContractInfo,
-    CosmosMsg, Decimal, Deps, DepsMut, Empty, Env, MessageInfo, QueryRequest, Reply, ReplyOn,
-    Response, StdError, StdResult, SubMsg, Uint128, WasmMsg, WasmQuery,
+    attr, entry_point, from_binary, to_binary, Addr, BankMsg, Binary, CanonicalAddr, Coin,
+    ContractInfo, CosmosMsg, Decimal, Deps, DepsMut, Empty, Env, MessageInfo, QueryRequest, Reply,
+    ReplyOn, Response, StdError, StdResult, SubMsg, Uint128, WasmMsg, WasmQuery,
 };
 use terraswap::asset::{Asset, AssetInfo};
 use terraswap::pair::Cw20HookMsg as TerraswapCw20HookMsg;
@@ -9,13 +9,12 @@ use terraswap::pair::ExecuteMsg as TerraswapExecuteMsg;
 
 use crate::{
     commands,
-    contract::SUBMSG_ID_BORROWING,
+    contract::{SUBMSG_ID_BORROWING, SUBMSG_ID_REDEEM_STABLE},
     queries,
     state::{
-        load_aim_buffer_size, load_config, load_farmer_info, load_repaying_loan_state,
-        load_stable_balance_before_selling_anc, load_state, store_aim_buffer_size,
-        store_farmer_info, store_repaying_loan_state, store_stable_balance_before_selling_anc,
-        FarmerInfo, RepayingLoanState, State,
+        load_aim_buffer_size, load_config, load_repaying_loan_state,
+        load_stable_balance_before_selling_anc, store_aim_buffer_size, store_repaying_loan_state,
+        store_stable_balance_before_selling_anc, RepayingLoanState,
     },
     utils::{calc_after_borrow_action, get_repay_loan_action, RepayLoanAction},
 };
@@ -79,7 +78,7 @@ pub fn deposit_basset(
     farmer: Addr,
     deposit_amount: Uint256,
 ) -> ContractResult<Response> {
-    let casset_supply: Uint256 = query_supply(&deps.querier, config.casset_token.clone())?.into();
+    let casset_supply: Uint256 = query_supply(&deps.querier, &config.casset_token.clone())?.into();
 
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
@@ -121,7 +120,7 @@ pub fn deposit_basset(
         //TODO: first UpdateReward and then Mint ?
         messages: vec![
             CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: config.overseer_contract.to_string(),
+                contract_addr: config.anchor_overseer_contract.to_string(),
                 msg: to_binary(&AnchorOverseerMsg::LockCollateral {
                     collaterals: vec![(config.basset_token.to_string(), deposit_amount)],
                 })?,
@@ -192,7 +191,7 @@ pub fn withdraw_basset(
         &env.contract.address,
     )?;
 
-    let casset_token_supply = query_supply(&deps.querier, config.casset_token)?;
+    let casset_token_supply = query_supply(&deps.querier, &config.casset_token)?;
 
     let share_to_withdraw: Decimal256 = Decimal256::from_ratio(
         casset_to_withdraw_amount.0,
@@ -208,7 +207,7 @@ pub fn withdraw_basset(
     let mut rebalance_response = rebalance(
         deps,
         env,
-        config,
+        &config,
         basset_in_custody,
         Some(basset_to_withdraw),
     )?;
@@ -216,7 +215,7 @@ pub fn withdraw_basset(
     rebalance_response
         .messages
         .push(CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: config.overseer_contract.to_string(),
+            contract_addr: config.anchor_overseer_contract.to_string(),
             msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
                 collaterals: vec![(config.basset_token.to_string(), basset_to_withdraw)],
             })?,
@@ -268,7 +267,7 @@ pub fn withdraw_basset(
 pub fn rebalance(
     deps: DepsMut,
     env: Env,
-    config: Config,
+    config: &Config,
     basset_in_custody: Uint256,
     basset_to_withdraw: Option<Uint256>,
 ) -> ContractResult<Response> {
@@ -321,7 +320,7 @@ pub fn rebalance(
 
 fn borrow_logic(
     deps: DepsMut,
-    config: Config,
+    config: &Config,
     borrow_amount: Uint256,
     aim_buffer_size: Uint256,
 ) -> ContractResult<Response> {
@@ -367,7 +366,7 @@ pub(crate) fn borrow_logic_on_reply(deps: DepsMut, env: Env) -> ContractResult<R
 pub(crate) fn repay_logic(
     deps: DepsMut,
     env: Env,
-    config: Config,
+    config: &Config,
     mut repaying_loan_state: RepayingLoanState,
 ) -> ContractResult<Response> {
     let aterra_balance =
@@ -407,7 +406,7 @@ pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> ContractResult<Re
         return Ok(Response::default());
     }
     let config = load_config(deps.storage)?;
-    repay_logic(deps, env, config, repaying_loan_state)
+    repay_logic(deps, env, &config, repaying_loan_state)
 }
 
 /// Anyone can execute claim_anc_rewards function to claim
@@ -547,12 +546,93 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
     })
 }
 
-pub fn claim_rewards(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
-    //TODO: what if user sent his cAsset to someone? How we can manage rewards here?
+pub fn send_rewards(
+    deps: DepsMut,
+    env: Env,
+    config: Config,
+    //we trust casset_staking contract
+    recipient: String,
+    rewards_amount: Uint256,
+) -> ContractResult<Response> {
+    let aim_buffer_size = load_aim_buffer_size(deps.as_ref().storage)?;
+    let stable_coin_balance = query_balance(
+        &deps.querier,
+        &env.contract.address,
+        config.stable_denom.clone(),
+    )?;
+    let stable_coin_balance = Uint256::from(stable_coin_balance);
 
-    // 1. ask cAsset contract for user balance
-    // 2. ask governance contract for user balance
-    // 3. now you know his cAsset balance - calculate rewards based on diff between borrowed UST
-    //    and UST in Anchor deposit
-    todo!()
+    let amount_to_get_from_buffer = if stable_coin_balance > aim_buffer_size {
+        stable_coin_balance - aim_buffer_size
+    } else {
+        Uint256::zero()
+    };
+
+    let tax_info = get_tax_info(deps.as_ref(), &config.stable_denom)?;
+    let rewards_coin = Coin {
+        denom: config.stable_denom.clone(),
+        amount: tax_info.subtract_tax(rewards_amount).into(),
+    };
+
+    if amount_to_get_from_buffer >= rewards_amount {
+        return Ok(Response {
+            messages: vec![CosmosMsg::Bank(BankMsg::Send {
+                to_address: recipient,
+                amount: vec![rewards_coin],
+            })],
+            submessages: vec![],
+            attributes: vec![
+                attr("action", "send_rewards"),
+                attr("rewards_amount", rewards_amount),
+            ],
+            data: None,
+        });
+    } else {
+        let aterra_balance =
+            query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address)?;
+        let aterra_balance = Uint256::from(aterra_balance);
+        let aterra_exchange_rate: Decimal256 =
+            query_aterra_state(deps.as_ref(), &config.anchor_market_contract)?.exchange_rate;
+
+        let amount_to_get_from_aterra = rewards_amount - amount_to_get_from_buffer;
+        let aterra_selling_value = tax_info.append_tax(amount_to_get_from_aterra);
+        let aterra_to_sell = aterra_selling_value / aterra_exchange_rate;
+        let aterra_to_sell = Uint256::min(aterra_to_sell, aterra_balance);
+        let repaying_loan_state = RepayingLoanState {
+            iteration_index: 0,
+            to_repay_amount: aterra_selling_value,
+            repaying_amount: aterra_selling_value,
+            aim_buffer_size,
+        };
+        store_repaying_loan_state(deps.storage, &repaying_loan_state)?;
+
+        return Ok(Response {
+            messages: vec![CosmosMsg::Bank(BankMsg::Send {
+                to_address: recipient,
+                amount: vec![rewards_coin],
+            })],
+            submessages: vec![SubMsg {
+                msg: WasmMsg::Execute {
+                    contract_addr: config.aterra_token.to_string(),
+                    msg: to_binary(&Cw20ExecuteMsg::Send {
+                        contract: config.anchor_market_contract.to_string(),
+                        amount: aterra_to_sell.into(),
+                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
+                    })?,
+                    send: vec![],
+                }
+                .into(),
+                gas_limit: None,
+                id: SUBMSG_ID_REDEEM_STABLE,
+                //Always because Anchor can block withdrawing
+                //if there are too many borrowers
+                reply_on: ReplyOn::Always,
+            }],
+            attributes: vec![
+                attr("action", "send_rewards"),
+                attr("rewards_amount", rewards_amount),
+            ],
+            data: None,
+        });
+    }
 }

@@ -32,8 +32,8 @@ use yield_optimizer::{
 
 pub fn update_global_index(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
     let config = load_config(deps.storage)?;
-    let state = load_state(deps.storage)?;
-    utils::update_global_reward(deps, env, config, &mut state, env.block.height)?;
+    let mut state = load_state(deps.storage)?;
+    utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
 
     store_state(deps.storage, &state)?;
 
@@ -83,10 +83,10 @@ pub fn stake_casset(
     staker: Addr,
     stake_amount: Uint256,
 ) -> ContractResult<Response> {
-    let staker_state = load_staker_info(deps.storage, &staker)?;
-    let state = load_state(deps.storage)?;
+    let mut staker_state = load_staker_info(deps.storage, &staker)?;
+    let mut state = load_state(deps.storage)?;
 
-    utils::update_global_reward(deps, env, config, &mut state, env.block.height)?;
+    utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
     utils::update_staker_reward(&state, &mut staker_state);
 
     staker_state.staked_amount += stake_amount;
@@ -109,40 +109,101 @@ pub fn unstake_casset(
     amount_to_unstake: Uint256,
     to: Option<String>,
 ) -> ContractResult<Response> {
-    let staker_state = load_staker_info(deps.storage, &staker)?;
-    if staker_state.staked_amount < amount_to_unstake {
-        return Err(StdError::generic_err("not enought casset to unstake").into());
-    }
-
-    let config: Config = load_config(deps.storage)?;
-    let state = load_state(deps.storage)?;
-
-    utils::update_global_reward(deps, env, config, &mut state, env.block.height)?;
-    utils::update_staker_reward(&state, &mut staker_state);
-
-    let claim_amount = staker_state.pending_rewards * Uint256::one();
-    let decimal_claim_amount = Decimal256::from_uint256(claim_amount);
-    staker_state.pending_rewards = staker_state.pending_rewards - decimal_claim_amount;
-
-    //TODO: write test on: Stake -> wait for reward -> Unstake -> Stake. Rewards amount for user
-    // after second 'Stake' should be zero!
-    state.last_reward_amount = state.last_reward_amount - decimal_claim_amount;
-
-    store_state(deps.storage, &state)?;
-    store_staker_state(deps.storage, &staker, &staker_state)?;
-
     let recipient = if let Some(to) = to {
         deps.api.addr_validate(&to)?.to_string()
     } else {
         staker.to_string()
     };
 
-    let mut messages: Vec<CosmosMsg> = if !claim_amount.is_zero() {
+    let mut staker_state = load_staker_info(deps.storage, &staker)?;
+    if staker_state.staked_amount < amount_to_unstake {
+        return Err(StdError::generic_err("not enought casset to unstake").into());
+    }
+
+    let config: Config = load_config(deps.storage)?;
+    let mut state = load_state(deps.storage)?;
+
+    utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
+    utils::update_staker_reward(&state, &mut staker_state);
+
+    let claim_amount = staker_state.pending_rewards * Uint256::one();
+    let decimal_claim_amount = Decimal256::from_uint256(claim_amount);
+    staker_state.pending_rewards = staker_state.pending_rewards - decimal_claim_amount;
+    //TODO: write test on: Stake -> wait for reward -> Unstake -> Stake. Rewards amount for user
+    // after second 'Stake' should be zero!
+    state.last_reward_amount = state.last_reward_amount - decimal_claim_amount;
+    staker_state.staked_amount = staker_state.staked_amount - amount_to_unstake;
+
+    store_state(deps.storage, &state)?;
+    store_staker_state(deps.storage, &staker, &staker_state)?;
+
+    let mut messages: Vec<CosmosMsg> = vec![CosmosMsg::Wasm(WasmMsg::Execute {
+        contract_addr: config.casset_token.to_string(),
+        send: vec![],
+        msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            recipient: recipient.clone(),
+            amount: amount_to_unstake.into(),
+        })?,
+    })];
+
+    if !claim_amount.is_zero() {
+        messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: config.basset_farmer_contract.to_string(),
+            send: vec![],
+            msg: to_binary(&BAssetExecuteMsg::CAssetStaker {
+                casset_staker_msg: CAssetStakerMsg::SendRewards {
+                    recipient,
+                    amount: claim_amount,
+                },
+            })?,
+        }))
+    }
+
+    Ok(Response {
+        messages,
+        submessages: vec![],
+        attributes: vec![
+            attr("action", "unstake"),
+            attr("unstake_amount", amount_to_unstake),
+            attr("claimed_rewards", claim_amount),
+        ],
+        data: None,
+    })
+}
+
+pub fn claim_rewards(
+    deps: DepsMut,
+    env: Env,
+    staker: Addr,
+    recipient: Option<String>,
+) -> ContractResult<Response> {
+    let recipient = if let Some(recipient) = recipient {
+        deps.api.addr_validate(&recipient)?.to_string()
+    } else {
+        staker.to_string()
+    };
+
+    let config: Config = load_config(deps.storage)?;
+    let mut state = load_state(deps.storage)?;
+    let mut staker_state = load_staker_info(deps.storage, &staker)?;
+
+    utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
+    utils::update_staker_reward(&state, &mut staker_state);
+
+    let claim_amount = staker_state.pending_rewards * Uint256::one();
+    let decimal_claim_amount = Decimal256::from_uint256(claim_amount);
+    staker_state.pending_rewards = staker_state.pending_rewards - decimal_claim_amount;
+    state.last_reward_amount = state.last_reward_amount - decimal_claim_amount;
+
+    store_state(deps.storage, &state)?;
+    store_staker_state(deps.storage, &staker, &staker_state)?;
+
+    let messages: Vec<CosmosMsg> = if !claim_amount.is_zero() {
         vec![CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.basset_farmer_contract.to_string(),
             send: vec![],
             msg: to_binary(&BAssetExecuteMsg::CAssetStaker {
-                casset_staker_msg: CAssetStakerMsg::SendReward {
+                casset_staker_msg: CAssetStakerMsg::SendRewards {
                     recipient,
                     amount: claim_amount,
                 },
@@ -152,22 +213,12 @@ pub fn unstake_casset(
         vec![]
     };
 
-    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: config.casset_token.to_string(),
-        send: vec![],
-        msg: to_binary(&Cw20ExecuteMsg::Transfer {
-            recipient,
-            amount: amount_to_unstake.into(),
-        })?,
-    }));
-
     Ok(Response {
         messages,
         submessages: vec![],
         attributes: vec![
-            attr("action", "unstake"),
-            attr("unstake_amount", amount_to_unstake),
-            attr("claimed_rewards", claim_amount),
+            attr("action", "claim_rewards"),
+            attr("claimed_amount", claim_amount),
         ],
         data: None,
     })

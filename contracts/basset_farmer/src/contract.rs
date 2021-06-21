@@ -9,8 +9,10 @@ use cosmwasm_std::{
 use crate::{
     commands, queries,
     state::{
-        config_set_casset_token, load_aim_buffer_size, load_config, load_repaying_loan_state,
-        store_config, store_state, update_loan_state_part_of_loan_repaid, RepayingLoanState, State,
+        config_set_casset_staker, config_set_casset_token, load_aim_buffer_size,
+        load_casset_staking_code_id, load_config, load_repaying_loan_state,
+        remove_casset_staking_code_id, store_casset_staking_code_id, store_config,
+        update_loan_state_part_of_loan_repaid, RepayingLoanState,
     },
 };
 use crate::{error::ContractError, response::MsgInstantiateContractResponse};
@@ -21,8 +23,10 @@ use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
 use yield_optimizer::{
     basset_farmer::{
-        AnyoneMsg, Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, YourselfMsg,
+        AnyoneMsg, CAssetStakerMsg, Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
+        YourselfMsg,
     },
+    casset_staking::InstantiateMsg as CAssetStakerInstantiateMsg,
     deduct_tax, get_tax_info,
     querier::{
         get_basset_in_custody, query_aterra_state, query_balance, AnchorMarketCw20Msg,
@@ -34,6 +38,7 @@ pub const SUBMSG_ID_INIT_CASSET: u64 = 1;
 pub const SUBMSG_ID_REDEEM_STABLE: u64 = 2;
 pub const SUBMSG_ID_REPAY_LOAN: u64 = 3;
 pub const SUBMSG_ID_BORROWING: u64 = 4;
+pub const SUBMSG_ID_INIT_CASSET_STAKER: u64 = 5;
 //withdrawing from Anchor Deposit error
 pub const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
 //borrowing error
@@ -48,11 +53,12 @@ pub fn instantiate(
 ) -> ContractResult<Response> {
     let config = Config {
         casset_token: Addr::unchecked(""),
+        casset_staking_contract: Addr::unchecked(""),
         basset_token: deps.api.addr_validate(&msg.basset_token_addr)?,
-        overseer_contract: deps.api.addr_validate(&msg.overseer_addr)?,
         custody_basset_contract: deps.api.addr_validate(&msg.custody_basset_contract)?,
         governance_contract: deps.api.addr_validate(&msg.governance_addr)?,
         anchor_token: deps.api.addr_validate(&msg.anchor_token)?,
+        anchor_overseer_contract: deps.api.addr_validate(&msg.anchor_overseer_contract)?,
         anchor_market_contract: deps.api.addr_validate(&msg.anchor_market_contract)?,
         anchor_ust_swap_contract: deps.api.addr_validate(&msg.anchor_ust_swap_contract)?,
         ust_psi_swap_contract: deps.api.addr_validate(&msg.ust_psi_swap_contract)?,
@@ -66,11 +72,7 @@ pub fn instantiate(
     };
     store_config(deps.storage, &config)?;
 
-    let state = State {
-        global_reward_index: Decimal256::zero(),
-        last_reward_amount: Decimal256::zero(),
-    };
-    store_state(deps.storage, &state)?;
+    store_casset_staking_code_id(deps.storage, &msg.casset_staking_code_id)?;
 
     Ok(Response {
         messages: vec![],
@@ -113,11 +115,50 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
 
             let casset_token = res.get_contract_address();
             config_set_casset_token(deps.storage, deps.api.addr_validate(casset_token)?)?;
+            let config = load_config(deps.as_ref().storage)?;
+            let casset_staking_code_id = load_casset_staking_code_id(deps.as_ref().storage)?;
+            remove_casset_staking_code_id(deps.storage);
+
+            Ok(Response {
+                messages: vec![],
+                submessages: vec![SubMsg {
+                    msg: WasmMsg::Instantiate {
+                        admin: None,
+                        code_id: casset_staking_code_id,
+                        msg: to_binary(&CAssetStakerInstantiateMsg {
+                            casset_token: casset_token.to_string(),
+                            aterra_token: config.aterra_token.to_string(),
+                            stable_denom: config.stable_denom,
+                            basset_farmer_contract: env.contract.address.to_string(),
+                            anchor_market_contract: config.anchor_market_contract.to_string(),
+                        })?,
+                        send: vec![],
+                        label: "".to_string(),
+                    }
+                    .into(),
+                    gas_limit: None,
+                    id: SUBMSG_ID_INIT_CASSET_STAKER,
+                    reply_on: ReplyOn::Success,
+                }],
+                attributes: vec![attr("casset_token_addr", casset_token)],
+                data: None,
+            })
+        }
+
+        SUBMSG_ID_INIT_CASSET_STAKER => {
+            let data = msg.result.unwrap().data.unwrap();
+            let res: MsgInstantiateContractResponse = Message::parse_from_bytes(data.as_slice())
+                .map_err(|_| {
+                    StdError::parse_err("MsgInstantiateContractResponse", "failed to parse data")
+                })?;
+
+            let casset_staker = res.get_contract_address();
+            config_set_casset_staker(deps.storage, deps.api.addr_validate(casset_staker)?)?;
 
             Ok(Response {
                 messages: vec![],
                 submessages: vec![],
-                attributes: vec![attr("casset_token_addr", casset_token)],
+                attributes: vec![attr("casset_staking_contract", casset_staker)],
                 data: None,
             })
         }
@@ -163,6 +204,7 @@ pub fn execute(
 ) -> ContractResult<Response> {
     match msg {
         ExecuteMsg::Receive(msg) => commands::receive_cw20(deps, env, info, msg),
+
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
             AnyoneMsg::Rebalance => {
                 let config: Config = load_config(deps.storage)?;
@@ -174,10 +216,11 @@ pub fn execute(
                     &env.contract.address.clone(),
                 )?;
 
-                commands::rebalance(deps, env, config, basset_in_custody, None)
+                commands::rebalance(deps, env, &config, basset_in_custody, None)
             }
             AnyoneMsg::HonestWork => commands::claim_anc_rewards(deps, env, info),
         },
+
         ExecuteMsg::Yourself { yourself_msg } => {
             if info.sender != env.contract.address {
                 return Err(ContractError::Unauthorized {});
@@ -186,6 +229,19 @@ pub fn execute(
             match yourself_msg {
                 YourselfMsg::SwapAnc => commands::swap_anc(deps, env),
                 YourselfMsg::DisributeRewards => commands::distribute_rewards(deps, env),
+            }
+        }
+
+        ExecuteMsg::CAssetStaker { casset_staker_msg } => {
+            let config: Config = load_config(deps.storage)?;
+            if info.sender != config.casset_staking_contract {
+                return Err(ContractError::Unauthorized {});
+            }
+
+            match casset_staker_msg {
+                CAssetStakerMsg::SendRewards { recipient, amount } => {
+                    commands::send_rewards(deps, env, config, recipient, amount)
+                }
             }
         }
     }

@@ -8,16 +8,16 @@ use cw20::Cw20ReceiveMsg;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub token_code_id: u64,
+    pub casset_staking_code_id: u64,
     //address for bLuna token, for example
     pub basset_token_addr: String,
     //Luna / ETH / Sol, will be converted to cLuna, cETH, cSol
     pub collateral_token_symbol: String,
-    //Nexus overseer addr
-    pub overseer_addr: String,
     pub governance_addr: String,
     pub custody_basset_contract: String,
     pub anchor_token: String,
     pub anchor_market_contract: String,
+    pub anchor_overseer_contract: String,
     pub anchor_ust_swap_contract: String,
     pub ust_psi_swap_contract: String,
     pub aterra_token: String,
@@ -25,7 +25,6 @@ pub struct InstantiateMsg {
     pub psi_token: String,
     pub basset_farmer_config_contract: String,
     pub stable_denom: String,
-    pub casset_staking_contract: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -54,7 +53,7 @@ pub enum AnyoneMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum CAssetStakerMsg {
-    SendReward { recipient: String, amount: Uint256 },
+    SendRewards { recipient: String, amount: Uint256 },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -75,6 +74,7 @@ pub enum QueryMsg {
     Rebalance,
 }
 
+//TODO: update struct
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ConfigResponse {
     pub governance_contract: String,
