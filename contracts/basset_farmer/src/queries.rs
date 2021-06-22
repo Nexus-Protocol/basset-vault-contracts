@@ -17,10 +17,20 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let config: Config = load_config(deps.storage)?;
     Ok(ConfigResponse {
         governance_contract: config.governance_contract.to_string(),
-        overseer_contract: config.anchor_overseer_contract.to_string(),
+        casset_staking_contract: config.casset_staking_contract.to_string(),
+        anchor_token: config.anchor_token.to_string(),
+        anchor_overseer_contract: config.anchor_overseer_contract.to_string(),
+        anchor_market_contract: config.anchor_market_contract.to_string(),
         custody_basset_contract: config.custody_basset_contract.to_string(),
+        anc_stable_swap_contract: config.anc_stable_swap_contract.to_string(),
+        psi_stable_swap_contract: config.psi_stable_swap_contract.to_string(),
         casset_token: config.casset_token.to_string(),
         basset_token: config.basset_token.to_string(),
+        aterra_token: config.aterra_token.to_string(),
+        psi_part_in_rewards: config.psi_part_in_rewards,
+        psi_token: config.psi_token.to_string(),
+        basset_farmer_config_contract: config.basset_farmer_config_contract.to_string(),
+        stable_denom: config.stable_denom,
     })
 }
 

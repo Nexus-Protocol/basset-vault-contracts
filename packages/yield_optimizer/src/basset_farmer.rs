@@ -73,14 +73,24 @@ pub enum QueryMsg {
     Rebalance,
 }
 
-//TODO: update struct
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ConfigResponse {
     pub governance_contract: String,
-    pub overseer_contract: String,
+    pub casset_staking_contract: String,
+    pub anchor_token: String,
+    pub anchor_overseer_contract: String,
+    pub anchor_market_contract: String,
     pub custody_basset_contract: String,
+    pub anc_stable_swap_contract: String,
+    pub psi_stable_swap_contract: String,
     pub casset_token: String,
     pub basset_token: String,
+    pub aterra_token: String,
+    //what part of profit from selling ANC spend to buy PSI
+    pub psi_part_in_rewards: Decimal,
+    pub psi_token: String,
+    pub basset_farmer_config_contract: String,
+    pub stable_denom: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
