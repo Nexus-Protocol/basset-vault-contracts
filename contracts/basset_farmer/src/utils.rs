@@ -141,7 +141,7 @@ impl RepayLoanAction {
     }
 }
 
-//TODO: refactor
+//TODO: refactor maybe?
 pub fn get_repay_loan_action(
     stable_coin_balance: Uint256,
     aterra_balance: Uint256,
@@ -515,7 +515,6 @@ mod test {
         );
         assert_eq!(
             RepayLoanAction::SellAterra {
-                //TODO: tax
                 amount: aterra_balance
             },
             repay_action

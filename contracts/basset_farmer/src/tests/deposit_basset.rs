@@ -11,9 +11,6 @@ use cosmwasm_std::{
 };
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 use protobuf::Message;
-use yield_optimizer::casset_staking::{
-    AnyoneMsg as CAssetStakingAnyoneMsg, ExecuteMsg as CAssetStakingMsg,
-};
 use yield_optimizer::{
     basset_farmer::{AnyoneMsg, Cw20HookMsg, ExecuteMsg},
     querier::AnchorOverseerMsg,
@@ -159,14 +156,6 @@ fn deposit_basset() {
                         .unwrap(),
                         send: vec![],
                     }),
-                    CosmosMsg::Wasm(WasmMsg::Execute {
-                        contract_addr: casset_staking_contract.clone(),
-                        msg: to_binary(&CAssetStakingMsg::Anyone {
-                            anyone_msg: CAssetStakingAnyoneMsg::UpdateIndex,
-                        })
-                        .unwrap(),
-                        send: vec![],
-                    }),
                 ]
             );
         }
@@ -233,14 +222,6 @@ fn deposit_basset() {
                         contract_addr: MOCK_CONTRACT_ADDR.to_string(),
                         msg: to_binary(&ExecuteMsg::Anyone {
                             anyone_msg: AnyoneMsg::Rebalance,
-                        })
-                        .unwrap(),
-                        send: vec![],
-                    }),
-                    CosmosMsg::Wasm(WasmMsg::Execute {
-                        contract_addr: casset_staking_contract.clone(),
-                        msg: to_binary(&CAssetStakingMsg::Anyone {
-                            anyone_msg: CAssetStakingAnyoneMsg::UpdateIndex,
                         })
                         .unwrap(),
                         send: vec![],

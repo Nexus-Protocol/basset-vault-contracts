@@ -21,7 +21,6 @@ use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use yield_optimizer::{
     basset_farmer::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, YourselfMsg},
     basset_farmer_config::{query_borrower_action, BorrowerActionResponse},
-    casset_staking::{AnyoneMsg as CAssetStakingAnyoneMsg, ExecuteMsg as CAssetStakingMsg},
     get_tax_info,
     querier::{
         get_basset_in_custody, query_aterra_state, query_balance, query_borrower_info,
@@ -106,11 +105,7 @@ pub fn deposit_basset(
     //1. lock basset
     //2. mint casset
     //3. rebalance
-    //4. update reward index
     Ok(Response {
-        //TODO: first Mint and then UpdateReward?
-        //OR
-        //TODO: first UpdateReward and then Mint ?
         messages: vec![
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.anchor_overseer_contract.to_string(),
@@ -131,13 +126,6 @@ pub fn deposit_basset(
                 contract_addr: env.contract.address.to_string(),
                 msg: to_binary(&ExecuteMsg::Anyone {
                     anyone_msg: AnyoneMsg::Rebalance,
-                })?,
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: config.casset_staking_contract.to_string(),
-                msg: to_binary(&CAssetStakingMsg::Anyone {
-                    anyone_msg: CAssetStakingAnyoneMsg::UpdateIndex,
                 })?,
                 send: vec![],
             }),
@@ -196,7 +184,6 @@ pub fn withdraw_basset(
     //2. unlock basset from custody
     //3. send basset to farmer
     //4. burn casset
-    //5. update reward index
     let mut rebalance_response = rebalance(
         deps,
         env,
@@ -232,16 +219,6 @@ pub fn withdraw_basset(
             contract_addr: config.casset_token.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Burn {
                 amount: casset_to_withdraw_amount.into(),
-            })?,
-            send: vec![],
-        }));
-
-    rebalance_response
-        .messages
-        .push(CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: config.casset_staking_contract.to_string(),
-            msg: to_binary(&CAssetStakingMsg::Anyone {
-                anyone_msg: CAssetStakingAnyoneMsg::UpdateIndex,
             })?,
             send: vec![],
         }));
