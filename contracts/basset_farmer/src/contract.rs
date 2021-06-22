@@ -59,6 +59,7 @@ pub fn instantiate(
             .api
             .addr_validate(&msg.basset_farmer_config_contract)?,
         stable_denom: msg.stable_denom,
+        claiming_rewards_delay: msg.claiming_rewards_delay,
     };
     store_config(deps.storage, &config)?;
 

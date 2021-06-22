@@ -62,6 +62,7 @@ fn deposit_basset() {
             basset_farmer_config_contract,
             stable_denom,
             casset_staking_code_id,
+            claiming_rewards_delay: 1000,
         };
 
         let info = mock_info("addr0000", &[]);

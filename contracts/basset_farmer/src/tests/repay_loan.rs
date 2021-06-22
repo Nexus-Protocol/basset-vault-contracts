@@ -82,6 +82,7 @@ fn repay_loan_without_problems() {
             basset_farmer_config_contract: basset_farmer_config_contract.clone(),
             stable_denom: stable_denom.to_string(),
             casset_staking_code_id,
+            claiming_rewards_delay: 1000,
         };
 
         let info = mock_info("addr0000", &[]);
@@ -284,6 +285,7 @@ fn repay_loan_fail_to_redeem_aterra() {
         basset_farmer_config_contract: Addr::unchecked(basset_farmer_config_contract.clone()),
         stable_denom: stable_denom.clone(),
         casset_staking_contract: Addr::unchecked(casset_staking_contract.clone()),
+        claiming_rewards_delay: 1000,
     };
 
     let stable_coin_initial_balance = Uint128::from(5_000u64);

@@ -40,6 +40,7 @@ fn proper_initialization() {
         basset_farmer_config_contract: "addr0012".to_string(),
         stable_denom: stable_denom.clone(),
         casset_staking_code_id,
+        claiming_rewards_delay: 1000,
     };
 
     let env = mock_env();

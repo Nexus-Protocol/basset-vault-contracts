@@ -31,6 +31,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         psi_token: config.psi_token.to_string(),
         basset_farmer_config_contract: config.basset_farmer_config_contract.to_string(),
         stable_denom: config.stable_denom,
+        claiming_rewards_delay: config.claiming_rewards_delay,
     })
 }
 

@@ -24,6 +24,7 @@ pub struct InstantiateMsg {
     pub psi_token: String,
     pub basset_farmer_config_contract: String,
     pub stable_denom: String,
+    pub claiming_rewards_delay: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -91,6 +92,7 @@ pub struct ConfigResponse {
     pub psi_token: String,
     pub basset_farmer_config_contract: String,
     pub stable_denom: String,
+    pub claiming_rewards_delay: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

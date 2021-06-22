@@ -1,19 +1,20 @@
 use cosmwasm_std::{
     attr, from_binary, to_binary, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo,
-    ReplyOn, Response, SubMsg, Uint128, WasmMsg,
+    ReplyOn, Response, StdError, SubMsg, Uint128, WasmMsg,
 };
 
-use crate::error::ContractError;
 use crate::{
     commands,
     contract::{SUBMSG_ID_BORROWING, SUBMSG_ID_REDEEM_STABLE},
     state::{
         load_aim_buffer_size, load_config, load_repaying_loan_state,
-        load_stable_balance_before_selling_anc, store_aim_buffer_size, store_repaying_loan_state,
+        load_stable_balance_before_selling_anc, store_aim_buffer_size,
+        store_last_rewards_claiming_height, store_repaying_loan_state,
         store_stable_balance_before_selling_anc, RepayingLoanState,
     },
     utils::{calc_after_borrow_action, get_repay_loan_action},
 };
+use crate::{error::ContractError, state::load_last_rewards_claiming_height};
 use crate::{state::Config, ContractResult};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ReceiveMsg;
@@ -383,8 +384,17 @@ pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> ContractResult<Re
 /// part of UST => PSI token and distribute
 /// result PSI token to gov contract
 pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
-    //TODO: maybe add some Delay to not allow claiming 1000times per second
     let config: Config = load_config(deps.storage)?;
+    let last_rewards_claiming_height = load_last_rewards_claiming_height(deps.as_ref().storage)?;
+    let current_height = env.block.height;
+
+    if current_height <= last_rewards_claiming_height
+        || (current_height - last_rewards_claiming_height) < config.claiming_rewards_delay
+    {
+        return Err(StdError::generic_err("claiming too often").into());
+    }
+
+    store_last_rewards_claiming_height(deps.storage, &current_height)?;
 
     Ok(Response {
         messages: vec![
@@ -424,6 +434,11 @@ pub fn swap_anc(deps: DepsMut, env: Env) -> ContractResult<Response> {
 
     let anc_amount =
         query_token_balance(deps.as_ref(), &config.anchor_token, &env.contract.address)?;
+
+    if anc_amount.is_zero() {
+        return Err(StdError::generic_err("ANC amount is zero").into());
+    }
+
     Ok(Response {
         messages: vec![
             CosmosMsg::Wasm(WasmMsg::Execute {

@@ -23,6 +23,7 @@ pub struct Config {
     pub psi_token: Addr,
     pub basset_farmer_config_contract: Addr,
     pub stable_denom: String,
+    pub claiming_rewards_delay: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
@@ -37,6 +38,7 @@ const CONFIG: Item<Config> = Item::new("config");
 const REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
 const AIM_BUFFER_SIZE: Item<Uint256> = Item::new("aim_buf_size");
 const STABLE_BALANCE_BEFORE_SELL_ANC: Item<Uint128> = Item::new("balance_before_sell_anc");
+const LAST_REWARDS_CLAIMING_HEIGHT: Item<u64> = Item::new("last_rewards_claiming_height");
 //need that only for instantiating
 const CASSET_STAKING_CODE_ID: Item<u64> = Item::new("casset_staking_code_id");
 
@@ -116,4 +118,17 @@ pub fn store_casset_staking_code_id(storage: &mut dyn Storage, code_id: &u64) ->
 
 pub fn remove_casset_staking_code_id(storage: &mut dyn Storage) {
     CASSET_STAKING_CODE_ID.remove(storage)
+}
+
+pub fn load_last_rewards_claiming_height(storage: &dyn Storage) -> StdResult<u64> {
+    LAST_REWARDS_CLAIMING_HEIGHT
+        .may_load(storage)
+        .map(|may_value| may_value.unwrap_or_default())
+}
+
+pub fn store_last_rewards_claiming_height(
+    storage: &mut dyn Storage,
+    height: &u64,
+) -> StdResult<()> {
+    LAST_REWARDS_CLAIMING_HEIGHT.save(storage, height)
 }
