@@ -17,6 +17,7 @@ pub fn update_config(
     borrow_ltv_min: Option<Decimal256>,
     borrow_ltv_aim: Option<Decimal256>,
     basset_max_ltv: Option<Decimal256>,
+    buffer_part: Option<Decimal256>,
 ) -> ContractResult<Response> {
     if let Some(ref oracle_addr) = oracle_addr {
         current_config.oracle_addr = deps.api.addr_validate(oracle_addr)?;
@@ -44,6 +45,10 @@ pub fn update_config(
 
     if let Some(basset_max_ltv) = basset_max_ltv {
         current_config.basset_max_ltv = basset_max_ltv;
+    }
+
+    if let Some(buffer_part) = buffer_part {
+        current_config.buffer_part = buffer_part;
     }
 
     save_config(deps.storage, &current_config)?;

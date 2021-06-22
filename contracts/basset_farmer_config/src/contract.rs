@@ -60,6 +60,7 @@ pub fn execute(
                     borrow_ltv_min,
                     borrow_ltv_aim,
                     basset_max_ltv,
+                    buffer_part,
                 } => commands::update_config(
                     deps,
                     config,
@@ -70,6 +71,7 @@ pub fn execute(
                     borrow_ltv_min,
                     borrow_ltv_aim,
                     basset_max_ltv,
+                    buffer_part,
                 ),
             }
         }

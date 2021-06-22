@@ -34,6 +34,7 @@ pub enum GovernanceMsg {
         borrow_ltv_min: Option<Decimal256>,
         borrow_ltv_aim: Option<Decimal256>,
         basset_max_ltv: Option<Decimal256>,
+        buffer_part: Option<Decimal256>,
     },
 }
 
@@ -51,7 +52,6 @@ pub enum QueryMsg {
     },
 }
 
-//TODO: update, cause Config struct changed
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ConfigResponse {
     pub governance_contract_addr: Addr,
