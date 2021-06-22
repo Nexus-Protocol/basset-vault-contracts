@@ -9,7 +9,6 @@ use cw20::Cw20ReceiveMsg;
 pub struct InstantiateMsg {
     pub token_code_id: u64,
     pub casset_staking_code_id: u64,
-    //address for bLuna token, for example
     pub basset_token_addr: String,
     //Luna / ETH / Sol, will be converted to cLuna, cETH, cSol
     pub collateral_token_symbol: String,
@@ -18,8 +17,8 @@ pub struct InstantiateMsg {
     pub anchor_token: String,
     pub anchor_market_contract: String,
     pub anchor_overseer_contract: String,
-    pub anchor_ust_swap_contract: String,
-    pub ust_psi_swap_contract: String,
+    pub anc_stable_swap_contract: String,
+    pub psi_stable_swap_contract: String,
     pub aterra_token: String,
     pub psi_part_in_rewards: Decimal,
     pub psi_token: String,

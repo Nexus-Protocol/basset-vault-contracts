@@ -453,7 +453,7 @@ pub fn swap_anc(deps: DepsMut, env: Env) -> ContractResult<Response> {
                 contract_addr: config.anchor_token.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Send {
                     amount: anc_amount,
-                    contract: config.anchor_ust_swap_contract.to_string(),
+                    contract: config.anc_stable_swap_contract.to_string(),
                     msg: to_binary(&TerraswapCw20HookMsg::Swap {
                         belief_price: None,
                         max_spread: None,
@@ -515,7 +515,7 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
                 }],
             }),
             CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: config.ust_psi_swap_contract.to_string(),
+                contract_addr: config.psi_stable_swap_contract.to_string(),
                 msg: to_binary(&TerraswapExecuteMsg::Swap {
                     offer_asset: swap_asset,
                     max_spread: None,

@@ -13,14 +13,12 @@ pub struct Config {
     pub anchor_overseer_contract: Addr,
     pub anchor_market_contract: Addr,
     pub custody_basset_contract: Addr,
-    //remove UST from name
-    pub anchor_ust_swap_contract: Addr,
-    //remove UST from name
-    pub ust_psi_swap_contract: Addr,
+    pub anc_stable_swap_contract: Addr,
+    pub psi_stable_swap_contract: Addr,
     pub casset_token: Addr,
     pub basset_token: Addr,
     pub aterra_token: Addr,
-    //what part of UST from selling ANC spend to buy PSI
+    //what part of profit from selling ANC spend to buy PSI
     pub psi_part_in_rewards: Decimal,
     pub psi_token: Addr,
     pub basset_farmer_config_contract: Addr,
