@@ -8,7 +8,6 @@ use cw20::TokenInfoResponse;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-//TODO: if you have `terraswap` as dependency - use it from there!
 pub fn query_balance(
     querier: &QuerierWrapper,
     account_addr: &Addr,
@@ -22,7 +21,6 @@ pub fn query_balance(
     Ok(balance.amount.amount)
 }
 
-//TODO: if you have `terraswap` as dependency - use it from there!
 pub fn query_all_balances(querier: &QuerierWrapper, account_addr: Addr) -> StdResult<Vec<Coin>> {
     // load price form the oracle
     let all_balances: AllBalanceResponse =
@@ -32,7 +30,6 @@ pub fn query_all_balances(querier: &QuerierWrapper, account_addr: Addr) -> StdRe
     Ok(all_balances.amount)
 }
 
-//TODO: if you have `terraswap` as dependency - use it from there!
 pub fn query_token_balance(
     deps: Deps,
     contract_addr: &Addr,
@@ -51,7 +48,6 @@ pub fn query_token_balance(
         .unwrap_or_else(|_| Uint128::zero()))
 }
 
-//TODO: if you have `terraswap` as dependency - use it from there!
 pub fn query_supply(querier: &QuerierWrapper, contract_addr: &Addr) -> StdResult<Uint128> {
     let token_info: TokenInfoResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
         contract_addr: contract_addr.to_string(),
@@ -68,7 +64,6 @@ fn concat(namespace: &[u8], key: &[u8]) -> Vec<u8> {
     k
 }
 
-//TODO: use Anchor as dependency
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct BorrowerInfoResponse {
     pub borrower: String,
@@ -108,7 +103,6 @@ pub fn query_borrower_info(
     })
 }
 
-//TODO: use Anchor as dependency
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct BorrowerResponse {
     pub borrower: String,
@@ -133,7 +127,6 @@ pub fn get_basset_in_custody(
     Ok(borrower_info.balance)
 }
 
-//TODO: use Anchor as dependency
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct PriceResponse {
     pub rate: Decimal256,
@@ -190,7 +183,6 @@ pub fn query_price(
     Ok(oracle_price)
 }
 
-//TODO: Use Anchor as dependency
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AnchorMarketMsg {
@@ -213,7 +205,6 @@ pub enum AnchorMarketCw20Msg {
     RedeemStable {},
 }
 
-//TODO: Use Anchor as dependency
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AnchorMarketQueryMsg {
@@ -222,7 +213,6 @@ pub enum AnchorMarketQueryMsg {
     // State { block_height: Option<u64> },
 }
 
-//TODO: Use Anchor as dependency
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct AnchorMarketEpochStateResponse {
     pub exchange_rate: Decimal256,
@@ -242,7 +232,6 @@ pub fn query_aterra_state(
     Ok(epoch_state)
 }
 
-//TODO: Use Anchor as dependency
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct AnchorMarketStateResponse {
     pub total_liabilities: Decimal256,
@@ -267,7 +256,6 @@ pub fn query_market_state(
     Ok(market_state)
 }
 
-//TODO: Use Anchor as dependency
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct AnchorMarketConfigResponse {
     pub contract_addr: CanonicalAddr,

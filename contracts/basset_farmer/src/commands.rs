@@ -366,13 +366,12 @@ pub(crate) fn repay_logic(
     repay_action.to_response(&config)
 }
 
+const LOAN_REPAYMENT_MAX_RECURSION_DEEP: u8 = 6;
+
 pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> ContractResult<Response> {
     let mut repaying_loan_state = load_repaying_loan_state(deps.storage)?;
-    //TODO: move '6' to const or config. Think about value. I think it is good idea to have
-    //some limit or iteration, cause of crazy gas price, but not sure about the value.
-    //to think
     repaying_loan_state.iteration_index += 1;
-    if repaying_loan_state.iteration_index >= 6 {
+    if repaying_loan_state.iteration_index >= LOAN_REPAYMENT_MAX_RECURSION_DEEP {
         return Ok(Response::default());
     }
     let config = load_config(deps.storage)?;
