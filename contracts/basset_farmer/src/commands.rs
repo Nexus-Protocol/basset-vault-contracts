@@ -167,6 +167,7 @@ pub fn withdraw_basset(
     farmer: Addr,
     casset_to_withdraw_amount: Uint256,
 ) -> ContractResult<Response> {
+    //basset_in_contract_address is always zero (except Deposit stage)
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
         &config.custody_basset_contract,

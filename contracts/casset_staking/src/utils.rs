@@ -57,6 +57,8 @@ pub fn update_global_reward(
     Ok(())
 }
 
+//TODO: this method is wrong
+//test all cases where you are using it!
 pub fn update_staker_reward(state: &State, staker_state: &mut StakerState) {
     staker_state.pending_rewards += state.global_reward_index - staker_state.reward_index;
     staker_state.reward_index = state.global_reward_index;
@@ -68,10 +70,18 @@ fn calculate_reward_index(
     aterra_amount: Uint256,
     aterra_exchange_rate: Decimal256,
     stable_coin_amount: Uint256,
-    casset_token_supply: Uint256,
+    casset_staked_amount: Uint256,
 ) {
+    //TODO: remove me
+    println!("borrowed_amount: {}, aterra_amount: {}, aterra_exchange_rate: {}, stable_coin_amount: {}, casset_staked_amount: {}", 
+    borrowed_amount,
+    aterra_amount,
+    aterra_exchange_rate,
+    stable_coin_amount,
+    casset_staked_amount,
+);
     let stable_balance = aterra_amount * aterra_exchange_rate + stable_coin_amount;
-    let decimal_casset_token_supply = Decimal256::from_uint256(casset_token_supply);
+    let decimal_casset_staked_amount = Decimal256::from_uint256(casset_staked_amount);
 
     if borrowed_amount >= stable_balance {
         return;
@@ -85,7 +95,7 @@ fn calculate_reward_index(
         } else {
             let new_reward_amount: Decimal256 =
                 current_total_reward_amount - state.last_reward_amount;
-            state.global_reward_index += new_reward_amount / decimal_casset_token_supply;
+            state.global_reward_index += new_reward_amount / decimal_casset_staked_amount;
         }
         state.last_reward_amount = current_total_reward_amount;
     }
@@ -109,7 +119,7 @@ mod test {
         let aterra_amount = Uint256::from(0u64);
         let aterra_exchange_rate = Decimal256::zero();
         let ust_amount = Uint256::from(0u64);
-        let casset_token_supply = Uint256::from(0u64);
+        let casset_staked_amount = Uint256::from(0u64);
 
         calculate_reward_index(
             &mut state,
@@ -117,7 +127,7 @@ mod test {
             aterra_amount,
             aterra_exchange_rate,
             ust_amount,
-            casset_token_supply,
+            casset_staked_amount,
         );
         assert_eq!(state.last_reward_amount, Decimal256::zero());
         assert_eq!(state.global_reward_index, Decimal256::zero());
@@ -134,7 +144,7 @@ mod test {
         let aterra_amount = Uint256::from(195_000u64);
         let aterra_exchange_rate = Decimal256::from_str("1.1").unwrap();
         let ust_amount = Uint256::from(10_000u64);
-        let casset_token_supply = Uint256::from(100u64);
+        let casset_staked_amount = Uint256::from(100u64);
         //195 * 1.1 = 214.5; 214.5 + 10 - 200 = 24.5
 
         calculate_reward_index(
@@ -143,7 +153,7 @@ mod test {
             aterra_amount,
             aterra_exchange_rate,
             ust_amount,
-            casset_token_supply,
+            casset_staked_amount,
         );
         assert_eq!(
             state.last_reward_amount,
@@ -152,7 +162,7 @@ mod test {
         // 24_500 / 100
         assert_eq!(
             state.global_reward_index,
-            Decimal256::from_ratio(Uint256::from(24_500u64).0, Uint256::from(100u64).0)
+            Decimal256::from_str("245").unwrap()
         );
     }
 
@@ -171,7 +181,7 @@ mod test {
         let aterra_amount = Uint256::from(290_000u64);
         let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
         let ust_amount = Uint256::from(10_000u64);
-        let casset_token_supply = Uint256::from(100u64);
+        let casset_staked_amount = Uint256::from(100u64);
         //290 * 1.2 = 348; 348 + 10 - 300 = 58
 
         let prev_global_reward_index = state.global_reward_index;
@@ -181,7 +191,7 @@ mod test {
             aterra_amount,
             aterra_exchange_rate,
             ust_amount,
-            casset_token_supply,
+            casset_staked_amount,
         );
         assert_eq!(
             state.last_reward_amount,
@@ -210,7 +220,7 @@ mod test {
         let aterra_amount = Uint256::from(200_000u64);
         let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
         let ust_amount = Uint256::from(10_000u64);
-        let casset_token_supply = Uint256::from(100u64);
+        let casset_staked_amount = Uint256::from(100u64);
         //200 * 1.2 = 240; 240 + 10 - 300 = -50
         //so borrowed_amount is less than UST balance, means do not change rewards
 
@@ -220,7 +230,7 @@ mod test {
             aterra_amount,
             aterra_exchange_rate,
             ust_amount,
-            casset_token_supply,
+            casset_staked_amount,
         );
         assert_eq!(state.last_reward_amount, last_reward_amount);
         assert_eq!(state.global_reward_index, global_reward_index);
@@ -241,7 +251,7 @@ mod test {
         let aterra_amount = Uint256::from(275_000u64);
         let aterra_exchange_rate = Decimal256::from_str("1.1").unwrap();
         let ust_amount = Uint256::from(10_000u64);
-        let casset_token_supply = Uint256::from(100u64);
+        let casset_staked_amount = Uint256::from(100u64);
         //275 * 1.1 = 302.5; 302.5 + 10 - 300 = 12.5
         //12.5 is less then previous reward amount, means do not change rewards
 
@@ -251,7 +261,7 @@ mod test {
             aterra_amount,
             aterra_exchange_rate,
             ust_amount,
-            casset_token_supply,
+            casset_staked_amount,
         );
         assert_eq!(state.last_reward_amount, last_reward_amount);
         assert_eq!(state.global_reward_index, global_reward_index);

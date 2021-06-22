@@ -13,8 +13,14 @@ use yield_optimizer::{
     querier::{AnchorMarketEpochStateResponse, BorrowerInfoResponse},
 };
 
+// borrowed_amount: 200000, aterra_amount: 195000,
+// aterra_exchange_rate: 1.1, stable_coin_amount: 10000, casset_staked_amount: 100
+//
+// borrowed_amount: 200000, aterra_amount: 195000,
+// aterra_exchange_rate: 1.1, stable_coin_amount: 10000, casset_staked_amount: 100
 #[test]
 fn first_stake() {
+    //numbers for reward calc get 'reward_calc_first_reward'
     let casset_token = "addr0001".to_string();
     let aterra_token = "addr0002".to_string();
     let stable_denom = "uust".to_string();
@@ -29,18 +35,19 @@ fn first_stake() {
         anchor_market_contract: anchor_market_contract.clone(),
     };
 
-    let stable_coin_balance = Uint128::from(200u64);
-    let aterra_balance = Uint256::from(200u64);
-    let basset_farmer_loan_amount = Uint256::from(10_000u64);
+    let basset_farmer_loan_amount = Uint256::from(200_000u64);
+    let aterra_exchange_rate = Decimal256::from_str("1.1").unwrap();
+    let aterra_amount = Uint256::from(195_000u64);
+    let stable_coin_balance = Uint128::from(10_000u64);
 
+    let mut deps = mock_dependencies(&[]);
     //to: 4. get amount of UST
-    let mut deps = mock_dependencies(&[Coin {
-        denom: stable_denom.to_string(),
-        amount: stable_coin_balance,
-    }]);
-    deps.querier.with_tax(
-        Decimal::percent(20),
-        &[(&stable_denom.to_string(), &Uint128::from(10u128))],
+    deps.querier.update_base_balance(
+        &basset_farmer_contract,
+        vec![Coin {
+            denom: stable_denom.to_string(),
+            amount: stable_coin_balance,
+        }],
     );
 
     // -= INITIALIZATION =-
@@ -52,7 +59,8 @@ fn first_stake() {
 
     //first farmer come
     let user_1_address = Addr::unchecked("addr9999".to_string());
-    let deposit_1_amount: Uint128 = 2_000_000_000u128.into();
+    //it is staked_casset_amount
+    let deposit_1_amount: Uint128 = 100u128.into();
     {
         deps.querier.with_token_balances(&[
             (
@@ -62,14 +70,14 @@ fn first_stake() {
             //to: 2. get amount of aUST
             (
                 &aterra_token,
-                &[(&basset_farmer_contract.clone(), &aterra_balance.into())],
+                &[(&basset_farmer_contract.clone(), &aterra_amount.into())],
             ),
         ]);
         //to: 3. get aUST to UST ratio
         deps.querier.with_wasm_query_response(&[(
             &anchor_market_contract,
             &to_binary(&AnchorMarketEpochStateResponse {
-                exchange_rate: Decimal256::from_str("1.25").unwrap(),
+                exchange_rate: aterra_exchange_rate,
                 aterra_supply: Uint256::from(1_000_000u64),
             })
             .unwrap(),
@@ -115,8 +123,8 @@ fn first_stake() {
             let state: State = load_state(&deps.storage).unwrap();
             assert_eq!(
                 State {
-                    global_reward_index: Decimal256::zero(),
-                    last_reward_amount: Decimal256::zero(),
+                    global_reward_index: Decimal256::from_str("245").unwrap(),
+                    last_reward_amount: Decimal256::from_str("24500").unwrap(),
                     last_reward_updated: current_block_height,
                 },
                 state
@@ -127,7 +135,7 @@ fn first_stake() {
             assert_eq!(
                 StakerState {
                     staked_amount: Uint256::from(deposit_1_amount),
-                    reward_index: Decimal256::zero(),
+                    reward_index: Decimal256::from_str("245").unwrap(),
                     pending_rewards: Decimal256::zero(),
                 },
                 staker_state

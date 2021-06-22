@@ -76,8 +76,8 @@ pub fn stake_casset(
     let mut state = load_state(deps.storage)?;
 
     utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
-    utils::update_staker_reward(&state, &mut staker_state);
 
+    staker_state.reward_index = state.global_reward_index;
     staker_state.staked_amount += stake_amount;
 
     store_state(deps.storage, &state)?;
