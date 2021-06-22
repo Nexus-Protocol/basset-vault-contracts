@@ -37,7 +37,7 @@ fn deposit_basset() {
     let casset_staking_contract = "addr0014".to_string();
     let mut deps = mock_dependencies(&[]);
 
-    //basset_farmer and custody_bluna have zero 'cluna' coins
+    //basset_farmer have zero 'cluna' coins
     deps.querier.with_token_balances(&[(
         &casset_contract_addr,
         &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128(0))],

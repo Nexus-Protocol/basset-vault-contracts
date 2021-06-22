@@ -47,7 +47,7 @@ pub fn config_set_casset_token(storage: &mut dyn Storage, casset_token: Addr) ->
     })
 }
 
-pub fn load_staker_info(storage: &dyn Storage, addr: &Addr) -> StdResult<StakerState> {
+pub fn load_staker_state(storage: &dyn Storage, addr: &Addr) -> StdResult<StakerState> {
     STAKERS
         .may_load(storage, addr)
         .map(|res| res.unwrap_or_default())

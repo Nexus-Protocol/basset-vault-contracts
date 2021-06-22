@@ -11,7 +11,4 @@ mod utils;
 #[cfg(test)]
 mod tests;
 
-// #[cfg(test)]
-// mod mock_querier;
-
 type ContractResult<T> = Result<T, ContractError>;

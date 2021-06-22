@@ -10,7 +10,7 @@ use crate::{
 };
 use crate::{
     error::ContractError,
-    state::{load_staker_info, load_state},
+    state::{load_staker_state, load_state},
 };
 use crate::{state::Config, ContractResult};
 use cosmwasm_bignumber::{Decimal256, Uint256};
@@ -53,7 +53,7 @@ pub fn receive_cw20_stake(
     cw20_msg: Cw20ReceiveMsg,
 ) -> ContractResult<Response> {
     let casset_addr = info.sender;
-    // only bAsset contract can execute this message
+    // only cAsset contract can execute this message
     let config: Config = load_config(deps.storage)?;
     if casset_addr != config.casset_token {
         return Err(ContractError::Unauthorized {});
@@ -72,7 +72,7 @@ pub fn stake_casset(
     staker: Addr,
     stake_amount: Uint256,
 ) -> ContractResult<Response> {
-    let mut staker_state = load_staker_info(deps.storage, &staker)?;
+    let mut staker_state = load_staker_state(deps.storage, &staker)?;
     let mut state = load_state(deps.storage)?;
 
     utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
@@ -104,7 +104,7 @@ pub fn unstake_casset(
         staker.to_string()
     };
 
-    let mut staker_state = load_staker_info(deps.storage, &staker)?;
+    let mut staker_state = load_staker_state(deps.storage, &staker)?;
     if staker_state.staked_amount < amount_to_unstake {
         return Err(StdError::generic_err("not enought casset to unstake").into());
     }
@@ -174,7 +174,7 @@ pub fn claim_rewards(
 
     let config: Config = load_config(deps.storage)?;
     let mut state = load_state(deps.storage)?;
-    let mut staker_state = load_staker_info(deps.storage, &staker)?;
+    let mut staker_state = load_staker_state(deps.storage, &staker)?;
 
     utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
     utils::update_staker_reward(&state, &mut staker_state);
