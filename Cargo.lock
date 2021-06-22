@@ -657,7 +657,6 @@ dependencies = [
  "schemars",
  "serde",
  "terra-cosmwasm",
- "terraswap",
  "thiserror",
  "yield_optimizer",
 ]
@@ -701,24 +700,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "yield-optimizer-overseer"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-bignumber",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw-storage-plus",
- "cw0",
- "cw20",
- "schemars",
- "serde",
- "terraswap",
- "thiserror",
- "yield_optimizer",
-]
-
-[[package]]
 name = "yield_optimizer"
 version = "0.1.0"
 dependencies = [
@@ -730,7 +711,6 @@ dependencies = [
  "schemars",
  "serde",
  "terra-cosmwasm",
- "terraswap",
 ]
 
 [[package]]

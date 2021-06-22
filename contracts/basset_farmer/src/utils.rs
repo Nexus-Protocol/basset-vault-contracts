@@ -1,21 +1,12 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{
-    attr, entry_point, from_binary, to_binary, Addr, Binary, CanonicalAddr, Coin, CosmosMsg, Deps,
-    DepsMut, Env, MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Uint128,
-    WasmMsg,
-};
-use schemars::_serde_json::map;
-use terraswap::querier::{query_balance, query_supply};
+use cosmwasm_std::{attr, to_binary, Coin, CosmosMsg, ReplyOn, Response, SubMsg, WasmMsg};
 
-use crate::contract::{SUBMSG_ID_BORROWING, SUBMSG_ID_REDEEM_STABLE, SUBMSG_ID_REPAY_LOAN};
-use crate::state::{load_config, Config};
+use crate::contract::{SUBMSG_ID_REDEEM_STABLE, SUBMSG_ID_REPAY_LOAN};
+use crate::state::Config;
 use crate::ContractResult;
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use yield_optimizer::{
-    querier::{
-        query_aterra_state, query_borrower_info, query_token_balance, AnchorMarketCw20Msg,
-        AnchorMarketMsg, BorrowerInfoResponse,
-    },
+    querier::{AnchorMarketCw20Msg, AnchorMarketMsg},
     TaxInfo,
 };
 

@@ -3,9 +3,6 @@ use cosmwasm_std::{
     ContractInfo, CosmosMsg, Decimal, Deps, DepsMut, Empty, Env, MessageInfo, QueryRequest, Reply,
     ReplyOn, Response, StdError, StdResult, SubMsg, Uint128, WasmMsg, WasmQuery,
 };
-use terraswap::asset::{Asset, AssetInfo};
-use terraswap::pair::Cw20HookMsg as TerraswapCw20HookMsg;
-use terraswap::pair::ExecuteMsg as TerraswapExecuteMsg;
 
 use crate::{
     commands,
@@ -37,6 +34,8 @@ use yield_optimizer::{
         query_supply, query_token_balance, AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg,
         BorrowerInfoResponse,
     },
+    terraswap::{Asset, AssetInfo},
+    terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
 };
 
 pub fn receive_cw20(

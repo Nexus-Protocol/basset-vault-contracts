@@ -2,12 +2,12 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Coin, Deps, StdResult};
 use terra_cosmwasm::TerraQuerier;
 
-// pub mod asset;
 pub mod basset_farmer;
 pub mod basset_farmer_config;
 pub mod casset_staking;
-pub mod overseer;
 pub mod querier;
+pub mod terraswap;
+pub mod terraswap_pair;
 
 pub fn deduct_tax(deps: Deps, coin: Coin) -> StdResult<Coin> {
     let tax_info = get_tax_info(deps, &coin.denom)?;

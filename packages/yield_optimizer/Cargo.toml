@@ -22,7 +22,6 @@ terra-cosmwasm = { version = "2.0.0" }
 cosmwasm-std = { version = "0.14.0" }
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-terraswap = "2.1.0"
 # anchor moneymarket contracts
 # moneymarket = { git = "ssh://git@github.com/Anchor-Protocol/money-market-contracts.git", version = "0.1.0", branch = "main" }
 
