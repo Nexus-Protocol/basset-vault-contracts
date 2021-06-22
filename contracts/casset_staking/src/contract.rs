@@ -1,19 +1,13 @@
-use std::default;
-
-use cosmwasm_bignumber::{Decimal256, Uint256};
+use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::{
-    attr, entry_point, from_binary, to_binary, Addr, Binary, CanonicalAddr, Coin, CosmosMsg, Deps,
-    DepsMut, Env, MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Uint128,
-    WasmMsg,
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult,
 };
 
 use crate::{
     commands, queries,
-    state::{config_set_casset_token, load_config, store_config, store_state, State},
+    state::{store_config, store_state, Config, State},
+    ContractResult,
 };
-use crate::{state::Config, ContractResult};
-use cw20::{Cw20ReceiveMsg, MinterResponse};
-use protobuf::Message;
 use yield_optimizer::casset_staking::{
     AnyoneMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
 };
@@ -54,7 +48,7 @@ pub fn execute(
     match msg {
         ExecuteMsg::Receive(msg) => commands::receive_cw20(deps, env, info, msg),
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
-            AnyoneMsg::UpdateIndex => commands::update_global_index(deps, env, info),
+            AnyoneMsg::UpdateIndex => commands::update_global_index(deps, env),
 
             AnyoneMsg::ClaimRewards { to } => commands::claim_rewards(deps, env, info.sender, to),
 
@@ -66,14 +60,14 @@ pub fn execute(
 }
 
 #[entry_point]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config => to_binary(&queries::query_config(deps)?),
     }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
+pub fn reply(_deps: DepsMut, _env: Env, _msg: Reply) -> ContractResult<Response> {
     Ok(Response::default())
 }
 

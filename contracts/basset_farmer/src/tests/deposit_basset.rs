@@ -1,18 +1,15 @@
-use crate::error::ContractError;
 use crate::{
-    contract::{execute, instantiate, reply, SUBMSG_ID_INIT_CASSET, SUBMSG_ID_INIT_CASSET_STAKER},
+    contract::{SUBMSG_ID_INIT_CASSET, SUBMSG_ID_INIT_CASSET_STAKER},
     response::MsgInstantiateContractResponse,
 };
 
 use crate::tests::mock_dependencies;
-use cosmwasm_bignumber::{Decimal256, Uint256};
+use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    attr, to_binary, Addr, BankMsg, Coin, ContractResult, CosmosMsg, Decimal, Reply, ReplyOn,
-    Response, StdError, SubMsg, SubcallResponse, Uint128, WasmMsg,
+    to_binary, ContractResult, CosmosMsg, Decimal, Reply, SubcallResponse, Uint128, WasmMsg,
 };
-use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg, MinterResponse};
-use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
+use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 use protobuf::Message;
 use yield_optimizer::casset_staking::{
     AnyoneMsg as CAssetStakingAnyoneMsg, ExecuteMsg as CAssetStakingMsg,
@@ -21,8 +18,6 @@ use yield_optimizer::{
     basset_farmer::{AnyoneMsg, Cw20HookMsg, ExecuteMsg},
     querier::AnchorOverseerMsg,
 };
-
-use super::math::decimal_subtraction;
 
 #[test]
 fn deposit_basset() {

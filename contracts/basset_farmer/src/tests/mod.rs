@@ -1,19 +1,14 @@
 mod deposit_basset;
 mod instantiate;
-mod math;
 mod repay_loan;
 
 use cosmwasm_bignumber::{Decimal256, Uint256};
+use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_slice, to_binary, Addr, Api, Binary, CanonicalAddr, Coin, ContractResult, Decimal, Empty,
+    from_slice, to_binary, Addr, Api, Binary, CanonicalAddr, Coin, ContractResult, Decimal,
     OwnedDeps, Querier, QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
 };
-use cosmwasm_std::{
-    testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
-    CustomQuery,
-};
 use cosmwasm_storage::to_length_prefixed;
-use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 use std::hash::Hash;
 use terra_cosmwasm::{TaxCapResponse, TaxRateResponse, TerraQuery, TerraQueryWrapper, TerraRoute};

@@ -1,37 +1,27 @@
-use commands::repay_logic_on_reply;
-use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
-    attr, entry_point, from_binary, to_binary, Addr, Binary, CanonicalAddr, Coin, CosmosMsg, Deps,
-    DepsMut, Env, MessageInfo, Reply, ReplyOn, Response, StdError, StdResult, SubMsg, Uint128,
-    WasmMsg,
+    attr, entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, ReplyOn,
+    Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 
 use crate::{
     commands, queries,
     state::{
-        config_set_casset_staker, config_set_casset_token, load_aim_buffer_size,
-        load_casset_staking_code_id, load_config, load_repaying_loan_state,
-        remove_casset_staking_code_id, store_casset_staking_code_id, store_config,
-        update_loan_state_part_of_loan_repaid, RepayingLoanState,
+        config_set_casset_staker, config_set_casset_token, load_casset_staking_code_id,
+        load_config, remove_casset_staking_code_id, store_casset_staking_code_id, store_config,
+        update_loan_state_part_of_loan_repaid,
     },
 };
 use crate::{error::ContractError, response::MsgInstantiateContractResponse};
 use crate::{state::Config, ContractResult};
-use cw20::{Cw20ReceiveMsg, MinterResponse};
-use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
+use cw20::MinterResponse;
 use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
 use yield_optimizer::{
     basset_farmer::{
-        AnyoneMsg, CAssetStakerMsg, Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
-        YourselfMsg,
+        AnyoneMsg, CAssetStakerMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, YourselfMsg,
     },
     casset_staking::InstantiateMsg as CAssetStakerInstantiateMsg,
-    deduct_tax, get_tax_info,
-    querier::{
-        get_basset_in_custody, query_aterra_state, query_balance, AnchorMarketCw20Msg,
-        AnchorMarketMsg,
-    },
+    querier::get_basset_in_custody,
 };
 
 pub const SUBMSG_ID_INIT_CASSET: u64 = 1;

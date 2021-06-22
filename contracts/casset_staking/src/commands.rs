@@ -1,36 +1,25 @@
 use cosmwasm_std::{
-    attr, entry_point, from_binary, to_binary, Addr, Binary, CanonicalAddr, Coin, ContractInfo,
-    CosmosMsg, Decimal, Deps, DepsMut, Empty, Env, MessageInfo, QueryRequest, Reply, ReplyOn,
-    Response, StdError, StdResult, SubMsg, Uint128, WasmMsg, WasmQuery,
+    attr, from_binary, to_binary, Addr, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdError,
+    WasmMsg,
 };
-use terraswap::asset::{Asset, AssetInfo};
-use terraswap::pair::Cw20HookMsg as TerraswapCw20HookMsg;
-use terraswap::pair::ExecuteMsg as TerraswapExecuteMsg;
 
 use crate::utils;
 use crate::{
-    commands, queries,
-    state::{load_config, store_staker_state, store_state, StakerState},
+    commands,
+    state::{load_config, store_staker_state, store_state},
 };
 use crate::{
     error::ContractError,
-    state::{load_staker_info, load_state, State},
+    state::{load_staker_info, load_state},
 };
 use crate::{state::Config, ContractResult};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ReceiveMsg;
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use yield_optimizer::basset_farmer::{CAssetStakerMsg, ExecuteMsg as BAssetExecuteMsg};
-use yield_optimizer::{
-    casset_staking::{AnyoneMsg, Cw20HookMsg, ExecuteMsg},
-    get_tax_info,
-    querier::{
-        query_aterra_state, query_balance, query_borrower_info, query_token_balance,
-        BorrowerInfoResponse,
-    },
-};
+use yield_optimizer::casset_staking::Cw20HookMsg;
 
-pub fn update_global_index(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+pub fn update_global_index(deps: DepsMut, env: Env) -> ContractResult<Response> {
     let config = load_config(deps.storage)?;
     let mut state = load_state(deps.storage)?;
     utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;

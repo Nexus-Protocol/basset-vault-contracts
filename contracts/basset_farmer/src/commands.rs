@@ -1,32 +1,26 @@
 use cosmwasm_std::{
-    attr, entry_point, from_binary, to_binary, Addr, BankMsg, Binary, CanonicalAddr, Coin,
-    ContractInfo, CosmosMsg, Decimal, Deps, DepsMut, Empty, Env, MessageInfo, QueryRequest, Reply,
-    ReplyOn, Response, StdError, StdResult, SubMsg, Uint128, WasmMsg, WasmQuery,
+    attr, from_binary, to_binary, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo,
+    ReplyOn, Response, SubMsg, Uint128, WasmMsg,
 };
 
+use crate::error::ContractError;
 use crate::{
     commands,
     contract::{SUBMSG_ID_BORROWING, SUBMSG_ID_REDEEM_STABLE},
-    queries,
     state::{
         load_aim_buffer_size, load_config, load_repaying_loan_state,
         load_stable_balance_before_selling_anc, store_aim_buffer_size, store_repaying_loan_state,
         store_stable_balance_before_selling_anc, RepayingLoanState,
     },
-    utils::{calc_after_borrow_action, get_repay_loan_action, RepayLoanAction},
+    utils::{calc_after_borrow_action, get_repay_loan_action},
 };
-use crate::{error::ContractError, response::MsgInstantiateContractResponse};
 use crate::{state::Config, ContractResult};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ReceiveMsg;
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use yield_optimizer::{
-    basset_farmer::{
-        AnyoneMsg, Cw20HookMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, YourselfMsg,
-    },
-    basset_farmer_config::{
-        query_borrower_action, BorrowerActionResponse, ConfigResponse as FarmerConfigConfigResponse,
-    },
+    basset_farmer::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, YourselfMsg},
+    basset_farmer_config::{query_borrower_action, BorrowerActionResponse},
     casset_staking::{AnyoneMsg as CAssetStakingAnyoneMsg, ExecuteMsg as CAssetStakingMsg},
     get_tax_info,
     querier::{

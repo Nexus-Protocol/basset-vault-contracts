@@ -1,11 +1,8 @@
-use std::collections::VecDeque;
-
-use cosmwasm_std::{to_binary, Addr, Decimal, Deps, QueryRequest, StdResult, WasmQuery};
+use cosmwasm_std::{to_binary, Addr, Deps, QueryRequest, StdResult, WasmQuery};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cw20::Cw20ReceiveMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {

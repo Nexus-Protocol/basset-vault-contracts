@@ -1,9 +1,9 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Addr, CanonicalAddr, Decimal, StdResult, Storage, Uint128};
-use cw_storage_plus::{Item, Map};
+use cosmwasm_bignumber::Uint256;
+use cosmwasm_std::{Addr, Decimal, StdResult, Storage, Uint128};
+use cw_storage_plus::Item;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {

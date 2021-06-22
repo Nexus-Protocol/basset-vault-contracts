@@ -6,9 +6,7 @@ use crate::{
 
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{testing::mock_dependencies, Decimal};
-use cosmwasm_std::{
-    to_binary, Api, ContractResult, Reply, ReplyOn, SubMsg, SubcallResponse, WasmMsg,
-};
+use cosmwasm_std::{to_binary, ContractResult, Reply, ReplyOn, SubMsg, SubcallResponse, WasmMsg};
 use cw20::MinterResponse;
 use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;

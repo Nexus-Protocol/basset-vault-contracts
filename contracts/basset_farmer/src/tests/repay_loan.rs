@@ -1,8 +1,7 @@
-use crate::error::ContractError;
 use crate::{
     contract::{
-        execute, instantiate, reply, SUBMSG_ID_INIT_CASSET, SUBMSG_ID_REDEEM_STABLE,
-        SUBMSG_ID_REPAY_LOAN, TOO_HIGH_BORROW_DEMAND_ERR_MSG,
+        SUBMSG_ID_INIT_CASSET, SUBMSG_ID_REDEEM_STABLE, SUBMSG_ID_REPAY_LOAN,
+        TOO_HIGH_BORROW_DEMAND_ERR_MSG,
     },
     response::MsgInstantiateContractResponse,
     state::{load_repaying_loan_state, store_config, RepayingLoanState},
@@ -10,21 +9,16 @@ use crate::{
 
 use crate::tests::mock_dependencies;
 use cosmwasm_bignumber::{Decimal256, Uint256};
+use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    attr, to_binary, Addr, BankMsg, Coin, ContractResult, CosmosMsg, Decimal, Reply, ReplyOn,
-    Response, StdError, SubMsg, SubcallResponse, Uint128, WasmMsg,
+    to_binary, Addr, Coin, ContractResult, Decimal, Reply, ReplyOn, Response, SubMsg,
+    SubcallResponse, Uint128, WasmMsg,
 };
-use cosmwasm_std::{
-    testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR},
-    Empty,
-};
-use cw20::{Cw20ReceiveMsg, MinterResponse};
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
-use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
 use std::str::FromStr;
 use yield_optimizer::{
-    basset_farmer::{Cw20HookMsg, ExecuteMsg},
+    basset_farmer::ExecuteMsg,
     basset_farmer_config::BorrowerActionResponse,
     querier::{
         AnchorMarketCw20Msg, AnchorMarketEpochStateResponse, AnchorMarketMsg, BorrowerInfoResponse,

@@ -1,15 +1,12 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
-    to_binary, Addr, AllBalanceResponse, Api, BalanceResponse, BankQuery, Binary, CanonicalAddr,
-    Coin, Deps, Querier, QuerierWrapper, QueryRequest, StdError, StdResult, Storage, Timestamp,
-    Uint128, WasmQuery,
+    to_binary, Addr, AllBalanceResponse, BalanceResponse, BankQuery, Binary, CanonicalAddr, Coin,
+    Deps, QuerierWrapper, QueryRequest, StdError, StdResult, Timestamp, Uint128, WasmQuery,
 };
 use cosmwasm_storage::to_length_prefixed;
-use cw20::Cw20QueryMsg;
 use cw20::TokenInfoResponse;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-// use moneymarket::custody::{BorrowerResponse, QueryMsg as CustodyQueryMsg};
 
 //TODO: if you have `terraswap` as dependency - use it from there!
 pub fn query_balance(

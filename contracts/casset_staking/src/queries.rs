@@ -1,15 +1,5 @@
-use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Deps, Env, StdResult};
-use serde::__private::de::TagOrContentField;
-use yield_optimizer::{
-    basset_farmer_config::{query_borrower_action, BorrowerActionResponse},
-    casset_staking::ConfigResponse,
-    querier::{
-        get_basset_in_custody, query_balance, query_borrower_info, query_market_config,
-        query_market_state, AnchorMarketConfigResponse, AnchorMarketStateResponse,
-        BorrowerInfoResponse,
-    },
-};
+use cosmwasm_std::{Deps, StdResult};
+use yield_optimizer::casset_staking::ConfigResponse;
 
 use crate::state::load_config;
 use crate::state::Config;
