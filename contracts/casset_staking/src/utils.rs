@@ -60,7 +60,9 @@ pub fn update_global_reward(
 //TODO: this method is wrong
 //test all cases where you are using it!
 pub fn update_staker_reward(state: &State, staker_state: &mut StakerState) {
-    staker_state.pending_rewards += state.global_reward_index - staker_state.reward_index;
+    let currently_staked = Decimal256::from_uint256(staker_state.staked_amount);
+    staker_state.pending_rewards +=
+        (state.global_reward_index - staker_state.reward_index) * currently_staked;
     staker_state.reward_index = state.global_reward_index;
 }
 
@@ -95,10 +97,19 @@ fn calculate_reward_index(
         } else {
             let new_reward_amount: Decimal256 =
                 current_total_reward_amount - state.last_reward_amount;
+            println!("new_reward_amount: {}", new_reward_amount);
+            println!(
+                "decimal_casset_staked_amount: {}",
+                decimal_casset_staked_amount
+            );
+
             state.global_reward_index += new_reward_amount / decimal_casset_staked_amount;
         }
         state.last_reward_amount = current_total_reward_amount;
     }
+
+    //TODO: remove me
+    println!("state after calc_reward_index: {:?}", state);
 }
 
 #[cfg(test)]

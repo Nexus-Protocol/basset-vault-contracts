@@ -16,7 +16,7 @@ use crate::{state::Config, ContractResult};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ReceiveMsg;
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
-use yield_optimizer::basset_farmer::{CAssetStakerMsg, ExecuteMsg as BAssetExecuteMsg};
+use yield_optimizer::basset_farmer::{CAssetStakerMsg, ExecuteMsg as BAssetFarmerExecuteMsg};
 use yield_optimizer::casset_staking::Cw20HookMsg;
 
 pub fn update_global_index(deps: DepsMut, env: Env) -> ContractResult<Response> {
@@ -115,6 +115,7 @@ pub fn unstake_casset(
     utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
     utils::update_staker_reward(&state, &mut staker_state);
 
+    println!("staker_state state: {:?}", staker_state);
     let claim_amount = staker_state.pending_rewards * Uint256::one();
     let decimal_claim_amount = Decimal256::from_uint256(claim_amount);
     staker_state.pending_rewards = staker_state.pending_rewards - decimal_claim_amount;
@@ -136,10 +137,11 @@ pub fn unstake_casset(
     })];
 
     if !claim_amount.is_zero() {
+        println!("claim_amount: {}", claim_amount);
         messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.basset_farmer_contract.to_string(),
             send: vec![],
-            msg: to_binary(&BAssetExecuteMsg::CAssetStaker {
+            msg: to_binary(&BAssetFarmerExecuteMsg::CAssetStaker {
                 casset_staker_msg: CAssetStakerMsg::SendRewards {
                     recipient,
                     amount: claim_amount,
@@ -191,7 +193,7 @@ pub fn claim_rewards(
         vec![CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.basset_farmer_contract.to_string(),
             send: vec![],
-            msg: to_binary(&BAssetExecuteMsg::CAssetStaker {
+            msg: to_binary(&BAssetFarmerExecuteMsg::CAssetStaker {
                 casset_staker_msg: CAssetStakerMsg::SendRewards {
                     recipient,
                     amount: claim_amount,
