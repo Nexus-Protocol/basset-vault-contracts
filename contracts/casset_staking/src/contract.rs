@@ -1,4 +1,4 @@
-use cosmwasm_bignumber::Decimal256;
+use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
     entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult,
 };
@@ -31,7 +31,7 @@ pub fn instantiate(
     let state = State {
         global_reward_index: Decimal256::zero(),
         last_reward_amount: Decimal256::zero(),
-        last_reward_updated: 0u64,
+        total_staked_amount: Uint256::zero(),
     };
     store_state(deps.storage, &state)?;
 

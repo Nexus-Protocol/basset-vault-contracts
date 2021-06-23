@@ -1,6 +1,6 @@
 use crate::state::{load_config, load_state, Config};
 
-use cosmwasm_bignumber::Decimal256;
+use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
 
@@ -36,5 +36,5 @@ fn proper_initialization() {
     let state = load_state(&deps.storage).unwrap();
     assert_eq!(state.last_reward_amount, Decimal256::zero());
     assert_eq!(state.global_reward_index, Decimal256::zero());
-    assert_eq!(state.last_reward_updated, 0);
+    assert_eq!(state.total_staked_amount, Uint256::zero());
 }

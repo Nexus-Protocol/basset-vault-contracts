@@ -103,12 +103,9 @@ fn first_stake() {
             };
 
             let info = mock_info(&casset_token, &vec![]);
-            let current_block_height = 68882;
-            let mut env = mock_env();
-            env.block.height = current_block_height;
             let res = crate::contract::execute(
                 deps.as_mut(),
-                env,
+                mock_env(),
                 info,
                 ExecuteMsg::Receive(cw20_deposit_msg),
             )
@@ -120,9 +117,11 @@ fn first_stake() {
             let state: State = load_state(&deps.storage).unwrap();
             assert_eq!(
                 State {
-                    global_reward_index: Decimal256::from_str("245").unwrap(),
-                    last_reward_amount: Decimal256::from_str("24500").unwrap(),
-                    last_reward_updated: current_block_height,
+                    // global_reward_index: Decimal256::from_str("245").unwrap(),
+                    // last_reward_amount: Decimal256::from_str("24500").unwrap(),
+                    global_reward_index: Decimal256::zero(),
+                    last_reward_amount: Decimal256::zero(),
+                    total_staked_amount: deposit_1_amount.into(),
                 },
                 state
             );
@@ -132,7 +131,7 @@ fn first_stake() {
             assert_eq!(
                 StakerState {
                     staked_amount: Uint256::from(deposit_1_amount),
-                    reward_index: Decimal256::from_str("245").unwrap(),
+                    reward_index: Decimal256::zero(),
                     pending_rewards: Decimal256::zero(),
                 },
                 staker_state
@@ -229,12 +228,9 @@ fn stake_and_unstake() {
             };
 
             let info = mock_info(&casset_token, &vec![]);
-            let current_block_height = 68882;
-            let mut env = mock_env();
-            env.block.height = current_block_height;
             crate::contract::execute(
                 deps.as_mut(),
-                env,
+                mock_env(),
                 info,
                 ExecuteMsg::Receive(cw20_deposit_msg),
             )
@@ -252,10 +248,7 @@ fn stake_and_unstake() {
         };
 
         let info = mock_info(&user_1_address.to_string(), &vec![]);
-        let current_block_height = 68883;
-        let mut env = mock_env();
-        env.block.height = current_block_height;
-        let res = crate::contract::execute(deps.as_mut(), env, info, unstake_msg).unwrap();
+        let res = crate::contract::execute(deps.as_mut(), mock_env(), info, unstake_msg).unwrap();
 
         assert_eq!(
             res.messages,
@@ -276,7 +269,7 @@ fn stake_and_unstake() {
             State {
                 global_reward_index: Decimal256::from_str("245").unwrap(),
                 last_reward_amount: Decimal256::from_str("24500").unwrap(),
-                last_reward_updated: current_block_height,
+                total_staked_amount: deposit_1_amount.into(),
             },
             state
         );
@@ -548,12 +541,9 @@ fn two_users_staking() {
             };
 
             let info = mock_info(&casset_token, &vec![]);
-            let current_block_height = 68883;
-            let mut env = mock_env();
-            env.block.height = current_block_height;
             crate::contract::execute(
                 deps.as_mut(),
-                env,
+                mock_env(),
                 info,
                 ExecuteMsg::Receive(cw20_deposit_msg),
             )
@@ -564,7 +554,7 @@ fn two_users_staking() {
                 State {
                     global_reward_index: Decimal256::from_str("245").unwrap(),
                     last_reward_amount: Decimal256::from_str("24500").unwrap(),
-                    last_reward_updated: current_block_height,
+                    total_staked_amount: (deposit_2_amount + deposit_1_amount).into(),
                 },
                 state
             );
@@ -620,10 +610,7 @@ fn two_users_staking() {
         };
 
         let info = mock_info(&user_1_address.to_string(), &vec![]);
-        let current_block_height = 68884;
-        let mut env = mock_env();
-        env.block.height = current_block_height;
-        let res = crate::contract::execute(deps.as_mut(), env, info, unstake_msg).unwrap();
+        let res = crate::contract::execute(deps.as_mut(), mock_env(), info, unstake_msg).unwrap();
 
         let state: State = load_state(&deps.storage).unwrap();
         assert_eq!(
@@ -639,7 +626,10 @@ fn two_users_staking() {
                 //minus claimed: 26_125
                 //result: 129_000 - 26_125
                 last_reward_amount: Decimal256::from_str("102875").unwrap(),
-                last_reward_updated: current_block_height,
+                total_staked_amount: (deposit_1_amount + deposit_2_amount)
+                    .checked_sub(withdraw_1_amount)
+                    .unwrap()
+                    .into(),
             },
             state
         );
@@ -730,10 +720,7 @@ fn two_users_staking() {
         };
 
         let info = mock_info(&user_2_address.to_string(), &vec![]);
-        let current_block_height = 68885;
-        let mut env = mock_env();
-        env.block.height = current_block_height;
-        let res = crate::contract::execute(deps.as_mut(), env, info, unstake_msg).unwrap();
+        let res = crate::contract::execute(deps.as_mut(), mock_env(), info, unstake_msg).unwrap();
 
         let state: State = load_state(&deps.storage).unwrap();
         assert_eq!(
@@ -748,7 +735,12 @@ fn two_users_staking() {
                 //minus claimed: 78_375
                 //result: 102_875 - 78_375 = 24_500
                 last_reward_amount: Decimal256::from_str("24500").unwrap(),
-                last_reward_updated: current_block_height,
+                total_staked_amount: (deposit_2_amount + deposit_1_amount)
+                    .checked_sub(withdraw_1_amount)
+                    .unwrap()
+                    .checked_sub(withdraw_2_amount)
+                    .unwrap()
+                    .into(),
             },
             state
         );
@@ -796,8 +788,6 @@ fn two_users_staking() {
     }
 }
 
-//TODO: user 1 stake, user 2 stake, some rewards come, user 1 unstake
-//
 //TODO: user 1 stake, some rewards come, user 2 stake
 //TODO: basset_farmer balance changed in negative way
 //TODO: claim rewards test (in new file)

@@ -76,12 +76,23 @@ pub fn stake_casset(
     let mut state = load_state(deps.storage)?;
 
     utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
+    utils::update_staker_reward(&state, &mut staker_state);
 
-    staker_state.reward_index = state.global_reward_index;
-    staker_state.staked_amount += stake_amount;
+    utils::increase_staked_amount(&mut state, &mut staker_state, stake_amount);
 
     store_state(deps.storage, &state)?;
     store_staker_state(deps.storage, &staker, &staker_state)?;
+
+    // // Compute global reward & staker reward
+    // compute_reward(&config, &mut state, env.block.height);
+    // compute_staker_reward(&state, &mut staker_info)?;
+
+    // // Increase bond_amount
+    // increase_bond_amount(&mut state, &mut staker_info, amount);
+
+    // // Store updated state with staker's staker_info
+    // store_staker_info(&mut deps.storage, &sender_addr_raw, &staker_info)?;
+    // store_state(&mut deps.storage, &state)?;
 
     Ok(Response {
         messages: vec![],
@@ -122,7 +133,8 @@ pub fn unstake_casset(
     //TODO: write test on: Stake -> wait for reward -> Unstake -> Stake. Rewards amount for user
     // after second 'Stake' should be zero!
     state.last_reward_amount = state.last_reward_amount - decimal_claim_amount;
-    staker_state.staked_amount = staker_state.staked_amount - amount_to_unstake;
+
+    utils::decrease_staked_amount(&mut state, &mut staker_state, amount_to_unstake);
 
     store_state(deps.storage, &state)?;
     store_staker_state(deps.storage, &staker, &staker_state)?;
