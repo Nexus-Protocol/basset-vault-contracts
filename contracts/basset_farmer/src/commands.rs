@@ -12,7 +12,7 @@ use crate::{
         store_last_rewards_claiming_height, store_repaying_loan_state,
         store_stable_balance_before_selling_anc, RepayingLoanState,
     },
-    utils::{calc_after_borrow_action, get_repay_loan_action},
+    utils::{calc_after_borrow_action, get_repay_loan_action, split_profit_to_handle_interest},
 };
 use crate::{error::ContractError, state::load_last_rewards_claiming_height};
 use crate::{state::Config, ContractResult};
@@ -28,8 +28,7 @@ use yield_optimizer::{
         query_supply, query_token_balance, AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg,
         BorrowerInfoResponse,
     },
-    terraswap::{Asset, AssetInfo},
-    terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
+    terraswap_pair::Cw20HookMsg as TerraswapCw20HookMsg,
 };
 
 pub fn receive_cw20(
@@ -415,11 +414,6 @@ pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
         attributes: vec![attr("action", "claim_anc_rewards")],
         data: None,
     })
-
-    //1. claim ANC rewards
-    //2. sell all ANC to UST
-    //3. 95% is a rewards, calculate them, add to rewards. Update global_reward_index
-    //4. 5% is for Psi stakers, swap UST to Psi and send them to Governance contract.
 }
 
 pub fn swap_anc(deps: DepsMut, env: Env) -> ContractResult<Response> {
@@ -470,153 +464,35 @@ pub fn swap_anc(deps: DepsMut, env: Env) -> ContractResult<Response> {
 
 pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
     let config: Config = load_config(deps.storage)?;
-    let stable_coin_balance = query_balance(
-        &deps.querier,
-        &env.contract.address,
-        config.stable_denom.clone(),
-    )?;
     let stable_coin_balance_before_sell_anc =
         load_stable_balance_before_selling_anc(deps.as_ref().storage)?;
 
-    let selling_anc_profit =
-        stable_coin_balance.checked_sub(stable_coin_balance_before_sell_anc)?;
-
-    let tax_info = get_tax_info(deps.as_ref(), &config.stable_denom)?;
-    let stable_coin_to_buy_psi = selling_anc_profit * config.psi_part_in_rewards;
-    let stable_coin_to_buy_psi: Uint128 =
-        tax_info.subtract_tax(stable_coin_to_buy_psi.into()).into();
-    let swap_asset = Asset {
-        info: AssetInfo::NativeToken {
-            denom: config.stable_denom.clone(),
-        },
-        amount: stable_coin_to_buy_psi,
-    };
-
-    let stable_coin_to_lending = selling_anc_profit.checked_sub(stable_coin_to_buy_psi)?;
-    let stable_coin_to_lending: Uint128 =
-        tax_info.subtract_tax(stable_coin_to_lending.into()).into();
-
-    Ok(Response {
-        messages: vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: config.anchor_market_contract.to_string(),
-                msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
-                send: vec![Coin {
-                    denom: config.stable_denom.clone(),
-                    amount: stable_coin_to_lending,
-                }],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: config.psi_stable_swap_contract.to_string(),
-                msg: to_binary(&TerraswapExecuteMsg::Swap {
-                    offer_asset: swap_asset,
-                    max_spread: None,
-                    belief_price: None,
-                    to: Some(config.governance_contract.to_string()),
-                })?,
-                send: vec![Coin {
-                    denom: config.stable_denom.clone(),
-                    amount: stable_coin_to_buy_psi,
-                }],
-            }),
-        ],
-        submessages: vec![],
-        attributes: vec![
-            attr("action", "distribute_rewards"),
-            attr("stable_to_lending", stable_coin_to_lending),
-            attr("bying_psi", stable_coin_to_buy_psi),
-        ],
-        data: None,
-    })
-}
-
-pub fn send_rewards(
-    deps: DepsMut,
-    env: Env,
-    config: Config,
-    //we trust casset_staking contract
-    recipient: String,
-    rewards_amount: Uint256,
-) -> ContractResult<Response> {
-    let aim_buffer_size = load_aim_buffer_size(deps.as_ref().storage)?;
     let stable_coin_balance = query_balance(
         &deps.querier,
         &env.contract.address,
         config.stable_denom.clone(),
     )?;
-    let stable_coin_balance = Uint256::from(stable_coin_balance);
+    let aterra_balance =
+        query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address)?;
 
-    let amount_to_get_from_buffer = if stable_coin_balance > aim_buffer_size {
-        stable_coin_balance - aim_buffer_size
-    } else {
-        Uint256::zero()
-    };
+    let aterra_state = query_aterra_state(deps.as_ref(), &config.anchor_market_contract)?;
+    let borrower_info: BorrowerInfoResponse = query_borrower_info(
+        deps.as_ref(),
+        &config.anchor_market_contract,
+        &env.contract.address,
+    )?;
+    let borrowed_amount = borrower_info.loan_amount;
+
+    let action_with_profit = split_profit_to_handle_interest(
+        borrowed_amount,
+        aterra_balance.into(),
+        aterra_state.exchange_rate,
+        stable_coin_balance.into(),
+        stable_coin_balance_before_sell_anc.into(),
+        config.over_loan_balance_value,
+    );
 
     let tax_info = get_tax_info(deps.as_ref(), &config.stable_denom)?;
-    let rewards_coin = Coin {
-        denom: config.stable_denom.clone(),
-        amount: tax_info.subtract_tax(rewards_amount).into(),
-    };
 
-    if amount_to_get_from_buffer >= rewards_amount {
-        return Ok(Response {
-            messages: vec![CosmosMsg::Bank(BankMsg::Send {
-                to_address: recipient,
-                amount: vec![rewards_coin],
-            })],
-            submessages: vec![],
-            attributes: vec![
-                attr("action", "send_rewards"),
-                attr("rewards_amount", rewards_amount),
-            ],
-            data: None,
-        });
-    } else {
-        let aterra_balance =
-            query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address)?;
-        let aterra_balance = Uint256::from(aterra_balance);
-        let aterra_exchange_rate: Decimal256 =
-            query_aterra_state(deps.as_ref(), &config.anchor_market_contract)?.exchange_rate;
-
-        let amount_to_get_from_aterra = rewards_amount - amount_to_get_from_buffer;
-        let aterra_selling_value = tax_info.append_tax(amount_to_get_from_aterra);
-        let aterra_to_sell = aterra_selling_value / aterra_exchange_rate;
-        let aterra_to_sell = Uint256::min(aterra_to_sell, aterra_balance);
-        let repaying_loan_state = RepayingLoanState {
-            iteration_index: 0,
-            to_repay_amount: aterra_selling_value,
-            repaying_amount: aterra_selling_value,
-            aim_buffer_size,
-        };
-        store_repaying_loan_state(deps.storage, &repaying_loan_state)?;
-
-        return Ok(Response {
-            messages: vec![CosmosMsg::Bank(BankMsg::Send {
-                to_address: recipient,
-                amount: vec![rewards_coin],
-            })],
-            submessages: vec![SubMsg {
-                msg: WasmMsg::Execute {
-                    contract_addr: config.aterra_token.to_string(),
-                    msg: to_binary(&Cw20ExecuteMsg::Send {
-                        contract: config.anchor_market_contract.to_string(),
-                        amount: aterra_to_sell.into(),
-                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
-                    })?,
-                    send: vec![],
-                }
-                .into(),
-                gas_limit: None,
-                id: SUBMSG_ID_REDEEM_STABLE,
-                //Always because Anchor can block withdrawing
-                //if there are too many borrowers
-                reply_on: ReplyOn::Always,
-            }],
-            attributes: vec![
-                attr("action", "send_rewards"),
-                attr("rewards_amount", rewards_amount),
-            ],
-            data: None,
-        });
-    }
+    action_with_profit.to_response(&config, &tax_info)
 }

@@ -33,7 +33,6 @@ pub enum ExecuteMsg {
     Anyone { anyone_msg: AnyoneMsg },
     Receive(Cw20ReceiveMsg),
     Yourself { yourself_msg: YourselfMsg },
-    CAssetStaker { casset_staker_msg: CAssetStakerMsg },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -48,12 +47,6 @@ pub enum YourselfMsg {
 pub enum AnyoneMsg {
     HonestWork,
     Rebalance,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum CAssetStakerMsg {
-    SendRewards { recipient: String, amount: Uint256 },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

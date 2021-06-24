@@ -1,14 +1,14 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_bignumber::Uint256;
+use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Addr, Decimal, StdResult, Storage, Uint128};
 use cw_storage_plus::Item;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub governance_contract: Addr,
-    pub casset_staking_contract: Addr,
+    pub psi_distributor_addr: Addr,
     pub anchor_token: Addr,
     pub anchor_overseer_contract: Addr,
     pub anchor_market_contract: Addr,
@@ -24,6 +24,10 @@ pub struct Config {
     pub basset_farmer_config_contract: Addr,
     pub stable_denom: String,
     pub claiming_rewards_delay: u64,
+    //UST value in balance should be more than loan
+    //on what portion.
+    //for example: 1.01 means 1% more than loan
+    pub over_loan_balance_value: Decimal256,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
@@ -53,16 +57,6 @@ pub fn store_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()>
 pub fn config_set_casset_token(storage: &mut dyn Storage, casset_token: Addr) -> StdResult<Config> {
     CONFIG.update(storage, |mut config| -> StdResult<_> {
         config.casset_token = casset_token;
-        Ok(config)
-    })
-}
-
-pub fn config_set_casset_staker(
-    storage: &mut dyn Storage,
-    casset_staker: Addr,
-) -> StdResult<Config> {
-    CONFIG.update(storage, |mut config| -> StdResult<_> {
-        config.casset_staking_contract = casset_staker;
         Ok(config)
     })
 }

@@ -1,12 +1,17 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{attr, to_binary, Coin, CosmosMsg, ReplyOn, Response, SubMsg, WasmMsg};
+use cosmwasm_std::{attr, to_binary, Coin, CosmosMsg, ReplyOn, Response, SubMsg, Uint128, WasmMsg};
 
 use crate::contract::{SUBMSG_ID_REDEEM_STABLE, SUBMSG_ID_REPAY_LOAN};
 use crate::state::Config;
 use crate::ContractResult;
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use yield_optimizer::{
+    psi_distributor::{
+        AnyoneMsg as PsiDistributorAnyoneMsg, ExecuteMsg as PsiDistributorExecuteMsg,
+    },
     querier::{AnchorMarketCw20Msg, AnchorMarketMsg},
+    terraswap::{Asset, AssetInfo},
+    terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
     TaxInfo,
 };
 
@@ -297,11 +302,194 @@ pub fn calc_after_borrow_action(
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum ActionWithProfit {
+    BuyPsi {
+        amount: Uint256,
+    },
+    DepositToAnc {
+        amount: Uint256,
+    },
+    Split {
+        buy_psi: Uint256,
+        deposit_to_anc: Uint256,
+    },
+    Nothing,
+}
+
+impl ActionWithProfit {
+    pub fn to_response(&self, config: &Config, tax_info: &TaxInfo) -> ContractResult<Response> {
+        match self {
+            ActionWithProfit::Nothing => Ok(Response {
+                messages: vec![],
+                submessages: vec![],
+                attributes: vec![
+                    attr("action", "distribute_rewards"),
+                    attr("rewards_profit", "zero"),
+                ],
+                data: None,
+            }),
+
+            &ActionWithProfit::DepositToAnc { amount } => {
+                let stable_coin_to_lending: Uint128 = tax_info.subtract_tax(amount).into();
+
+                Ok(Response {
+                    messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: config.anchor_market_contract.to_string(),
+                        msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
+                        send: vec![Coin {
+                            denom: config.stable_denom.clone(),
+                            amount: stable_coin_to_lending,
+                        }],
+                    })],
+                    submessages: vec![],
+                    attributes: vec![
+                        attr("action", "distribute_rewards"),
+                        attr("deposit_to_anc", stable_coin_to_lending),
+                    ],
+                    data: None,
+                })
+            }
+
+            &ActionWithProfit::BuyPsi { amount } => {
+                let stable_coin_to_buy_psi: Uint128 = tax_info.subtract_tax(amount).into();
+                let swap_asset = Asset {
+                    info: AssetInfo::NativeToken {
+                        denom: config.stable_denom.clone(),
+                    },
+                    amount: stable_coin_to_buy_psi,
+                };
+
+                Ok(Response {
+                    messages: vec![
+                        CosmosMsg::Wasm(WasmMsg::Execute {
+                            contract_addr: config.psi_stable_swap_contract.to_string(),
+                            msg: to_binary(&TerraswapExecuteMsg::Swap {
+                                offer_asset: swap_asset,
+                                max_spread: None,
+                                belief_price: None,
+                                to: Some(config.psi_distributor_addr.to_string()),
+                            })?,
+                            send: vec![Coin {
+                                denom: config.stable_denom.clone(),
+                                amount: stable_coin_to_buy_psi,
+                            }],
+                        }),
+                        CosmosMsg::Wasm(WasmMsg::Execute {
+                            contract_addr: config.psi_distributor_addr.to_string(),
+                            msg: to_binary(&PsiDistributorExecuteMsg::Anyone {
+                                anyone_msg: PsiDistributorAnyoneMsg::DistributeRewards,
+                            })?,
+                            send: vec![],
+                        }),
+                    ],
+                    submessages: vec![],
+                    attributes: vec![
+                        attr("action", "distribute_rewards"),
+                        attr("bying_psi", stable_coin_to_buy_psi),
+                    ],
+                    data: None,
+                })
+            }
+
+            &ActionWithProfit::Split {
+                buy_psi,
+                deposit_to_anc,
+            } => {
+                let stable_coin_to_lending: Uint128 = tax_info.subtract_tax(deposit_to_anc).into();
+                let stable_coin_to_buy_psi: Uint128 = tax_info.subtract_tax(buy_psi).into();
+                let swap_asset = Asset {
+                    info: AssetInfo::NativeToken {
+                        denom: config.stable_denom.clone(),
+                    },
+                    amount: stable_coin_to_buy_psi,
+                };
+
+                Ok(Response {
+                    messages: vec![
+                        CosmosMsg::Wasm(WasmMsg::Execute {
+                            contract_addr: config.anchor_market_contract.to_string(),
+                            msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
+                            send: vec![Coin {
+                                denom: config.stable_denom.clone(),
+                                amount: stable_coin_to_lending,
+                            }],
+                        }),
+                        CosmosMsg::Wasm(WasmMsg::Execute {
+                            contract_addr: config.psi_stable_swap_contract.to_string(),
+                            msg: to_binary(&TerraswapExecuteMsg::Swap {
+                                offer_asset: swap_asset,
+                                max_spread: None,
+                                belief_price: None,
+                                to: Some(config.psi_distributor_addr.to_string()),
+                            })?,
+                            send: vec![Coin {
+                                denom: config.stable_denom.clone(),
+                                amount: stable_coin_to_buy_psi,
+                            }],
+                        }),
+                        CosmosMsg::Wasm(WasmMsg::Execute {
+                            contract_addr: config.psi_distributor_addr.to_string(),
+                            msg: to_binary(&PsiDistributorExecuteMsg::Anyone {
+                                anyone_msg: PsiDistributorAnyoneMsg::DistributeRewards,
+                            })?,
+                            send: vec![],
+                        }),
+                    ],
+                    submessages: vec![],
+                    attributes: vec![
+                        attr("action", "distribute_rewards"),
+                        attr("bying_psi", stable_coin_to_buy_psi),
+                        attr("deposit_to_anc", stable_coin_to_lending),
+                    ],
+                    data: None,
+                })
+            }
+        }
+    }
+}
+
+pub fn split_profit_to_handle_interest(
+    borrowed_amount: Uint256,
+    aterra_amount: Uint256,
+    aterra_exchange_rate: Decimal256,
+    stable_coin_balance: Uint256,
+    stable_coin_balance_before_sell_anc: Uint256,
+    over_loan_balance_value: Decimal256,
+) -> ActionWithProfit {
+    if stable_coin_balance <= stable_coin_balance_before_sell_anc {
+        return ActionWithProfit::Nothing;
+    }
+
+    let total_stable_coin_balance = aterra_amount * aterra_exchange_rate + stable_coin_balance;
+    let selling_anc_profit = stable_coin_balance - stable_coin_balance_before_sell_anc;
+
+    let aim_stable_balance = borrowed_amount * over_loan_balance_value;
+    if aim_stable_balance <= total_stable_coin_balance {
+        return ActionWithProfit::BuyPsi {
+            amount: selling_anc_profit,
+        };
+    }
+
+    let amount_to_anc_deposit = aim_stable_balance - total_stable_coin_balance;
+    if selling_anc_profit <= amount_to_anc_deposit {
+        return ActionWithProfit::DepositToAnc {
+            amount: selling_anc_profit,
+        };
+    }
+
+    let buy_psi_amount = selling_anc_profit - amount_to_anc_deposit;
+    return ActionWithProfit::Split {
+        buy_psi: buy_psi_amount,
+        deposit_to_anc: amount_to_anc_deposit,
+    };
+}
+
 #[cfg(test)]
 mod test {
     use super::{
         calc_after_borrow_action, calc_wanted_stablecoins, get_repay_loan_action,
-        AfterBorrowAction, RepayLoanAction,
+        split_profit_to_handle_interest, ActionWithProfit, AfterBorrowAction, RepayLoanAction,
     };
 
     use cosmwasm_bignumber::{Decimal256, Uint256};
@@ -1186,5 +1374,131 @@ mod test {
         let buffer = Uint256::from(1_000_000u64);
         let action = calc_after_borrow_action(balance, buffer, &tax_info);
         assert_eq!(AfterBorrowAction::Nothing, action)
+    }
+
+    #[test]
+    fn split_profit_to_handle_interest_zero_profit() {
+        let borrowed_amount = Uint256::from(2_000u64);
+        let aterra_balance = Uint256::from(1_500u64);
+        let aterra_state_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let stable_coin_balance = Uint256::from(500u64);
+        let stable_coin_balance_before_sell_anc = Uint256::from(500u64);
+        let over_loan_balance_value = Decimal256::from_str("1.01").unwrap();
+
+        let action_with_profit = split_profit_to_handle_interest(
+            borrowed_amount,
+            aterra_balance,
+            aterra_state_exchange_rate,
+            stable_coin_balance,
+            stable_coin_balance_before_sell_anc,
+            over_loan_balance_value,
+        );
+
+        assert_eq!(ActionWithProfit::Nothing, action_with_profit);
+    }
+
+    #[test]
+    fn split_profit_to_handle_interest_negative_profit() {
+        let borrowed_amount = Uint256::from(2_000u64);
+        let aterra_balance = Uint256::from(1_500u64);
+        let aterra_state_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let stable_coin_balance = Uint256::from(500u64);
+        let stable_coin_balance_before_sell_anc = Uint256::from(1_000u64);
+        let over_loan_balance_value = Decimal256::from_str("1.01").unwrap();
+
+        let action_with_profit = split_profit_to_handle_interest(
+            borrowed_amount,
+            aterra_balance,
+            aterra_state_exchange_rate,
+            stable_coin_balance,
+            stable_coin_balance_before_sell_anc,
+            over_loan_balance_value,
+        );
+
+        assert_eq!(ActionWithProfit::Nothing, action_with_profit);
+    }
+
+    #[test]
+    fn split_profit_to_handle_interest_current_balance_is_bigger_than_aim() {
+        let borrowed_amount = Uint256::from(2_000u64);
+        //1500*1.2 = 1800
+        let aterra_balance = Uint256::from(1_500u64);
+        let aterra_state_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let stable_coin_balance = Uint256::from(800u64);
+        let stable_coin_balance_before_sell_anc = Uint256::from(500u64);
+        let over_loan_balance_value = Decimal256::from_str("1.01").unwrap();
+
+        let action_with_profit = split_profit_to_handle_interest(
+            borrowed_amount,
+            aterra_balance,
+            aterra_state_exchange_rate,
+            stable_coin_balance,
+            stable_coin_balance_before_sell_anc,
+            over_loan_balance_value,
+        );
+
+        assert_eq!(
+            ActionWithProfit::BuyPsi {
+                amount: Uint256::from(300u64)
+            },
+            action_with_profit
+        );
+    }
+
+    #[test]
+    fn split_profit_to_handle_interest_current_balance_is_lesser_than_aim_plus_profit() {
+        let borrowed_amount = Uint256::from(2_000u64);
+        //1500*1.2 = 1800
+        let aterra_balance = Uint256::from(1_500u64);
+        let aterra_state_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let stable_coin_balance = Uint256::from(100u64);
+        let stable_coin_balance_before_sell_anc = Uint256::from(50u64);
+        //so, aim is 2020
+        let over_loan_balance_value = Decimal256::from_str("1.01").unwrap();
+
+        let action_with_profit = split_profit_to_handle_interest(
+            borrowed_amount,
+            aterra_balance,
+            aterra_state_exchange_rate,
+            stable_coin_balance,
+            stable_coin_balance_before_sell_anc,
+            over_loan_balance_value,
+        );
+
+        assert_eq!(
+            ActionWithProfit::DepositToAnc {
+                amount: Uint256::from(50u64)
+            },
+            action_with_profit
+        );
+    }
+
+    #[test]
+    fn split_profit_to_handle_interest_current_balance_is_lesser_than_aim_but_profit_helps() {
+        let borrowed_amount = Uint256::from(2_000u64);
+        //1500*1.2 = 1800
+        let aterra_balance = Uint256::from(1_500u64);
+        let aterra_state_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let stable_coin_balance = Uint256::from(200u64);
+        let stable_coin_balance_before_sell_anc = Uint256::from(150u64);
+        //so, aim is 2020
+        let over_loan_balance_value = Decimal256::from_str("1.01").unwrap();
+
+        let action_with_profit = split_profit_to_handle_interest(
+            borrowed_amount,
+            aterra_balance,
+            aterra_state_exchange_rate,
+            stable_coin_balance,
+            stable_coin_balance_before_sell_anc,
+            over_loan_balance_value,
+        );
+
+        assert_eq!(
+            ActionWithProfit::Split {
+                buy_psi: Uint256::from(30u64),
+                deposit_to_anc: Uint256::from(20u64),
+            },
+            action_with_profit
+        );
     }
 }

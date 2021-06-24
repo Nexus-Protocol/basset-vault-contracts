@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    attr, entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, ReplyOn,
-    Response, StdError, StdResult, SubMsg, WasmMsg,
+    attr, entry_point, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
+    ReplyOn, Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 
 use crate::{
@@ -28,7 +28,6 @@ pub const SUBMSG_ID_INIT_CASSET: u64 = 1;
 pub const SUBMSG_ID_REDEEM_STABLE: u64 = 2;
 pub const SUBMSG_ID_REPAY_LOAN: u64 = 3;
 pub const SUBMSG_ID_BORROWING: u64 = 4;
-pub const SUBMSG_ID_INIT_CASSET_STAKER: u64 = 5;
 //withdrawing from Anchor Deposit error
 pub const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
 //borrowing error
@@ -60,6 +59,7 @@ pub fn instantiate(
             .addr_validate(&msg.basset_farmer_config_contract)?,
         stable_denom: msg.stable_denom,
         claiming_rewards_delay: msg.claiming_rewards_delay,
+        over_loan_balance_value: todo!(),
     };
     store_config(deps.storage, &config)?;
 
@@ -111,45 +111,24 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
             remove_casset_staking_code_id(deps.storage);
 
             Ok(Response {
-                messages: vec![],
-                submessages: vec![SubMsg {
-                    msg: WasmMsg::Instantiate {
-                        admin: None,
-                        code_id: casset_staking_code_id,
-                        msg: to_binary(&CAssetStakerInstantiateMsg {
-                            casset_token: casset_token.to_string(),
-                            aterra_token: config.aterra_token.to_string(),
-                            stable_denom: config.stable_denom,
-                            basset_farmer_contract: env.contract.address.to_string(),
-                            anchor_market_contract: config.anchor_market_contract.to_string(),
-                        })?,
-                        send: vec![],
-                        label: "".to_string(),
-                    }
-                    .into(),
-                    gas_limit: None,
-                    id: SUBMSG_ID_INIT_CASSET_STAKER,
-                    reply_on: ReplyOn::Success,
-                }],
-                attributes: vec![attr("casset_token_addr", casset_token)],
-                data: None,
-            })
-        }
-
-        SUBMSG_ID_INIT_CASSET_STAKER => {
-            let data = msg.result.unwrap().data.unwrap();
-            let res: MsgInstantiateContractResponse = Message::parse_from_bytes(data.as_slice())
-                .map_err(|_| {
-                    StdError::parse_err("MsgInstantiateContractResponse", "failed to parse data")
-                })?;
-
-            let casset_staker = res.get_contract_address();
-            config_set_casset_staker(deps.storage, deps.api.addr_validate(casset_staker)?)?;
-
-            Ok(Response {
-                messages: vec![],
+                messages: vec![CosmosMsg::Wasm(WasmMsg::Instantiate {
+                    admin: None,
+                    code_id: casset_staking_code_id,
+                    msg: to_binary(&CAssetStakerInstantiateMsg {
+                        casset_token: casset_token.to_string(),
+                        aterra_token: config.aterra_token.to_string(),
+                        stable_denom: config.stable_denom,
+                        basset_farmer_contract: env.contract.address.to_string(),
+                        anchor_market_contract: config.anchor_market_contract.to_string(),
+                    })?,
+                    send: vec![],
+                    label: "".to_string(),
+                })],
                 submessages: vec![],
-                attributes: vec![attr("casset_staking_contract", casset_staker)],
+                attributes: vec![
+                    attr("action", "creating_casset_staker"),
+                    attr("casset_token_addr", casset_token),
+                ],
                 data: None,
             })
         }
@@ -221,19 +200,6 @@ pub fn execute(
             match yourself_msg {
                 YourselfMsg::SwapAnc => commands::swap_anc(deps, env),
                 YourselfMsg::DisributeRewards => commands::distribute_rewards(deps, env),
-            }
-        }
-
-        ExecuteMsg::CAssetStaker { casset_staker_msg } => {
-            let config: Config = load_config(deps.storage)?;
-            if info.sender != config.casset_staking_contract {
-                return Err(ContractError::Unauthorized {});
-            }
-
-            match casset_staker_msg {
-                CAssetStakerMsg::SendRewards { recipient, amount } => {
-                    commands::send_rewards(deps, env, config, recipient, amount)
-                }
             }
         }
     }

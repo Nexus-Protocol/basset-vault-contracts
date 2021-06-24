@@ -286,6 +286,7 @@ fn repay_loan_fail_to_redeem_aterra() {
         stable_denom: stable_denom.clone(),
         casset_staking_contract: Addr::unchecked(casset_staking_contract.clone()),
         claiming_rewards_delay: 1000,
+        over_loan_balance_value: todo!(),
     };
 
     let stable_coin_initial_balance = Uint128::from(5_000u64);
