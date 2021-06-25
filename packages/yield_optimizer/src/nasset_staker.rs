@@ -6,11 +6,7 @@ use cw20::Cw20ReceiveMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub casset_token: String,
-    pub aterra_token: String,
-    pub stable_denom: String,
-    pub basset_farmer_contract: String,
-    pub anchor_market_contract: String,
+    pub nasset_token: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -46,9 +42,5 @@ pub struct MigrateMsg {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ConfigResponse {
-    pub casset_token: String,
-    pub aterra_token: String,
-    pub stable_denom: String,
-    pub basset_farmer_contract: String,
-    pub anchor_market_contract: String,
+    pub nasset_token: String,
 }

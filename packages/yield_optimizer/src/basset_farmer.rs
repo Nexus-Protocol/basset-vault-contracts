@@ -1,30 +1,30 @@
-use cosmwasm_std::Decimal;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_bignumber::Uint256;
+use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ReceiveMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub token_code_id: u64,
-    pub casset_staking_code_id: u64,
+    pub nasset_token_code_id: u64,
+    pub casset_staker_code_id: u64,
+    pub psi_distributor_code_id: u64,
     pub basset_token_addr: String,
     //Luna / ETH / Sol, will be converted to cLuna, cETH, cSol
     pub collateral_token_symbol: String,
     pub governance_addr: String,
-    pub custody_basset_contract: String,
     pub anchor_token: String,
     pub anchor_market_contract: String,
     pub anchor_overseer_contract: String,
+    pub anchor_custody_basset_contract: String,
     pub anc_stable_swap_contract: String,
     pub psi_stable_swap_contract: String,
     pub aterra_token: String,
-    pub psi_part_in_rewards: Decimal,
     pub psi_token: String,
     pub basset_farmer_config_contract: String,
     pub stable_denom: String,
     pub claiming_rewards_delay: u64,
+    pub over_loan_balance_value: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -65,12 +65,13 @@ pub struct MigrateMsg {}
 pub enum QueryMsg {
     Config,
     Rebalance,
+    ChildContractsCodeId,
+    IsRewardsClaimable,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ConfigResponse {
     pub governance_contract: String,
-    pub casset_staking_contract: String,
     pub anchor_token: String,
     pub anchor_overseer_contract: String,
     pub anchor_market_contract: String,
@@ -80,8 +81,6 @@ pub struct ConfigResponse {
     pub casset_token: String,
     pub basset_token: String,
     pub aterra_token: String,
-    //what part of profit from selling ANC spend to buy PSI
-    pub psi_part_in_rewards: Decimal,
     pub psi_token: String,
     pub basset_farmer_config_contract: String,
     pub stable_denom: String,
@@ -100,4 +99,18 @@ pub enum RebalanceResponse {
         amount: Uint256,
         advised_buffer_size: Uint256,
     },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ChildContractsCodeIdResponse {
+    pub nasset_token: u64,
+    pub nasset_staker: u64,
+    pub psi_distributor: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct IsRewardsClaimableResponse {
+    pub claimable: bool,
+    pub anc_amount: Decimal256,
+    pub last_claiming_height: u64,
 }

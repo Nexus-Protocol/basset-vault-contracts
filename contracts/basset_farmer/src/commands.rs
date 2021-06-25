@@ -12,7 +12,10 @@ use crate::{
         store_last_rewards_claiming_height, store_repaying_loan_state,
         store_stable_balance_before_selling_anc, RepayingLoanState,
     },
-    utils::{calc_after_borrow_action, get_repay_loan_action, split_profit_to_handle_interest},
+    utils::{
+        calc_after_borrow_action, get_repay_loan_action, is_anc_rewards_claimable,
+        split_profit_to_handle_interest,
+    },
 };
 use crate::{error::ContractError, state::load_last_rewards_claiming_height};
 use crate::{state::Config, ContractResult};
@@ -74,7 +77,7 @@ pub fn deposit_basset(
 
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
-        &config.custody_basset_contract,
+        &config.anchor_custody_basset_contract,
         &env.contract.address,
     )?;
 
@@ -169,7 +172,7 @@ pub fn withdraw_basset(
     //basset_in_contract_address is always zero (except Deposit stage)
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
-        &config.custody_basset_contract,
+        &config.anchor_custody_basset_contract,
         &env.contract.address,
     )?;
 
@@ -387,9 +390,11 @@ pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
     let last_rewards_claiming_height = load_last_rewards_claiming_height(deps.as_ref().storage)?;
     let current_height = env.block.height;
 
-    if current_height <= last_rewards_claiming_height
-        || (current_height - last_rewards_claiming_height) < config.claiming_rewards_delay
-    {
+    if !is_anc_rewards_claimable(
+        current_height,
+        last_rewards_claiming_height,
+        config.claiming_rewards_delay,
+    ) {
         return Err(StdError::generic_err("claiming too often").into());
     }
 

@@ -485,6 +485,15 @@ pub fn split_profit_to_handle_interest(
     };
 }
 
+pub fn is_anc_rewards_claimable(
+    current_height: u64,
+    last_rewards_claiming_height: u64,
+    claiming_rewards_delay: u64,
+) -> bool {
+    current_height > last_rewards_claiming_height
+        && (current_height - last_rewards_claiming_height) >= claiming_rewards_delay
+}
+
 #[cfg(test)]
 mod test {
     use super::{

@@ -2,58 +2,31 @@ use crate::state::Config;
 use crate::state::StakerState;
 use crate::{error::ContractError, state::State};
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Deps, Env};
-use yield_optimizer::querier::{
-    query_aterra_state, query_balance, query_borrower_info, query_token_balance,
-    BorrowerInfoResponse,
-};
+use cosmwasm_std::{Deps, Env, StdError};
+use yield_optimizer::querier::query_token_balance;
 
 pub fn update_global_reward(
     deps: Deps,
     env: Env,
     config: &Config,
     state: &mut State,
+    incoming_staking_amount: Option<Uint256>,
 ) -> Result<(), ContractError> {
     if state.total_staked_amount.is_zero() {
         return Ok(());
     }
 
-    // 1. get amount of borrowed UST
-    // 2. get amount of aUST
-    // 3. get aUST to UST ratio
-    // 4. get amount of UST
-    // 5. (aUST_amount * aUST_ration) + UST_amount - borrowed_ust = rewards
+    let nasset_balance: Uint256 =
+        query_token_balance(deps, &config.nasset_token, &env.contract.address)?.into();
+    // balance already increased, so subtract deposit amount
+    let balance_before_incoming_amount =
+        nasset_balance - incoming_staking_amount.unwrap_or(Uint256::zero());
 
-    let borrower_info: BorrowerInfoResponse = query_borrower_info(
-        deps,
-        &config.anchor_market_contract,
-        &config.basset_farmer_contract,
-    )?;
-    let borrowed_amount = borrower_info.loan_amount;
-
-    let aterra_balance =
-        query_token_balance(deps, &config.aterra_token, &config.basset_farmer_contract)?;
-    let stable_coin_balance = query_balance(
-        &deps.querier,
-        &config.basset_farmer_contract,
-        config.stable_denom.clone(),
-    )?;
-
-    let aterra_state = query_aterra_state(deps, &config.anchor_market_contract)?;
-
-    calculate_reward_index(
-        state,
-        borrowed_amount,
-        aterra_balance.into(),
-        aterra_state.exchange_rate,
-        stable_coin_balance.into(),
-    );
+    calculate_reward_index(state, balance_before_incoming_amount)?;
 
     Ok(())
 }
 
-//TODO: this method is wrong
-//test all cases where you are using it!
 pub fn update_staker_reward(state: &State, staker_state: &mut StakerState) {
     let currently_staked = Decimal256::from_uint256(staker_state.staked_amount);
     staker_state.pending_rewards +=
@@ -71,46 +44,25 @@ pub fn decrease_staked_amount(state: &mut State, staker_state: &mut StakerState,
     staker_state.staked_amount = staker_state.staked_amount - amount;
 }
 
-fn calculate_reward_index(
-    state: &mut State,
-    borrowed_amount: Uint256,
-    aterra_amount: Uint256,
-    aterra_exchange_rate: Decimal256,
-    stable_coin_amount: Uint256,
-) {
-    //TODO: remove me
-    println!(
-        "borrowed_amount: {}, aterra_amount: {}, aterra_exchange_rate: {}, stable_coin_amount: {}",
-        borrowed_amount, aterra_amount, aterra_exchange_rate, stable_coin_amount,
-    );
-    let stable_balance = aterra_amount * aterra_exchange_rate + stable_coin_amount;
-    let decimal_casset_staked_amount = Decimal256::from_uint256(state.total_staked_amount);
-
-    if borrowed_amount >= stable_balance {
-        return;
-    } else {
-        let current_total_reward_amount = stable_balance - borrowed_amount;
-        let current_total_reward_amount: Decimal256 =
-            Decimal256::from_uint256(current_total_reward_amount);
-
-        if current_total_reward_amount < state.last_reward_amount {
-            return;
-        } else {
-            let new_reward_amount: Decimal256 =
-                current_total_reward_amount - state.last_reward_amount;
-            println!("new_reward_amount: {}", new_reward_amount);
-            println!(
-                "decimal_casset_staked_amount: {}",
-                decimal_casset_staked_amount
-            );
-
-            state.global_reward_index += new_reward_amount / decimal_casset_staked_amount;
-        }
-        state.last_reward_amount = current_total_reward_amount;
+fn calculate_reward_index(state: &mut State, nasset_balance: Uint256) -> Result<(), ContractError> {
+    let last_balance = state.total_staked_amount + state.last_reward_amount;
+    if nasset_balance < last_balance {
+        return Err(StdError::generic_err(
+            "last nasset balance is bigger than current balance, impossible case",
+        )
+        .into());
     }
 
-    //TODO: remove me
-    println!("state after calc_reward_index: {:?}", state);
+    let new_reward_amount: Uint256 = nasset_balance - last_balance;
+    if new_reward_amount.is_zero() {
+        return Ok(());
+    }
+
+    state.global_reward_index +=
+        Decimal256::from_ratio(new_reward_amount.0, state.total_staked_amount.0);
+    state.last_reward_amount = new_reward_amount;
+
+    Ok(())
 }
 
 #[cfg(test)]

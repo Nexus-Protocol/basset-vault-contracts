@@ -680,7 +680,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "yield-optimizer-casset-staking"
+name = "yield-optimizer-nasset-staker"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-bignumber",
