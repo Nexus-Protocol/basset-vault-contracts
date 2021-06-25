@@ -28,7 +28,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         custody_basset_contract: config.anchor_custody_basset_contract.to_string(),
         anc_stable_swap_contract: config.anc_stable_swap_contract.to_string(),
         psi_stable_swap_contract: config.psi_stable_swap_contract.to_string(),
-        casset_token: config.casset_token.to_string(),
+        casset_token: config.nasset_token.to_string(),
         basset_token: config.basset_token.to_string(),
         aterra_token: config.aterra_token.to_string(),
         psi_token: config.psi_token.to_string(),
@@ -148,7 +148,7 @@ pub fn is_rewards_claimable(deps: Deps, env: Env) -> StdResult<IsRewardsClaimabl
     Ok(IsRewardsClaimableResponse {
         claimable: is_rewards_claimable,
         anc_amount: borrower_info.pending_rewards,
-        last_claiming_height,
+        last_claiming_height: last_rewards_claiming_height,
         current_height,
     })
 }

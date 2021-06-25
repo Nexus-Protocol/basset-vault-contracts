@@ -10,42 +10,21 @@ use cw20::Cw20ReceiveMsg;
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use std::str::FromStr;
 use yield_optimizer::{
-    basset_farmer::{CAssetStakerMsg, ExecuteMsg as BAssetFarmerExecuteMsg},
-    casset_staking::{AnyoneMsg, Cw20HookMsg, ExecuteMsg},
+    basset_farmer::ExecuteMsg as BAssetFarmerExecuteMsg,
+    nasset_staker::{AnyoneMsg, Cw20HookMsg, ExecuteMsg},
     querier::{AnchorMarketEpochStateResponse, BorrowerInfoResponse},
 };
 
 #[test]
 fn first_stake() {
     //numbers for reward calc get 'reward_calc_first_reward'
-    let casset_token = "addr0001".to_string();
-    let aterra_token = "addr0002".to_string();
-    let stable_denom = "uust".to_string();
-    let basset_farmer_contract = "addr0003".to_string();
-    let anchor_market_contract = "addr0004".to_string();
+    let nasset_token = "addr0001".to_string();
 
-    let msg = yield_optimizer::casset_staking::InstantiateMsg {
-        casset_token: casset_token.clone(),
-        aterra_token: aterra_token.clone(),
-        stable_denom: stable_denom.clone(),
-        basset_farmer_contract: basset_farmer_contract.clone(),
-        anchor_market_contract: anchor_market_contract.clone(),
+    let msg = yield_optimizer::nasset_staker::InstantiateMsg {
+        nasset_token: nasset_token.clone(),
     };
 
-    let basset_farmer_loan_amount = Uint256::from(200_000u64);
-    let aterra_exchange_rate = Decimal256::from_str("1.1").unwrap();
-    let aterra_amount = Uint256::from(195_000u64);
-    let stable_coin_balance = Uint128::from(10_000u64);
-
     let mut deps = mock_dependencies(&[]);
-    //to: 4. get amount of UST
-    deps.querier.update_base_balance(
-        &basset_farmer_contract,
-        vec![Coin {
-            denom: stable_denom.to_string(),
-            amount: stable_coin_balance,
-        }],
-    );
 
     // -= INITIALIZATION =-
     {
@@ -59,42 +38,12 @@ fn first_stake() {
     //it is staked_casset_amount
     let deposit_1_amount: Uint128 = 100u128.into();
     {
-        deps.querier.with_token_balances(&[
-            (
-                &casset_token,
-                &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
-            ),
-            //to: 2. get amount of aUST
-            (
-                &aterra_token,
-                &[(&basset_farmer_contract.clone(), &aterra_amount.into())],
-            ),
-        ]);
-        //to: 3. get aUST to UST ratio
-        deps.querier.with_wasm_query_response(&[(
-            &anchor_market_contract,
-            &to_binary(&AnchorMarketEpochStateResponse {
-                exchange_rate: aterra_exchange_rate,
-                aterra_supply: Uint256::from(1_000_000u64),
-            })
-            .unwrap(),
-        )]);
-        //to: 1. get amount of borrowed UST
-        deps.querier.with_loan(&[(
-            &anchor_market_contract,
-            &[(
-                &basset_farmer_contract.to_string(),
-                &BorrowerInfoResponse {
-                    borrower: basset_farmer_contract.to_string(),
-                    interest_index: Decimal256::one(),
-                    reward_index: Decimal256::zero(),
-                    loan_amount: basset_farmer_loan_amount,
-                    pending_rewards: Decimal256::zero(),
-                },
-            )],
+        deps.querier.with_token_balances(&[(
+            &nasset_token,
+            &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
         )]);
 
-        // -= USER SEND cAsset tokens to casset_staker =-
+        // -= USER SEND nAsset tokens to nasset_staker =-
         {
             let cw20_deposit_msg = Cw20ReceiveMsg {
                 sender: user_1_address.to_string(),
@@ -102,7 +51,7 @@ fn first_stake() {
                 msg: to_binary(&Cw20HookMsg::Stake).unwrap(),
             };
 
-            let info = mock_info(&casset_token, &vec![]);
+            let info = mock_info(&nasset_token, &vec![]);
             let res = crate::contract::execute(
                 deps.as_mut(),
                 mock_env(),
@@ -120,7 +69,7 @@ fn first_stake() {
                     // global_reward_index: Decimal256::from_str("245").unwrap(),
                     // last_reward_amount: Decimal256::from_str("24500").unwrap(),
                     global_reward_index: Decimal256::zero(),
-                    last_reward_amount: Decimal256::zero(),
+                    last_reward_amount: Uint256::zero(),
                     total_staked_amount: deposit_1_amount.into(),
                 },
                 state
@@ -143,35 +92,13 @@ fn first_stake() {
 #[test]
 fn stake_and_unstake() {
     //numbers for reward calc get 'reward_calc_first_reward'
-    let casset_token = "addr0001".to_string();
-    let aterra_token = "addr0002".to_string();
-    let stable_denom = "uust".to_string();
-    let basset_farmer_contract = "addr0003".to_string();
-    let anchor_market_contract = "addr0004".to_string();
+    let nasset_token = "addr0001".to_string();
 
-    let msg = yield_optimizer::casset_staking::InstantiateMsg {
-        casset_token: casset_token.clone(),
-        aterra_token: aterra_token.clone(),
-        stable_denom: stable_denom.clone(),
-        basset_farmer_contract: basset_farmer_contract.clone(),
-        anchor_market_contract: anchor_market_contract.clone(),
+    let msg = yield_optimizer::nasset_staker::InstantiateMsg {
+        nasset_token: nasset_token.clone(),
     };
 
-    let basset_farmer_loan_amount = Uint256::from(200_000u64);
-    let aterra_exchange_rate = Decimal256::from_str("1.1").unwrap();
-    let aterra_amount = Uint256::from(195_000u64);
-    let stable_coin_balance = Uint128::from(10_000u64);
-
     let mut deps = mock_dependencies(&[]);
-    //to: 4. get amount of UST
-    deps.querier.update_base_balance(
-        &basset_farmer_contract,
-        vec![Coin {
-            denom: stable_denom.to_string(),
-            amount: stable_coin_balance,
-        }],
-    );
-
     // -= INITIALIZATION =-
     {
         let env = mock_env();
@@ -181,45 +108,15 @@ fn stake_and_unstake() {
 
     //first farmer come
     let user_1_address = Addr::unchecked("addr9999".to_string());
-    //it is staked_casset_amount
+    //it is staked_nasset_amount
     let deposit_1_amount: Uint128 = 100u128.into();
     {
-        deps.querier.with_token_balances(&[
-            (
-                &casset_token,
-                &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
-            ),
-            //to: 2. get amount of aUST
-            (
-                &aterra_token,
-                &[(&basset_farmer_contract.clone(), &aterra_amount.into())],
-            ),
-        ]);
-        //to: 3. get aUST to UST ratio
-        deps.querier.with_wasm_query_response(&[(
-            &anchor_market_contract,
-            &to_binary(&AnchorMarketEpochStateResponse {
-                exchange_rate: aterra_exchange_rate,
-                aterra_supply: Uint256::from(1_000_000u64),
-            })
-            .unwrap(),
-        )]);
-        //to: 1. get amount of borrowed UST
-        deps.querier.with_loan(&[(
-            &anchor_market_contract,
-            &[(
-                &basset_farmer_contract.to_string(),
-                &BorrowerInfoResponse {
-                    borrower: basset_farmer_contract.to_string(),
-                    interest_index: Decimal256::one(),
-                    reward_index: Decimal256::zero(),
-                    loan_amount: basset_farmer_loan_amount,
-                    pending_rewards: Decimal256::zero(),
-                },
-            )],
+        deps.querier.with_token_balances(&[(
+            &nasset_token,
+            &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
         )]);
 
-        // -= USER SEND cAsset tokens to casset_staker =-
+        // -= USER SEND nAsset tokens to nasset_staker =-
         {
             let cw20_deposit_msg = Cw20ReceiveMsg {
                 sender: user_1_address.to_string(),
@@ -227,7 +124,7 @@ fn stake_and_unstake() {
                 msg: to_binary(&Cw20HookMsg::Stake).unwrap(),
             };
 
-            let info = mock_info(&casset_token, &vec![]);
+            let info = mock_info(&nasset_token, &vec![]);
             crate::contract::execute(
                 deps.as_mut(),
                 mock_env(),
@@ -238,7 +135,7 @@ fn stake_and_unstake() {
         }
     }
 
-    // -= USER SEND unstake casset tokens =-
+    // -= USER SEND unstake nasset tokens =-
     {
         let unstake_msg = ExecuteMsg::Anyone {
             anyone_msg: AnyoneMsg::Unstake {
@@ -253,7 +150,7 @@ fn stake_and_unstake() {
         assert_eq!(
             res.messages,
             vec![CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: casset_token.clone(),
+                contract_addr: nasset_token.clone(),
                 send: vec![],
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_1_address.to_string(),
@@ -268,7 +165,7 @@ fn stake_and_unstake() {
         assert_eq!(
             State {
                 global_reward_index: Decimal256::from_str("245").unwrap(),
-                last_reward_amount: Decimal256::from_str("24500").unwrap(),
+                last_reward_amount: Uint256::from(24_500u64),
                 total_staked_amount: deposit_1_amount.into(),
             },
             state
@@ -289,34 +186,13 @@ fn stake_and_unstake() {
 #[test]
 fn stake_and_unstake_partially() {
     //numbers for reward calc get 'reward_calc_first_reward'
-    let casset_token = "addr0001".to_string();
-    let aterra_token = "addr0002".to_string();
-    let stable_denom = "uust".to_string();
-    let basset_farmer_contract = "addr0003".to_string();
-    let anchor_market_contract = "addr0004".to_string();
+    let nasset_token = "addr0001".to_string();
 
-    let msg = yield_optimizer::casset_staking::InstantiateMsg {
-        casset_token: casset_token.clone(),
-        aterra_token: aterra_token.clone(),
-        stable_denom: stable_denom.clone(),
-        basset_farmer_contract: basset_farmer_contract.clone(),
-        anchor_market_contract: anchor_market_contract.clone(),
+    let msg = yield_optimizer::nasset_staker::InstantiateMsg {
+        nasset_token: nasset_token.clone(),
     };
 
-    let basset_farmer_loan_amount = Uint256::from(200_000u64);
-    let aterra_exchange_rate = Decimal256::from_str("1.1").unwrap();
-    let aterra_amount = Uint256::from(195_000u64);
-    let stable_coin_balance = Uint128::from(10_000u64);
-
     let mut deps = mock_dependencies(&[]);
-    //to: 4. get amount of UST
-    deps.querier.update_base_balance(
-        &basset_farmer_contract,
-        vec![Coin {
-            denom: stable_denom.to_string(),
-            amount: stable_coin_balance,
-        }],
-    );
 
     // -= INITIALIZATION =-
     {
@@ -331,42 +207,12 @@ fn stake_and_unstake_partially() {
     let deposit_1_amount: Uint128 = 100u128.into();
     let withdraw_amount: Uint128 = 30u128.into();
     {
-        deps.querier.with_token_balances(&[
-            (
-                &casset_token,
-                &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
-            ),
-            //to: 2. get amount of aUST
-            (
-                &aterra_token,
-                &[(&basset_farmer_contract.clone(), &aterra_amount.into())],
-            ),
-        ]);
-        //to: 3. get aUST to UST ratio
-        deps.querier.with_wasm_query_response(&[(
-            &anchor_market_contract,
-            &to_binary(&AnchorMarketEpochStateResponse {
-                exchange_rate: aterra_exchange_rate,
-                aterra_supply: Uint256::from(1_000_000u64),
-            })
-            .unwrap(),
-        )]);
-        //to: 1. get amount of borrowed UST
-        deps.querier.with_loan(&[(
-            &anchor_market_contract,
-            &[(
-                &basset_farmer_contract.to_string(),
-                &BorrowerInfoResponse {
-                    borrower: basset_farmer_contract.to_string(),
-                    interest_index: Decimal256::one(),
-                    reward_index: Decimal256::zero(),
-                    loan_amount: basset_farmer_loan_amount,
-                    pending_rewards: Decimal256::zero(),
-                },
-            )],
+        deps.querier.with_token_balances(&[(
+            &nasset_token,
+            &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
         )]);
 
-        // -= USER SEND cAsset tokens to casset_staker =-
+        // -= USER SEND nAsset tokens to nasset_staker =-
         {
             let cw20_deposit_msg = Cw20ReceiveMsg {
                 sender: user_1_address.to_string(),
@@ -374,13 +220,10 @@ fn stake_and_unstake_partially() {
                 msg: to_binary(&Cw20HookMsg::Stake).unwrap(),
             };
 
-            let info = mock_info(&casset_token, &vec![]);
-            let current_block_height = 68882;
-            let mut env = mock_env();
-            env.block.height = current_block_height;
+            let info = mock_info(&nasset_token, &vec![]);
             crate::contract::execute(
                 deps.as_mut(),
-                env,
+                mock_env(),
                 info,
                 ExecuteMsg::Receive(cw20_deposit_msg),
             )
@@ -388,7 +231,7 @@ fn stake_and_unstake_partially() {
         }
     }
 
-    // -= USER SEND unstake casset tokens =-
+    // -= USER SEND unstake nasset tokens =-
     {
         let unstake_msg = ExecuteMsg::Anyone {
             anyone_msg: AnyoneMsg::Unstake {
@@ -398,10 +241,7 @@ fn stake_and_unstake_partially() {
         };
 
         let info = mock_info(&user_1_address.to_string(), &vec![]);
-        let current_block_height = 68883;
-        let mut env = mock_env();
-        env.block.height = current_block_height;
-        crate::contract::execute(deps.as_mut(), env, info, unstake_msg).unwrap();
+        crate::contract::execute(deps.as_mut(), mock_env(), info, unstake_msg).unwrap();
 
         let staker_state: StakerState = load_staker_state(&deps.storage, &user_1_address).unwrap();
         assert_eq!(
@@ -420,34 +260,13 @@ fn stake_and_unstake_partially() {
 #[test]
 fn two_users_staking() {
     //numbers for reward calc get 'reward_calc_first_reward'
-    let casset_token = "addr0001".to_string();
-    let aterra_token = "addr0002".to_string();
-    let stable_denom = "uust".to_string();
-    let basset_farmer_contract = "addr0003".to_string();
-    let anchor_market_contract = "addr0004".to_string();
+    let nasset_token = "addr0001".to_string();
 
-    let msg = yield_optimizer::casset_staking::InstantiateMsg {
-        casset_token: casset_token.clone(),
-        aterra_token: aterra_token.clone(),
-        stable_denom: stable_denom.clone(),
-        basset_farmer_contract: basset_farmer_contract.clone(),
-        anchor_market_contract: anchor_market_contract.clone(),
+    let msg = yield_optimizer::nasset_staker::InstantiateMsg {
+        nasset_token: nasset_token.clone(),
     };
 
-    let basset_farmer_loan_amount = Uint256::from(200_000u64);
-    let aterra_exchange_rate = Decimal256::from_str("1.1").unwrap();
-    let aterra_amount = Uint256::from(195_000u64);
-    let stable_coin_balance = Uint128::from(10_000u64);
-
     let mut deps = mock_dependencies(&[]);
-    //to: 4. get amount of UST
-    deps.querier.update_base_balance(
-        &basset_farmer_contract,
-        vec![Coin {
-            denom: stable_denom.to_string(),
-            amount: stable_coin_balance,
-        }],
-    );
 
     // -= INITIALIZATION =-
     {
@@ -461,43 +280,12 @@ fn two_users_staking() {
     let user_2_address = Addr::unchecked("addr6666".to_string());
     let deposit_2_amount: Uint128 = 300u128.into();
     {
-        //to: 3. get aUST to UST ratio
-        deps.querier.with_wasm_query_response(&[(
-            &anchor_market_contract,
-            &to_binary(&AnchorMarketEpochStateResponse {
-                exchange_rate: aterra_exchange_rate,
-                aterra_supply: Uint256::from(1_000_000u64),
-            })
-            .unwrap(),
-        )]);
-        //to: 1. get amount of borrowed UST
-        deps.querier.with_loan(&[(
-            &anchor_market_contract,
-            &[(
-                &basset_farmer_contract.to_string(),
-                &BorrowerInfoResponse {
-                    borrower: basset_farmer_contract.to_string(),
-                    interest_index: Decimal256::one(),
-                    reward_index: Decimal256::zero(),
-                    loan_amount: basset_farmer_loan_amount,
-                    pending_rewards: Decimal256::zero(),
-                },
-            )],
-        )]);
-
-        // -= USER 1 SEND cAsset tokens to casset_staker =-
+        // -= USER 1 SEND nAsset tokens to nasset_staker =-
         {
-            deps.querier.with_token_balances(&[
-                (
-                    &casset_token,
-                    &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
-                ),
-                //to: 2. get amount of aUST
-                (
-                    &aterra_token,
-                    &[(&basset_farmer_contract.clone(), &aterra_amount.into())],
-                ),
-            ]);
+            deps.querier.with_token_balances(&[(
+                &nasset_token,
+                &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
+            )]);
 
             let cw20_deposit_msg = Cw20ReceiveMsg {
                 sender: user_1_address.to_string(),
@@ -505,7 +293,7 @@ fn two_users_staking() {
                 msg: to_binary(&Cw20HookMsg::Stake).unwrap(),
             };
 
-            let info = mock_info(&casset_token, &vec![]);
+            let info = mock_info(&nasset_token, &vec![]);
             let mut env = mock_env();
             env.block.height = 68882;
             crate::contract::execute(
@@ -517,22 +305,15 @@ fn two_users_staking() {
             .unwrap();
         }
 
-        // -= USER 2 SEND cAsset tokens to casset_staker =-
+        // -= USER 2 SEND nAsset tokens to nasset_staker =-
         {
-            deps.querier.with_token_balances(&[
-                (
-                    &casset_token,
-                    &[(
-                        &MOCK_CONTRACT_ADDR.to_string(),
-                        &(deposit_1_amount + deposit_2_amount),
-                    )],
-                ),
-                //to: 2. get amount of aUST
-                (
-                    &aterra_token,
-                    &[(&basset_farmer_contract.clone(), &aterra_amount.into())],
-                ),
-            ]);
+            deps.querier.with_token_balances(&[(
+                &nasset_token,
+                &[(
+                    &MOCK_CONTRACT_ADDR.to_string(),
+                    &(deposit_1_amount + deposit_2_amount),
+                )],
+            )]);
 
             let cw20_deposit_msg = Cw20ReceiveMsg {
                 sender: user_2_address.to_string(),
@@ -540,7 +321,7 @@ fn two_users_staking() {
                 msg: to_binary(&Cw20HookMsg::Stake).unwrap(),
             };
 
-            let info = mock_info(&casset_token, &vec![]);
+            let info = mock_info(&nasset_token, &vec![]);
             crate::contract::execute(
                 deps.as_mut(),
                 mock_env(),
@@ -553,7 +334,7 @@ fn two_users_staking() {
             assert_eq!(
                 State {
                     global_reward_index: Decimal256::from_str("245").unwrap(),
-                    last_reward_amount: Decimal256::from_str("24500").unwrap(),
+                    last_reward_amount: Uint256::from(24_500u64),
                     total_staked_amount: (deposit_2_amount + deposit_1_amount).into(),
                 },
                 state
@@ -572,31 +353,16 @@ fn two_users_staking() {
         }
     }
 
-    let new_aterra_amount = aterra_amount + Uint256::from(95_000u64);
-
-    // -= SOME REWARDS COME (basset_farmer aUST balance changed in positive way) =-
+    let new_rewards_amount = Uint128::from(20_000u64);
+    // -= SOME REWARDS COME (nasset balance increased) =-
     {
-        deps.querier.with_token_balances(&[
-            (
-                &casset_token,
-                &[(
-                    &MOCK_CONTRACT_ADDR.to_string(),
-                    &(deposit_1_amount + deposit_2_amount),
-                )],
-            ),
-            //to: 2. get amount of aUST
-            (
-                &aterra_token,
-                &[(&basset_farmer_contract.clone(), &new_aterra_amount.into())],
-            ),
-        ]);
-
-        // 195 * 1.1 = 214.5 - old aUST value
-        // total rewards = 214.5 + 10 - 200 = 24.5
-        //
-        // 290 * 1.1 = 319 - new aUST value
-        // total rewards: 319 + 10 - 200 = 129
-        // I didn't change loan amount or UST balance
+        deps.querier.with_token_balances(&[(
+            &nasset_token,
+            &[(
+                &MOCK_CONTRACT_ADDR.to_string(),
+                &(deposit_1_amount + deposit_2_amount + new_rewards_amount),
+            )],
+        )]);
     }
 
     let withdraw_1_amount: Uint128 = 30u128.into();
@@ -615,17 +381,8 @@ fn two_users_staking() {
         let state: State = load_state(&deps.storage).unwrap();
         assert_eq!(
             State {
-                //104.5(new_rewards)/400(staked nAsset) = 261.25
-                //plus prev reward index (245) = 506.25
                 global_reward_index: Decimal256::from_str("506.25").unwrap(),
-                //total rewards: 129_000
-                //
-                //user_1 share is 1/4, rewards after user stake: 104.5k
-                //so user rewards: 104.5k/4 = 26_125
-                //
-                //minus claimed: 26_125
-                //result: 129_000 - 26_125
-                last_reward_amount: Decimal256::from_str("102875").unwrap(),
+                last_reward_amount: Uint256::from(102_875u64),
                 total_staked_amount: (deposit_1_amount + deposit_2_amount)
                     .checked_sub(withdraw_1_amount)
                     .unwrap()
@@ -648,65 +405,31 @@ fn two_users_staking() {
 
         assert_eq!(
             res.messages,
-            vec![
-                CosmosMsg::Wasm(WasmMsg::Execute {
-                    contract_addr: casset_token.clone(),
-                    send: vec![],
-                    msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                        recipient: user_1_address.to_string(),
-                        amount: withdraw_1_amount,
-                    })
-                    .unwrap(),
-                }),
-                CosmosMsg::Wasm(WasmMsg::Execute {
-                    contract_addr: basset_farmer_contract.clone(),
-                    send: vec![],
-                    msg: to_binary(&BAssetFarmerExecuteMsg::CAssetStaker {
-                        casset_staker_msg: CAssetStakerMsg::SendRewards {
-                            recipient: user_1_address.to_string(),
-                            //user_1 share is 1/4, rewards after user stake: 104.5k
-                            //so user rewards: 104.5k/4 = 26_125
-                            amount: Uint256::from(26_125u64),
-                        },
-                    })
-                    .unwrap(),
+            vec![CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: nasset_token.clone(),
+                send: vec![],
+                msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: user_1_address.to_string(),
+                    amount: withdraw_1_amount,
                 })
-            ]
+                .unwrap(),
+            })]
         );
         assert_eq!(res.submessages, vec![]);
     }
 
-    // 26_125 / 1.1 = 23_750
-    let aterra_sent_to_user_1_as_rewards = Uint256::from(23_750u64);
     // subtract rewards sent to user_1
     // subtract user_1 unstaked casset
     {
-        deps.querier.with_token_balances(&[
-            (
-                &casset_token,
-                &[(
-                    &MOCK_CONTRACT_ADDR.to_string(),
-                    &((deposit_1_amount + deposit_2_amount)
-                        .checked_sub(withdraw_1_amount)
-                        .unwrap()),
-                )],
-            ),
-            //to: 2. get amount of aUST
-            (
-                &aterra_token,
-                &[(
-                    &basset_farmer_contract.clone(),
-                    &(new_aterra_amount - aterra_sent_to_user_1_as_rewards).into(),
-                )],
-            ),
-        ]);
-
-        // 195 * 1.1 = 214.5 - old aUST value
-        // total rewards = 214.5 + 10 - 200 = 24.5
-        //
-        // 290 * 1.1 = 319 - new aUST value
-        // total rewards: 319 + 10 - 200 = 129
-        // I didn't change loan amount or UST balance
+        deps.querier.with_token_balances(&[(
+            &nasset_token,
+            &[(
+                &MOCK_CONTRACT_ADDR.to_string(),
+                &((deposit_1_amount + deposit_2_amount)
+                    .checked_sub(withdraw_1_amount)
+                    .unwrap()),
+            )],
+        )]);
     }
 
     // -= USER 2 partially unstake =-
@@ -725,16 +448,8 @@ fn two_users_staking() {
         let state: State = load_state(&deps.storage).unwrap();
         assert_eq!(
             State {
-                //104.5(new_rewards)/400(staked nAsset) = 261.25
-                //plus prev reward index (245) = 506.25
                 global_reward_index: Decimal256::from_str("506.25").unwrap(),
-                //
-                //user_2 share is 3/4, rewards after user stake: 104.5k
-                //so user rewards: 104.5k/4 = 26_125 * 3 = 78_375
-                //
-                //minus claimed: 78_375
-                //result: 102_875 - 78_375 = 24_500
-                last_reward_amount: Decimal256::from_str("24500").unwrap(),
+                last_reward_amount: Uint256::from(24_500u64),
                 total_staked_amount: (deposit_2_amount + deposit_1_amount)
                     .checked_sub(withdraw_1_amount)
                     .unwrap()
@@ -759,30 +474,15 @@ fn two_users_staking() {
 
         assert_eq!(
             res.messages,
-            vec![
-                CosmosMsg::Wasm(WasmMsg::Execute {
-                    contract_addr: casset_token.clone(),
-                    send: vec![],
-                    msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                        recipient: user_2_address.to_string(),
-                        amount: withdraw_2_amount,
-                    })
-                    .unwrap(),
-                }),
-                CosmosMsg::Wasm(WasmMsg::Execute {
-                    contract_addr: basset_farmer_contract.clone(),
-                    send: vec![],
-                    msg: to_binary(&BAssetFarmerExecuteMsg::CAssetStaker {
-                        casset_staker_msg: CAssetStakerMsg::SendRewards {
-                            recipient: user_2_address.to_string(),
-                            //user_2 share is 3/4, rewards after user stake: 104.5k
-                            //so user rewards: 104.5k/4 = 26_125 * 3 = 78_375
-                            amount: Uint256::from(78_375u64),
-                        },
-                    })
-                    .unwrap(),
+            vec![CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: nasset_token.clone(),
+                send: vec![],
+                msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: user_2_address.to_string(),
+                    amount: withdraw_2_amount,
                 })
-            ]
+                .unwrap(),
+            })]
         );
         assert_eq!(res.submessages, vec![]);
     }

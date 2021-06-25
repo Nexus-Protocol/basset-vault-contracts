@@ -7,7 +7,7 @@ use cw20::Cw20ReceiveMsg;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub nasset_token_code_id: u64,
-    pub casset_staker_code_id: u64,
+    pub nasset_staker_code_id: u64,
     pub psi_distributor_code_id: u64,
     pub basset_token_addr: String,
     //Luna / ETH / Sol, will be converted to cLuna, cETH, cSol
@@ -113,4 +113,5 @@ pub struct IsRewardsClaimableResponse {
     pub claimable: bool,
     pub anc_amount: Decimal256,
     pub last_claiming_height: u64,
+    pub current_height: u64,
 }

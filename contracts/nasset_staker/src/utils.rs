@@ -76,148 +76,77 @@ mod test {
     fn reward_calc_zero_state() {
         let mut state = State {
             global_reward_index: Decimal256::zero(),
-            last_reward_amount: Decimal256::zero(),
+            last_reward_amount: Uint256::zero(),
             total_staked_amount: Uint256::zero(),
         };
-        let borrowed_amount = Uint256::from(0u64);
-        let aterra_amount = Uint256::from(0u64);
-        let aterra_exchange_rate = Decimal256::zero();
-        let ust_amount = Uint256::from(0u64);
+        let nasset_balance = Uint256::zero();
 
-        calculate_reward_index(
-            &mut state,
-            borrowed_amount,
-            aterra_amount,
-            aterra_exchange_rate,
-            ust_amount,
-        );
-        assert_eq!(state.last_reward_amount, Decimal256::zero());
+        calculate_reward_index(&mut state, nasset_balance).unwrap();
+        assert_eq!(state.last_reward_amount, Uint256::zero());
         assert_eq!(state.global_reward_index, Decimal256::zero());
+        assert_eq!(state.total_staked_amount, Uint256::zero());
     }
 
     #[test]
     fn reward_calc_first_reward() {
         let mut state = State {
             global_reward_index: Decimal256::zero(),
-            last_reward_amount: Decimal256::zero(),
+            last_reward_amount: Uint256::zero(),
             total_staked_amount: Uint256::from(100u64),
         };
-        let borrowed_amount = Uint256::from(200_000u64);
-        let aterra_amount = Uint256::from(195_000u64);
-        let aterra_exchange_rate = Decimal256::from_str("1.1").unwrap();
-        let ust_amount = Uint256::from(10_000u64);
-        //195 * 1.1 = 214.5; 214.5 + 10 - 200 = 24.5
+        let nasset_balance = Uint256::from(200u64);
 
-        calculate_reward_index(
-            &mut state,
-            borrowed_amount,
-            aterra_amount,
-            aterra_exchange_rate,
-            ust_amount,
-        );
-        assert_eq!(
-            state.last_reward_amount,
-            Decimal256::from_str("24500").unwrap()
-        );
-        // 24_500 / 100
-        assert_eq!(
-            state.global_reward_index,
-            Decimal256::from_str("245").unwrap()
-        );
+        calculate_reward_index(&mut state, nasset_balance).unwrap();
+        assert_eq!(state.last_reward_amount, Uint256::from(100u64));
+        // (200 - 100) / 100
+        assert_eq!(state.global_reward_index, Decimal256::one());
+        assert_eq!(state.total_staked_amount, Uint256::from(100u64));
+    }
+
+    #[test]
+    fn reward_calc_current_balance_lesser_than_staked() {
+        let mut state = State {
+            global_reward_index: Decimal256::zero(),
+            last_reward_amount: Uint256::zero(),
+            total_staked_amount: Uint256::from(100u64),
+        };
+        let nasset_balance = Uint256::from(70u64);
+
+        let calc_res = calculate_reward_index(&mut state, nasset_balance);
+        assert!(calc_res.is_err());
+        assert_eq!(state.total_staked_amount, Uint256::from(100u64));
+    }
+
+    #[test]
+    fn reward_calc_current_reward_lesser_than_previous() {
+        let mut state = State {
+            global_reward_index: Decimal256::from_str("245").unwrap(),
+            last_reward_amount: Uint256::from(24_500u64),
+            total_staked_amount: Uint256::from(1000u64),
+        };
+        let nasset_balance = Uint256::from(8_000u64);
+
+        let calc_res = calculate_reward_index(&mut state, nasset_balance);
+        assert!(calc_res.is_err());
+        assert_eq!(state.total_staked_amount, Uint256::from(1000u64));
     }
 
     #[test]
     fn reward_calc_second_reward() {
-        //get from 'first reward' test
         let mut state = State {
-            global_reward_index: Decimal256::from_ratio(
-                Uint256::from(24_500u64).0,
-                Uint256::from(100u64).0,
-            ),
-            last_reward_amount: Decimal256::from_str("24500").unwrap(),
-            total_staked_amount: Uint256::from(100u64),
+            global_reward_index: Decimal256::from_str("245").unwrap(),
+            last_reward_amount: Uint256::from(24_500u64),
+            total_staked_amount: Uint256::from(50_000u64),
         };
-        let borrowed_amount = Uint256::from(300_000u64);
-        let aterra_amount = Uint256::from(290_000u64);
-        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
-        let ust_amount = Uint256::from(10_000u64);
-        //290 * 1.2 = 348; 348 + 10 - 300 = 58
+        let nasset_balance = Uint256::from(80_000u64);
 
-        let prev_global_reward_index = state.global_reward_index;
-        calculate_reward_index(
-            &mut state,
-            borrowed_amount,
-            aterra_amount,
-            aterra_exchange_rate,
-            ust_amount,
-        );
+        calculate_reward_index(&mut state, nasset_balance).unwrap();
+        assert_eq!(Uint256::from(5_500u64), state.last_reward_amount);
+        //245 + 5_500 / 50_000
         assert_eq!(
-            state.last_reward_amount,
-            Decimal256::from_str("58000").unwrap()
+            Decimal256::from_str("245.11").unwrap(),
+            state.global_reward_index
         );
-        // new_rewards = 58_000 - 24_500 = 33_500
-        assert_eq!(
-            state.global_reward_index,
-            prev_global_reward_index
-                + Decimal256::from_ratio(Uint256::from(33_500u64).0, Uint256::from(100u64).0)
-        );
-    }
-
-    #[test]
-    fn reward_calc_borrowed_amount_bigger_then_aterra_amount() {
-        let last_reward_amount = Decimal256::from_str("14500").unwrap();
-        let global_reward_index =
-            Decimal256::from_ratio(Uint256::from(24_500u64).0, Uint256::from(100u64).0);
-        //get from 'first reward' test
-        let mut state = State {
-            global_reward_index,
-            last_reward_amount,
-            total_staked_amount: Uint256::from(100u64),
-        };
-        let borrowed_amount = Uint256::from(300_000u64);
-        let aterra_amount = Uint256::from(200_000u64);
-        let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
-        let ust_amount = Uint256::from(10_000u64);
-        //200 * 1.2 = 240; 240 + 10 - 300 = -50
-        //so borrowed_amount is less than UST balance, means do not change rewards
-
-        calculate_reward_index(
-            &mut state,
-            borrowed_amount,
-            aterra_amount,
-            aterra_exchange_rate,
-            ust_amount,
-        );
-        assert_eq!(state.last_reward_amount, last_reward_amount);
-        assert_eq!(state.global_reward_index, global_reward_index);
-    }
-
-    #[test]
-    fn reward_calc_negative_reward() {
-        let last_reward_amount = Decimal256::from_str("14500").unwrap();
-        let global_reward_index =
-            Decimal256::from_ratio(Uint256::from(24_500u64).0, Uint256::from(100u64).0);
-        //get from 'first reward' test
-        let mut state = State {
-            global_reward_index,
-            last_reward_amount,
-            total_staked_amount: Uint256::from(100u64),
-        };
-        let borrowed_amount = Uint256::from(300_000u64);
-        let aterra_amount = Uint256::from(275_000u64);
-        let aterra_exchange_rate = Decimal256::from_str("1.1").unwrap();
-        let ust_amount = Uint256::from(10_000u64);
-        //275 * 1.1 = 302.5; 302.5 + 10 - 300 = 12.5
-        //12.5 is less then previous reward amount, means do not change rewards
-
-        calculate_reward_index(
-            &mut state,
-            borrowed_amount,
-            aterra_amount,
-            aterra_exchange_rate,
-            ust_amount,
-        );
-        assert_eq!(state.last_reward_amount, last_reward_amount);
-        assert_eq!(state.global_reward_index, global_reward_index);
+        assert_eq!(state.total_staked_amount, Uint256::from(50_000u64));
     }
 }

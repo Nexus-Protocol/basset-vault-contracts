@@ -73,7 +73,7 @@ pub fn deposit_basset(
     farmer: Addr,
     deposit_amount: Uint256,
 ) -> ContractResult<Response> {
-    let casset_supply: Uint256 = query_supply(&deps.querier, &config.casset_token.clone())?.into();
+    let casset_supply: Uint256 = query_supply(&deps.querier, &config.nasset_token.clone())?.into();
 
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
@@ -118,7 +118,7 @@ pub fn deposit_basset(
                 send: vec![],
             }),
             CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: config.casset_token.to_string(),
+                contract_addr: config.nasset_token.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Mint {
                     recipient: farmer.to_string(),
                     amount: casset_to_mint.into(),
@@ -152,7 +152,7 @@ pub fn receive_cw20_withdraw(
     let contract_addr = info.sender;
     // only cAsset contract can execute this message
     let config: Config = load_config(deps.storage)?;
-    if contract_addr != config.casset_token {
+    if contract_addr != config.nasset_token {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -176,7 +176,7 @@ pub fn withdraw_basset(
         &env.contract.address,
     )?;
 
-    let casset_token_supply = query_supply(&deps.querier, &config.casset_token)?;
+    let casset_token_supply = query_supply(&deps.querier, &config.nasset_token)?;
 
     let share_to_withdraw: Decimal256 = Decimal256::from_ratio(
         casset_to_withdraw_amount.0,
@@ -220,7 +220,7 @@ pub fn withdraw_basset(
     rebalance_response
         .messages
         .push(CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: config.casset_token.to_string(),
+            contract_addr: config.nasset_token.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Burn {
                 amount: casset_to_withdraw_amount.into(),
             })?,

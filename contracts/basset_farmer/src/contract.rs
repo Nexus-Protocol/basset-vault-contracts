@@ -20,16 +20,16 @@ use protobuf::Message;
 use std::str::FromStr;
 use yield_optimizer::{
     basset_farmer::{AnyoneMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, YourselfMsg},
-    casset_staking::InstantiateMsg as CAssetStakerInstantiateMsg,
+    nasset_staker::InstantiateMsg as NAssetStakerInstantiateMsg,
     psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg,
     querier::get_basset_in_custody,
 };
 
-pub const SUBMSG_ID_INIT_CASSET: u64 = 1;
+pub const SUBMSG_ID_INIT_NASSET: u64 = 1;
 pub const SUBMSG_ID_REDEEM_STABLE: u64 = 2;
 pub const SUBMSG_ID_REPAY_LOAN: u64 = 3;
 pub const SUBMSG_ID_BORROWING: u64 = 4;
-pub const SUBMSG_ID_INIT_CASSET_STAKER: u64 = 5;
+pub const SUBMSG_ID_INIT_NASSET_STAKER: u64 = 5;
 pub const SUBMSG_ID_INIT_PSI_DISTRIBUTOR: u64 = 6;
 //withdrawing from Anchor Deposit error
 pub const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
@@ -44,7 +44,7 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> ContractResult<Response> {
     let config = Config {
-        casset_token: Addr::unchecked(""),
+        nasset_token: Addr::unchecked(""),
         basset_token: deps.api.addr_validate(&msg.basset_token_addr)?,
         anchor_custody_basset_contract: deps
             .api
@@ -69,7 +69,7 @@ pub fn instantiate(
 
     let child_contracts_code_id = ChildContractsCodeId {
         nasset_token: msg.nasset_token_code_id,
-        nasset_staker: msg.casset_staker_code_id,
+        nasset_staker: msg.nasset_staker_code_id,
         psi_distributor: msg.psi_distributor_code_id,
     };
     store_child_contracts_code_id(deps.storage, &child_contracts_code_id)?;
@@ -95,7 +95,7 @@ pub fn instantiate(
             }
             .into(),
             gas_limit: None,
-            id: SUBMSG_ID_INIT_CASSET,
+            id: SUBMSG_ID_INIT_NASSET,
             reply_on: ReplyOn::Success,
         }],
         attributes: vec![attr("action", "initialization")],
@@ -123,15 +123,15 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                     msg: WasmMsg::Instantiate {
                         admin: None,
                         code_id: child_contracts_code_id.nasset_staker,
-                        msg: to_binary(&CAssetStakerInstantiateMsg {
-                            casset_token: nasset_token.to_string(),
+                        msg: to_binary(&NAssetStakerInstantiateMsg {
+                            nasset_token: nasset_token.to_string(),
                         })?,
                         send: vec![],
                         label: "".to_string(),
                     }
                     .into(),
                     gas_limit: None,
-                    id: SUBMSG_ID_INIT_CASSET_STAKER,
+                    id: SUBMSG_ID_INIT_NASSET_STAKER,
                     reply_on: ReplyOn::Success,
                 }],
                 attributes: vec![
@@ -142,7 +142,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
             })
         }
 
-        SUBMSG_ID_INIT_CASSET_STAKER => {
+        SUBMSG_ID_INIT_NASSET_STAKER => {
             let data = msg.result.unwrap().data.unwrap();
             let res: MsgInstantiateContractResponse = Message::parse_from_bytes(data.as_slice())
                 .map_err(|_| {
@@ -161,7 +161,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                         admin: None,
                         code_id: child_contracts_code_id.nasset_staker,
                         msg: to_binary(&PsiDistributorInstantiateMsg {
-                            nasset_token_contract: config.casset_token.to_string(),
+                            nasset_token_contract: config.nasset_token.to_string(),
                             nasset_staker_contract: nasset_staker.to_string(),
                             governance_contract: config.governance_contract.to_string(),
                         })?,

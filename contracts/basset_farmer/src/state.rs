@@ -16,7 +16,7 @@ pub struct Config {
     pub anchor_custody_basset_contract: Addr,
     pub anc_stable_swap_contract: Addr,
     pub psi_stable_swap_contract: Addr,
-    pub casset_token: Addr,
+    pub nasset_token: Addr,
     pub basset_token: Addr,
     pub aterra_token: Addr,
     //what part of profit from selling ANC spend to buy PSI
@@ -63,7 +63,7 @@ pub fn store_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()>
 
 pub fn config_set_casset_token(storage: &mut dyn Storage, casset_token: Addr) -> StdResult<Config> {
     CONFIG.update(storage, |mut config| -> StdResult<_> {
-        config.casset_token = casset_token;
+        config.nasset_token = casset_token;
         Ok(config)
     })
 }
