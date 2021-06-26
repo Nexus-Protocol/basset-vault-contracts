@@ -35,7 +35,7 @@ fn first_stake() {
 
     //first farmer come
     let user_1_address = Addr::unchecked("addr9999".to_string());
-    //it is staked_casset_amount
+    //it is staked_nasset_amount
     let deposit_1_amount: Uint128 = 100u128.into();
     {
         deps.querier.with_token_balances(&[(
@@ -66,8 +66,6 @@ fn first_stake() {
             let state: State = load_state(&deps.storage).unwrap();
             assert_eq!(
                 State {
-                    // global_reward_index: Decimal256::from_str("245").unwrap(),
-                    // last_reward_amount: Decimal256::from_str("24500").unwrap(),
                     global_reward_index: Decimal256::zero(),
                     last_reward_amount: Uint256::zero(),
                     total_staked_amount: deposit_1_amount.into(),
@@ -164,9 +162,9 @@ fn stake_and_unstake() {
         let state: State = load_state(&deps.storage).unwrap();
         assert_eq!(
             State {
-                global_reward_index: Decimal256::from_str("245").unwrap(),
-                last_reward_amount: Uint256::from(24_500u64),
-                total_staked_amount: deposit_1_amount.into(),
+                global_reward_index: Decimal256::zero(),
+                last_reward_amount: Uint256::zero(),
+                total_staked_amount: Uint256::zero(),
             },
             state
         );
@@ -175,7 +173,7 @@ fn stake_and_unstake() {
         assert_eq!(
             StakerState {
                 staked_amount: Uint256::zero(),
-                reward_index: Decimal256::from_str("245").unwrap(),
+                reward_index: Decimal256::zero(),
                 pending_rewards: Decimal256::zero(),
             },
             staker_state
@@ -243,13 +241,26 @@ fn stake_and_unstake_partially() {
         let info = mock_info(&user_1_address.to_string(), &vec![]);
         crate::contract::execute(deps.as_mut(), mock_env(), info, unstake_msg).unwrap();
 
+        let state: State = load_state(&deps.storage).unwrap();
+        assert_eq!(
+            State {
+                global_reward_index: Decimal256::zero(),
+                last_reward_amount: Uint256::zero(),
+                total_staked_amount: deposit_1_amount
+                    .checked_sub(withdraw_amount)
+                    .unwrap()
+                    .into(),
+            },
+            state
+        );
+
         let staker_state: StakerState = load_staker_state(&deps.storage, &user_1_address).unwrap();
         assert_eq!(
             StakerState {
                 staked_amount: Uint256::from(
                     deposit_1_amount.checked_sub(withdraw_amount).unwrap()
                 ),
-                reward_index: Decimal256::from_str("245").unwrap(),
+                reward_index: Decimal256::zero(),
                 pending_rewards: Decimal256::zero(),
             },
             staker_state
@@ -258,7 +269,7 @@ fn stake_and_unstake_partially() {
 }
 
 #[test]
-fn two_users_staking() {
+fn two_users_stake_partially_unstake_stake_again() {
     //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
 
@@ -333,8 +344,8 @@ fn two_users_staking() {
             let state: State = load_state(&deps.storage).unwrap();
             assert_eq!(
                 State {
-                    global_reward_index: Decimal256::from_str("245").unwrap(),
-                    last_reward_amount: Uint256::from(24_500u64),
+                    global_reward_index: Decimal256::zero(),
+                    last_reward_amount: Uint256::zero(),
                     total_staked_amount: (deposit_2_amount + deposit_1_amount).into(),
                 },
                 state
@@ -345,7 +356,7 @@ fn two_users_staking() {
             assert_eq!(
                 StakerState {
                     staked_amount: Uint256::from(deposit_2_amount),
-                    reward_index: Decimal256::from_str("245").unwrap(),
+                    reward_index: Decimal256::zero(),
                     pending_rewards: Decimal256::zero(),
                 },
                 staker_state
@@ -353,7 +364,7 @@ fn two_users_staking() {
         }
     }
 
-    let new_rewards_amount = Uint128::from(20_000u64);
+    let new_rewards_amount = Uint128::from(1_000u64);
     // -= SOME REWARDS COME (nasset balance increased) =-
     {
         deps.querier.with_token_balances(&[(
@@ -366,6 +377,9 @@ fn two_users_staking() {
     }
 
     let withdraw_1_amount: Uint128 = 30u128.into();
+    let withdraw_2_amount: Uint128 = 150u128.into();
+    //1/4(total stake share) * 1000 (dep1+ dep2)
+    let rewards_1_amount = Uint128::from(250u64);
     // -= USER 1 partially unstake =-
     {
         let unstake_msg = ExecuteMsg::Anyone {
@@ -381,8 +395,11 @@ fn two_users_staking() {
         let state: State = load_state(&deps.storage).unwrap();
         assert_eq!(
             State {
-                global_reward_index: Decimal256::from_str("506.25").unwrap(),
-                last_reward_amount: Uint256::from(102_875u64),
+                global_reward_index: Decimal256::from_str("2.5").unwrap(), //1000/400
+                last_reward_amount: new_rewards_amount
+                    .checked_sub(rewards_1_amount)
+                    .unwrap()
+                    .into(),
                 total_staked_amount: (deposit_1_amount + deposit_2_amount)
                     .checked_sub(withdraw_1_amount)
                     .unwrap()
@@ -397,7 +414,7 @@ fn two_users_staking() {
                 staked_amount: Uint256::from(
                     deposit_1_amount.checked_sub(withdraw_1_amount).unwrap()
                 ),
-                reward_index: Decimal256::from_str("506.25").unwrap(),
+                reward_index: Decimal256::from_str("2.5").unwrap(),
                 pending_rewards: Decimal256::zero(),
             },
             staker_state
@@ -410,7 +427,7 @@ fn two_users_staking() {
                 send: vec![],
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_1_address.to_string(),
-                    amount: withdraw_1_amount,
+                    amount: withdraw_1_amount + rewards_1_amount,
                 })
                 .unwrap(),
             })]
@@ -425,8 +442,10 @@ fn two_users_staking() {
             &nasset_token,
             &[(
                 &MOCK_CONTRACT_ADDR.to_string(),
-                &((deposit_1_amount + deposit_2_amount)
+                &((deposit_1_amount + deposit_2_amount + new_rewards_amount)
                     .checked_sub(withdraw_1_amount)
+                    .unwrap()
+                    .checked_sub(rewards_1_amount)
                     .unwrap()),
             )],
         )]);
@@ -434,7 +453,7 @@ fn two_users_staking() {
 
     // -= USER 2 partially unstake =-
     {
-        let withdraw_2_amount: Uint128 = 150u128.into();
+        let rewards_2_amount = Uint128::from(750u64);
         let unstake_msg = ExecuteMsg::Anyone {
             anyone_msg: AnyoneMsg::Unstake {
                 amount: Uint256::from(withdraw_2_amount),
@@ -448,14 +467,14 @@ fn two_users_staking() {
         let state: State = load_state(&deps.storage).unwrap();
         assert_eq!(
             State {
-                global_reward_index: Decimal256::from_str("506.25").unwrap(),
-                last_reward_amount: Uint256::from(24_500u64),
-                total_staked_amount: (deposit_2_amount + deposit_1_amount)
+                global_reward_index: Decimal256::from_str("2.5").unwrap(),
+                last_reward_amount: Uint256::zero(),
+                total_staked_amount: (deposit_1_amount + deposit_2_amount)
                     .checked_sub(withdraw_1_amount)
                     .unwrap()
                     .checked_sub(withdraw_2_amount)
                     .unwrap()
-                    .into(),
+                    .into()
             },
             state
         );
@@ -466,7 +485,7 @@ fn two_users_staking() {
                 staked_amount: Uint256::from(
                     deposit_2_amount.checked_sub(withdraw_2_amount).unwrap()
                 ),
-                reward_index: Decimal256::from_str("506.25").unwrap(),
+                reward_index: Decimal256::from_str("2.5").unwrap(),
                 pending_rewards: Decimal256::zero(),
             },
             staker_state
@@ -479,16 +498,75 @@ fn two_users_staking() {
                 send: vec![],
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_2_address.to_string(),
-                    amount: withdraw_2_amount,
+                    amount: withdraw_2_amount + rewards_2_amount,
                 })
                 .unwrap(),
             })]
         );
         assert_eq!(res.submessages, vec![]);
     }
+
+    // -= USER 1 SECOND TIME SEND nAsset tokens to nasset_staker =-
+    {
+        let second_deposit_1_amount = Uint128::from(130u64);
+        deps.querier.with_token_balances(&[(
+            &nasset_token,
+            &[(
+                &MOCK_CONTRACT_ADDR.to_string(),
+                &((deposit_1_amount + deposit_2_amount + second_deposit_1_amount)
+                    .checked_sub(withdraw_1_amount)
+                    .unwrap()
+                    .checked_sub(withdraw_2_amount)
+                    .unwrap()),
+            )],
+        )]);
+
+        let cw20_deposit_msg = Cw20ReceiveMsg {
+            sender: user_1_address.to_string(),
+            amount: second_deposit_1_amount,
+            msg: to_binary(&Cw20HookMsg::Stake).unwrap(),
+        };
+
+        let info = mock_info(&nasset_token, &vec![]);
+        crate::contract::execute(
+            deps.as_mut(),
+            mock_env(),
+            info,
+            ExecuteMsg::Receive(cw20_deposit_msg),
+        )
+        .unwrap();
+
+        let state: State = load_state(&deps.storage).unwrap();
+        assert_eq!(
+            State {
+                global_reward_index: Decimal256::from_str("2.5").unwrap(),
+                last_reward_amount: Uint256::zero(),
+                total_staked_amount: (deposit_1_amount
+                    + deposit_2_amount
+                    + second_deposit_1_amount)
+                    .checked_sub(withdraw_1_amount)
+                    .unwrap()
+                    .checked_sub(withdraw_2_amount)
+                    .unwrap()
+                    .into(),
+            },
+            state
+        );
+
+        let staker_state: StakerState = load_staker_state(&deps.storage, &user_1_address).unwrap();
+        assert_eq!(
+            StakerState {
+                staked_amount: (deposit_1_amount + second_deposit_1_amount)
+                    .checked_sub(withdraw_1_amount)
+                    .unwrap()
+                    .into(),
+                reward_index: Decimal256::from_str("2.5").unwrap(),
+                pending_rewards: Decimal256::zero(),
+            },
+            staker_state
+        );
+    }
 }
 
-//TODO: user 1 stake, some rewards come, user 2 stake
-//TODO: basset_farmer balance changed in negative way
 //TODO: claim rewards test (in new file)
 //TODO: first user comes, but there is already some rewards! Should we gave them to him, or what?

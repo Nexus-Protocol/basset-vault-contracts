@@ -51,20 +51,20 @@ pub fn receive_cw20_stake(
     info: MessageInfo,
     cw20_msg: Cw20ReceiveMsg,
 ) -> ContractResult<Response> {
-    let casset_addr = info.sender;
-    // only cAsset contract can execute this message
+    let nasset_addr = info.sender;
+    // only nAsset contract can execute this message
     let config: Config = load_config(deps.storage)?;
-    if casset_addr != config.nasset_token {
+    if nasset_addr != config.nasset_token {
         return Err(ContractError::Unauthorized {});
     }
 
     //we trust cw20 contract
     let staker_addr: Addr = Addr::unchecked(cw20_msg.sender);
 
-    stake_casset(deps, env, config, staker_addr, cw20_msg.amount.into())
+    stake_nasset(deps, env, config, staker_addr, cw20_msg.amount.into())
 }
 
-pub fn stake_casset(
+pub fn stake_nasset(
     deps: DepsMut,
     env: Env,
     config: Config,
@@ -114,7 +114,6 @@ pub fn unstake_casset(
     utils::update_global_reward(deps.as_ref(), env, &config, &mut state, None)?;
     utils::update_staker_reward(&state, &mut staker_state);
 
-    println!("staker_state state: {:?}", staker_state);
     //TODO: add test on decimal part dropping. What if pending_rewards = 1.99?
     //How much claim_amount would be? It should be 1!
     let claim_amount = staker_state.pending_rewards * Uint256::one();
