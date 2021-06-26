@@ -73,7 +73,7 @@ pub fn deposit_basset(
     farmer: Addr,
     deposit_amount: Uint256,
 ) -> ContractResult<Response> {
-    let casset_supply: Uint256 = query_supply(&deps.querier, &config.nasset_token.clone())?.into();
+    let nasset_supply: Uint256 = query_supply(&deps.querier, &config.nasset_token.clone())?.into();
 
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
@@ -85,9 +85,9 @@ pub fn deposit_basset(
     let basset_in_contract_address =
         query_token_balance(deps.as_ref(), &config.basset_token, &env.contract.address)?;
 
-    // cAsset tokens to mint:
+    // nAsset tokens to mint:
     // user_share = (deposited_basset / total_basset)
-    // cAsset_to_mint = cAsset_supply * user_share / (1 - user_share)
+    // nAsset_to_mint = nAsset_supply * user_share / (1 - user_share)
     let basset_balance: Uint256 = basset_in_custody + basset_in_contract_address.into();
     if basset_balance == Uint256::zero() {
         //impossible because 'farmer' already sent some basset
@@ -98,15 +98,15 @@ pub fn deposit_basset(
     let farmer_basset_share: Decimal256 =
         Decimal256::from_ratio(deposit_amount.0, basset_balance.0);
 
-    let casset_to_mint = if farmer_basset_share == Decimal256::one() {
+    let nasset_to_mint = if farmer_basset_share == Decimal256::one() {
         deposit_amount
     } else {
         // 'casset_supply' can't be zero here, cause we already mint some for first farmer
-        casset_supply * farmer_basset_share / (Decimal256::one() - farmer_basset_share)
+        nasset_supply * farmer_basset_share / (Decimal256::one() - farmer_basset_share)
     };
 
     //1. lock basset
-    //2. mint casset
+    //2. mint nasset
     //3. rebalance
     Ok(Response {
         messages: vec![
@@ -121,7 +121,7 @@ pub fn deposit_basset(
                 contract_addr: config.nasset_token.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Mint {
                     recipient: farmer.to_string(),
-                    amount: casset_to_mint.into(),
+                    amount: nasset_to_mint.into(),
                 })?,
                 send: vec![],
             }),

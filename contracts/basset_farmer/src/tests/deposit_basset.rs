@@ -119,11 +119,10 @@ fn deposit_basset() {
         // -= USER SEND bAsset tokens to basset_farmer =-
         {
             deps.querier.with_token_balances(&[
-                //TODO: why I need that at all?
-                // (
-                //     &nasset_contract_addr,
-                //     &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128(0))],
-                // ),
+                (
+                    &nasset_contract_addr,
+                    &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128(0))],
+                ),
                 (
                     &basset_token_addr,
                     &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
@@ -186,11 +185,10 @@ fn deposit_basset() {
     let deposit_2_amount: Uint128 = 6_000_000_000u128.into();
     {
         deps.querier.with_token_balances(&[
-            // TODO: why?
-            // (
-            //     &nasset_contract_addr,
-            //     &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
-            // ),
+            (
+                &nasset_contract_addr,
+                &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
+            ),
             (
                 &basset_token_addr,
                 &[(

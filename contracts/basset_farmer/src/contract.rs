@@ -106,7 +106,7 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
     match msg.id {
-        SUBMSG_ID_INIT_CASSET => {
+        SUBMSG_ID_INIT_NASSET => {
             let data = msg.result.unwrap().data.unwrap();
             let res: MsgInstantiateContractResponse = Message::parse_from_bytes(data.as_slice())
                 .map_err(|_| {
@@ -159,7 +159,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                 submessages: vec![SubMsg {
                     msg: WasmMsg::Instantiate {
                         admin: None,
-                        code_id: child_contracts_code_id.nasset_staker,
+                        code_id: child_contracts_code_id.psi_distributor,
                         msg: to_binary(&PsiDistributorInstantiateMsg {
                             nasset_token_contract: config.nasset_token.to_string(),
                             nasset_staker_contract: nasset_staker.to_string(),
