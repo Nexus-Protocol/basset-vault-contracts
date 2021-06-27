@@ -440,15 +440,26 @@ fn two_users_stake_partially_unstake_stake_again() {
 
         assert_eq!(
             res.messages,
-            vec![CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: nasset_token.clone(),
-                send: vec![],
-                msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                    recipient: user_1_address.to_string(),
-                    amount: withdraw_1_amount + rewards_1_amount,
+            vec![
+                CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: nasset_token.clone(),
+                    send: vec![],
+                    msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                        recipient: user_1_address.to_string(),
+                        amount: withdraw_1_amount,
+                    })
+                    .unwrap(),
+                }),
+                CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: psi_token.clone(),
+                    send: vec![],
+                    msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                        recipient: user_1_address.to_string(),
+                        amount: rewards_1_amount,
+                    })
+                    .unwrap(),
                 })
-                .unwrap(),
-            })]
+            ]
         );
         assert_eq!(res.submessages, vec![]);
     }
@@ -518,15 +529,26 @@ fn two_users_stake_partially_unstake_stake_again() {
 
         assert_eq!(
             res.messages,
-            vec![CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: nasset_token.clone(),
-                send: vec![],
-                msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                    recipient: user_2_address.to_string(),
-                    amount: withdraw_2_amount + rewards_2_amount,
+            vec![
+                CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: nasset_token.clone(),
+                    send: vec![],
+                    msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                        recipient: user_2_address.to_string(),
+                        amount: withdraw_2_amount,
+                    })
+                    .unwrap(),
+                }),
+                CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: psi_token.clone(),
+                    send: vec![],
+                    msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                        recipient: user_2_address.to_string(),
+                        amount: rewards_2_amount,
+                    })
+                    .unwrap(),
                 })
-                .unwrap(),
-            })]
+            ]
         );
         assert_eq!(res.submessages, vec![]);
     }
