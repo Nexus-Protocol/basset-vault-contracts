@@ -2,16 +2,14 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Addr, StdResult, Storage, Uint128};
+use cosmwasm_std::{Addr, StdResult, Storage};
 use cw_storage_plus::{Item, Map};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
-    pub casset_token: Addr,
-    pub aterra_token: Addr,
-    pub stable_denom: String,
-    pub basset_farmer_contract: Addr,
-    pub anchor_market_contract: Addr,
+    pub nasset_token: Addr,
+    pub psi_token: Addr,
+    pub governance_addr: Addr,
 }
 
 const CONFIG: Item<Config> = Item::new("config");
@@ -21,7 +19,7 @@ const STAKERS: Map<&Addr, StakerState> = Map::new("stakers");
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
 pub struct State {
     pub global_reward_index: Decimal256,
-    pub last_reward_amount: Decimal256,
+    pub last_reward_amount: Uint256,
     pub total_staked_amount: Uint256,
 }
 
@@ -40,9 +38,9 @@ pub fn store_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()>
     CONFIG.save(storage, config)
 }
 
-pub fn config_set_casset_token(storage: &mut dyn Storage, casset_token: Addr) -> StdResult<Config> {
+pub fn config_set_nasset_token(storage: &mut dyn Storage, nasset_token: Addr) -> StdResult<Config> {
     CONFIG.update(storage, |mut config| -> StdResult<_> {
-        config.casset_token = casset_token;
+        config.nasset_token = nasset_token;
         Ok(config)
     })
 }

@@ -8,9 +8,7 @@ use crate::{
     state::{store_config, store_state, Config, State},
     ContractResult,
 };
-use yield_optimizer::casset_staking::{
-    AnyoneMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
-};
+use yield_optimizer::nasset_staker::{AnyoneMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 
 #[entry_point]
 pub fn instantiate(
@@ -20,17 +18,15 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> ContractResult<Response> {
     let config = Config {
-        casset_token: deps.api.addr_validate(&msg.casset_token)?,
-        aterra_token: deps.api.addr_validate(&msg.aterra_token)?,
-        stable_denom: msg.stable_denom,
-        basset_farmer_contract: deps.api.addr_validate(&msg.basset_farmer_contract)?,
-        anchor_market_contract: deps.api.addr_validate(&msg.anchor_market_contract)?,
+        nasset_token: deps.api.addr_validate(&msg.nasset_token)?,
+        psi_token: deps.api.addr_validate(&msg.psi_token)?,
+        governance_addr: deps.api.addr_validate(&msg.governance_contract)?,
     };
     store_config(deps.storage, &config)?;
 
     let state = State {
         global_reward_index: Decimal256::zero(),
-        last_reward_amount: Decimal256::zero(),
+        last_reward_amount: Uint256::zero(),
         total_staked_amount: Uint256::zero(),
     };
     store_state(deps.storage, &state)?;
@@ -55,6 +51,8 @@ pub fn execute(
             AnyoneMsg::Unstake { amount, to } => {
                 commands::unstake_casset(deps, env, info.sender, amount, to)
             }
+
+            AnyoneMsg::ClaimRemainder => commands::claim_remainder(deps, env),
         },
     }
 }

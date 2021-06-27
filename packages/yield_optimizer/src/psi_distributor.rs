@@ -1,32 +1,45 @@
+use cosmwasm_std::{Addr, Decimal};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_bignumber::Uint256;
+use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ReceiveMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub casset_token: String,
-    pub aterra_token: String,
-    pub stable_denom: String,
-    pub basset_farmer_contract: String,
-    pub anchor_market_contract: String,
+    pub nasset_token_contract: String,
+    pub nasset_staker_contract: String,
+    pub governance_contract: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    Receive(Cw20ReceiveMsg),
     Anyone { anyone_msg: AnyoneMsg },
+    GovernanceMsg { governance_msg: GovernanceMsg },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AnyoneMsg {
-    UpdateIndex,
-    ClaimRewards { to: Option<String> },
-    Unstake { amount: Uint256, to: Option<String> },
+    DistributeRewards,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum GovernanceMsg {
+    UpdateConfig {
+        nasset_token_addr: Option<String>,
+        governance_addr: Option<String>,
+    },
+    UpdateRewardsDistribution {
+        distribution: Vec<(String, u64)>,
+    },
+}
+
+/// We currently take no arguments for migrations
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct MigrateMsg {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -35,20 +48,8 @@ pub enum QueryMsg {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum Cw20HookMsg {
-    Stake,
-}
-
-/// We currently take no arguments for migrations
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct MigrateMsg {}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ConfigResponse {
-    pub casset_token: String,
-    pub aterra_token: String,
-    pub stable_denom: String,
-    pub basset_farmer_contract: String,
-    pub anchor_market_contract: String,
+    pub nasset_token_addr: String,
+    pub governance_addr: String,
+    pub rewards_distribution: Vec<(String, Decimal256)>,
 }

@@ -1,29 +1,33 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_bignumber::Uint256;
+use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Addr, Decimal, StdResult, Storage, Uint128};
 use cw_storage_plus::Item;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub governance_contract: Addr,
-    pub casset_staking_contract: Addr,
+    //TODO: test that this value is SET after initialization
+    pub psi_distributor_addr: Addr,
     pub anchor_token: Addr,
     pub anchor_overseer_contract: Addr,
     pub anchor_market_contract: Addr,
-    pub custody_basset_contract: Addr,
+    pub anchor_custody_basset_contract: Addr,
     pub anc_stable_swap_contract: Addr,
     pub psi_stable_swap_contract: Addr,
-    pub casset_token: Addr,
+    pub nasset_token: Addr,
     pub basset_token: Addr,
     pub aterra_token: Addr,
     //what part of profit from selling ANC spend to buy PSI
-    pub psi_part_in_rewards: Decimal,
     pub psi_token: Addr,
     pub basset_farmer_config_contract: Addr,
     pub stable_denom: String,
     pub claiming_rewards_delay: u64,
+    //UST value in balance should be more than loan
+    //on what portion.
+    //for example: 1.01 means 1% more than loan
+    pub over_loan_balance_value: Decimal256,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
@@ -34,13 +38,20 @@ pub struct RepayingLoanState {
     pub aim_buffer_size: Uint256,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
+pub struct ChildContractsCodeId {
+    pub nasset_token: u64,
+    pub nasset_staker: u64,
+    pub psi_distributor: u64,
+}
+
 const CONFIG: Item<Config> = Item::new("config");
 const REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
 const AIM_BUFFER_SIZE: Item<Uint256> = Item::new("aim_buf_size");
 const STABLE_BALANCE_BEFORE_SELL_ANC: Item<Uint128> = Item::new("balance_before_sell_anc");
 const LAST_REWARDS_CLAIMING_HEIGHT: Item<u64> = Item::new("last_rewards_claiming_height");
 //need that only for instantiating
-const CASSET_STAKING_CODE_ID: Item<u64> = Item::new("casset_staking_code_id");
+const CHILD_CONTRACTS_CODE_ID: Item<ChildContractsCodeId> = Item::new("child_contracts_code_id");
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
     CONFIG.load(storage)
@@ -52,17 +63,17 @@ pub fn store_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()>
 
 pub fn config_set_casset_token(storage: &mut dyn Storage, casset_token: Addr) -> StdResult<Config> {
     CONFIG.update(storage, |mut config| -> StdResult<_> {
-        config.casset_token = casset_token;
+        config.nasset_token = casset_token;
         Ok(config)
     })
 }
 
-pub fn config_set_casset_staker(
+pub fn config_set_psi_distributor(
     storage: &mut dyn Storage,
-    casset_staker: Addr,
+    psi_distributor: Addr,
 ) -> StdResult<Config> {
     CONFIG.update(storage, |mut config| -> StdResult<_> {
-        config.casset_staking_contract = casset_staker;
+        config.psi_distributor_addr = psi_distributor;
         Ok(config)
     })
 }
@@ -108,16 +119,15 @@ pub fn store_stable_balance_before_selling_anc(
     STABLE_BALANCE_BEFORE_SELL_ANC.save(storage, balance)
 }
 
-pub fn load_casset_staking_code_id(storage: &dyn Storage) -> StdResult<u64> {
-    CASSET_STAKING_CODE_ID.load(storage)
+pub fn load_child_contracts_code_id(storage: &dyn Storage) -> StdResult<ChildContractsCodeId> {
+    CHILD_CONTRACTS_CODE_ID.load(storage)
 }
 
-pub fn store_casset_staking_code_id(storage: &mut dyn Storage, code_id: &u64) -> StdResult<()> {
-    CASSET_STAKING_CODE_ID.save(storage, code_id)
-}
-
-pub fn remove_casset_staking_code_id(storage: &mut dyn Storage) {
-    CASSET_STAKING_CODE_ID.remove(storage)
+pub fn store_child_contracts_code_id(
+    storage: &mut dyn Storage,
+    child_contracts_code_id: &ChildContractsCodeId,
+) -> StdResult<()> {
+    CHILD_CONTRACTS_CODE_ID.save(storage, child_contracts_code_id)
 }
 
 pub fn load_last_rewards_claiming_height(storage: &dyn Storage) -> StdResult<u64> {

@@ -1,9 +1,9 @@
 [package]
-name = "yield-optimizer-casset-staking"
+name = "yield-optimizer-nasset-staker"
 version = "0.1.0"
 authors = ["Nexus Labs"]
 edition = "2018"
-description = "Contract for staking cAsset"
+description = "Contract for staking nAsset"
 license = "Apache-2.0"
 repository = "https://github.com/nexus/yield-optimizer-contracts"
 homepage = "https://nexus.io"

@@ -1,3 +1,4 @@
+use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::{
     attr, entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, ReplyOn,
     Response, StdError, StdResult, SubMsg, WasmMsg,
@@ -6,9 +7,9 @@ use cosmwasm_std::{
 use crate::{
     commands, queries,
     state::{
-        config_set_casset_staker, config_set_casset_token, load_casset_staking_code_id,
-        load_config, remove_casset_staking_code_id, store_casset_staking_code_id, store_config,
-        update_loan_state_part_of_loan_repaid,
+        config_set_casset_token, config_set_psi_distributor, load_child_contracts_code_id,
+        load_config, store_child_contracts_code_id, store_config,
+        update_loan_state_part_of_loan_repaid, ChildContractsCodeId,
     },
 };
 use crate::{error::ContractError, response::MsgInstantiateContractResponse};
@@ -16,19 +17,20 @@ use crate::{state::Config, ContractResult};
 use cw20::MinterResponse;
 use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
+use std::str::FromStr;
 use yield_optimizer::{
-    basset_farmer::{
-        AnyoneMsg, CAssetStakerMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, YourselfMsg,
-    },
-    casset_staking::InstantiateMsg as CAssetStakerInstantiateMsg,
+    basset_farmer::{AnyoneMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, YourselfMsg},
+    nasset_staker::InstantiateMsg as NAssetStakerInstantiateMsg,
+    psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg,
     querier::get_basset_in_custody,
 };
 
-pub const SUBMSG_ID_INIT_CASSET: u64 = 1;
+pub const SUBMSG_ID_INIT_NASSET: u64 = 1;
 pub const SUBMSG_ID_REDEEM_STABLE: u64 = 2;
 pub const SUBMSG_ID_REPAY_LOAN: u64 = 3;
 pub const SUBMSG_ID_BORROWING: u64 = 4;
-pub const SUBMSG_ID_INIT_CASSET_STAKER: u64 = 5;
+pub const SUBMSG_ID_INIT_NASSET_STAKER: u64 = 5;
+pub const SUBMSG_ID_INIT_PSI_DISTRIBUTOR: u64 = 6;
 //withdrawing from Anchor Deposit error
 pub const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
 //borrowing error
@@ -42,10 +44,11 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> ContractResult<Response> {
     let config = Config {
-        casset_token: Addr::unchecked(""),
-        casset_staking_contract: Addr::unchecked(""),
+        nasset_token: Addr::unchecked(""),
         basset_token: deps.api.addr_validate(&msg.basset_token_addr)?,
-        custody_basset_contract: deps.api.addr_validate(&msg.custody_basset_contract)?,
+        anchor_custody_basset_contract: deps
+            .api
+            .addr_validate(&msg.anchor_custody_basset_contract)?,
         governance_contract: deps.api.addr_validate(&msg.governance_addr)?,
         anchor_token: deps.api.addr_validate(&msg.anchor_token)?,
         anchor_overseer_contract: deps.api.addr_validate(&msg.anchor_overseer_contract)?,
@@ -53,27 +56,33 @@ pub fn instantiate(
         anc_stable_swap_contract: deps.api.addr_validate(&msg.anc_stable_swap_contract)?,
         psi_stable_swap_contract: deps.api.addr_validate(&msg.psi_stable_swap_contract)?,
         aterra_token: deps.api.addr_validate(&msg.aterra_token)?,
-        psi_part_in_rewards: msg.psi_part_in_rewards,
         psi_token: deps.api.addr_validate(&msg.psi_token)?,
         basset_farmer_config_contract: deps
             .api
             .addr_validate(&msg.basset_farmer_config_contract)?,
         stable_denom: msg.stable_denom,
         claiming_rewards_delay: msg.claiming_rewards_delay,
+        psi_distributor_addr: Addr::unchecked(""),
+        over_loan_balance_value: Decimal256::from_str(&msg.over_loan_balance_value)?,
     };
     store_config(deps.storage, &config)?;
 
-    store_casset_staking_code_id(deps.storage, &msg.casset_staking_code_id)?;
+    let child_contracts_code_id = ChildContractsCodeId {
+        nasset_token: msg.nasset_token_code_id,
+        nasset_staker: msg.nasset_staker_code_id,
+        psi_distributor: msg.psi_distributor_code_id,
+    };
+    store_child_contracts_code_id(deps.storage, &child_contracts_code_id)?;
 
     Ok(Response {
         messages: vec![],
         submessages: vec![SubMsg {
             msg: WasmMsg::Instantiate {
                 admin: None,
-                code_id: msg.token_code_id,
+                code_id: msg.nasset_token_code_id,
                 msg: to_binary(&TokenInstantiateMsg {
                     name: "nexus basset token share representation".to_string(),
-                    symbol: format!("c{}", msg.collateral_token_symbol),
+                    symbol: format!("n{}", msg.collateral_token_symbol),
                     decimals: 6,
                     initial_balances: vec![],
                     mint: Some(MinterResponse {
@@ -86,10 +95,10 @@ pub fn instantiate(
             }
             .into(),
             gas_limit: None,
-            id: SUBMSG_ID_INIT_CASSET,
+            id: SUBMSG_ID_INIT_NASSET,
             reply_on: ReplyOn::Success,
         }],
-        attributes: vec![],
+        attributes: vec![attr("action", "initialization")],
         data: None,
     })
 }
@@ -97,59 +106,101 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
     match msg.id {
-        SUBMSG_ID_INIT_CASSET => {
+        SUBMSG_ID_INIT_NASSET => {
             let data = msg.result.unwrap().data.unwrap();
             let res: MsgInstantiateContractResponse = Message::parse_from_bytes(data.as_slice())
                 .map_err(|_| {
                     StdError::parse_err("MsgInstantiateContractResponse", "failed to parse data")
                 })?;
 
-            let casset_token = res.get_contract_address();
-            config_set_casset_token(deps.storage, deps.api.addr_validate(casset_token)?)?;
-            let config = load_config(deps.as_ref().storage)?;
-            let casset_staking_code_id = load_casset_staking_code_id(deps.as_ref().storage)?;
-            remove_casset_staking_code_id(deps.storage);
+            let nasset_token = res.get_contract_address();
+            config_set_casset_token(deps.storage, deps.api.addr_validate(nasset_token)?)?;
+            let child_contracts_code_id = load_child_contracts_code_id(deps.as_ref().storage)?;
+            let config = load_config(deps.storage)?;
 
             Ok(Response {
                 messages: vec![],
                 submessages: vec![SubMsg {
                     msg: WasmMsg::Instantiate {
                         admin: None,
-                        code_id: casset_staking_code_id,
-                        msg: to_binary(&CAssetStakerInstantiateMsg {
-                            casset_token: casset_token.to_string(),
-                            aterra_token: config.aterra_token.to_string(),
-                            stable_denom: config.stable_denom,
-                            basset_farmer_contract: env.contract.address.to_string(),
-                            anchor_market_contract: config.anchor_market_contract.to_string(),
+                        code_id: child_contracts_code_id.nasset_staker,
+                        msg: to_binary(&NAssetStakerInstantiateMsg {
+                            nasset_token: nasset_token.to_string(),
+                            psi_token: config.psi_token.to_string(),
+                            governance_contract: config.governance_contract.to_string(),
                         })?,
                         send: vec![],
                         label: "".to_string(),
                     }
                     .into(),
                     gas_limit: None,
-                    id: SUBMSG_ID_INIT_CASSET_STAKER,
+                    id: SUBMSG_ID_INIT_NASSET_STAKER,
                     reply_on: ReplyOn::Success,
                 }],
-                attributes: vec![attr("casset_token_addr", casset_token)],
+                attributes: vec![
+                    attr("action", "nasset_token_initialized"),
+                    attr("nasset_token_addr", nasset_token),
+                ],
                 data: None,
             })
         }
 
-        SUBMSG_ID_INIT_CASSET_STAKER => {
+        SUBMSG_ID_INIT_NASSET_STAKER => {
             let data = msg.result.unwrap().data.unwrap();
             let res: MsgInstantiateContractResponse = Message::parse_from_bytes(data.as_slice())
                 .map_err(|_| {
                     StdError::parse_err("MsgInstantiateContractResponse", "failed to parse data")
                 })?;
 
-            let casset_staker = res.get_contract_address();
-            config_set_casset_staker(deps.storage, deps.api.addr_validate(casset_staker)?)?;
+            let nasset_staker = res.get_contract_address();
+            let config = load_config(deps.as_ref().storage)?;
+            let child_contracts_code_id = load_child_contracts_code_id(deps.as_ref().storage)?;
+            //we do not need to save casset_staker addr here, cause there is no direct interactions
+
+            Ok(Response {
+                messages: vec![],
+                submessages: vec![SubMsg {
+                    msg: WasmMsg::Instantiate {
+                        admin: None,
+                        code_id: child_contracts_code_id.psi_distributor,
+                        msg: to_binary(&PsiDistributorInstantiateMsg {
+                            nasset_token_contract: config.nasset_token.to_string(),
+                            nasset_staker_contract: nasset_staker.to_string(),
+                            governance_contract: config.governance_contract.to_string(),
+                        })?,
+                        send: vec![],
+                        label: "".to_string(),
+                    }
+                    .into(),
+                    gas_limit: None,
+                    id: SUBMSG_ID_INIT_PSI_DISTRIBUTOR,
+                    reply_on: ReplyOn::Success,
+                }],
+                attributes: vec![
+                    attr("action", "nasset_staker_initialized"),
+                    attr("nasset_staker_addr", nasset_staker),
+                ],
+                data: None,
+            })
+        }
+
+        SUBMSG_ID_INIT_PSI_DISTRIBUTOR => {
+            let data = msg.result.unwrap().data.unwrap();
+            let res: MsgInstantiateContractResponse = Message::parse_from_bytes(data.as_slice())
+                .map_err(|_| {
+                    StdError::parse_err("MsgInstantiateContractResponse", "failed to parse data")
+                })?;
+
+            let psi_distributor = res.get_contract_address();
+            config_set_psi_distributor(deps.storage, deps.api.addr_validate(psi_distributor)?)?;
 
             Ok(Response {
                 messages: vec![],
                 submessages: vec![],
-                attributes: vec![attr("casset_staking_contract", casset_staker)],
+                attributes: vec![
+                    attr("action", "psi_distributor_initialized"),
+                    attr("psi_distributor_addr", psi_distributor),
+                ],
                 data: None,
             })
         }
@@ -203,7 +254,7 @@ pub fn execute(
                 // basset balance in custody contract
                 let basset_in_custody = get_basset_in_custody(
                     deps.as_ref(),
-                    &config.custody_basset_contract,
+                    &config.anchor_custody_basset_contract,
                     &env.contract.address.clone(),
                 )?;
 
@@ -223,19 +274,6 @@ pub fn execute(
                 YourselfMsg::DisributeRewards => commands::distribute_rewards(deps, env),
             }
         }
-
-        ExecuteMsg::CAssetStaker { casset_staker_msg } => {
-            let config: Config = load_config(deps.storage)?;
-            if info.sender != config.casset_staking_contract {
-                return Err(ContractError::Unauthorized {});
-            }
-
-            match casset_staker_msg {
-                CAssetStakerMsg::SendRewards { recipient, amount } => {
-                    commands::send_rewards(deps, env, config, recipient, amount)
-                }
-            }
-        }
     }
 }
 
@@ -244,6 +282,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config => to_binary(&queries::query_config(deps)?),
         QueryMsg::Rebalance => to_binary(&queries::query_rebalance(deps, env)?),
+        QueryMsg::ChildContractsCodeId => to_binary(&queries::child_contracts_code_id(deps)?),
+        QueryMsg::IsRewardsClaimable => to_binary(&queries::is_rewards_claimable(deps, env)?),
     }
 }
 
