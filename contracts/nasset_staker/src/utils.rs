@@ -74,9 +74,9 @@ mod test {
             last_reward_amount: Uint256::zero(),
             total_staked_amount: Uint256::zero(),
         };
-        let nasset_balance = Uint256::zero();
+        let psi_balance = Uint256::zero();
 
-        calculate_reward_index(&mut state, nasset_balance).unwrap();
+        calculate_reward_index(&mut state, psi_balance).unwrap();
         assert_eq!(state.last_reward_amount, Uint256::zero());
         assert_eq!(state.global_reward_index, Decimal256::zero());
         assert_eq!(state.total_staked_amount, Uint256::zero());
@@ -89,26 +89,15 @@ mod test {
             last_reward_amount: Uint256::zero(),
             total_staked_amount: Uint256::from(100u64),
         };
-        let nasset_balance = Uint256::from(200u64);
+        let psi_balance = Uint256::from(200u64);
 
-        calculate_reward_index(&mut state, nasset_balance).unwrap();
-        assert_eq!(state.last_reward_amount, Uint256::from(100u64));
-        // (200 - 100) / 100
-        assert_eq!(state.global_reward_index, Decimal256::one());
-        assert_eq!(state.total_staked_amount, Uint256::from(100u64));
-    }
-
-    #[test]
-    fn reward_calc_current_balance_lesser_than_staked() {
-        let mut state = State {
-            global_reward_index: Decimal256::zero(),
-            last_reward_amount: Uint256::zero(),
-            total_staked_amount: Uint256::from(100u64),
-        };
-        let nasset_balance = Uint256::from(70u64);
-
-        let calc_res = calculate_reward_index(&mut state, nasset_balance);
-        assert!(calc_res.is_err());
+        calculate_reward_index(&mut state, psi_balance).unwrap();
+        assert_eq!(state.last_reward_amount, Uint256::from(200u64));
+        // 200 / 100
+        assert_eq!(
+            state.global_reward_index,
+            Decimal256::from_str("2").unwrap()
+        );
         assert_eq!(state.total_staked_amount, Uint256::from(100u64));
     }
 
@@ -119,9 +108,9 @@ mod test {
             last_reward_amount: Uint256::from(24_500u64),
             total_staked_amount: Uint256::from(1000u64),
         };
-        let nasset_balance = Uint256::from(8_000u64);
+        let psi_balance = Uint256::from(8_000u64);
 
-        let calc_res = calculate_reward_index(&mut state, nasset_balance);
+        let calc_res = calculate_reward_index(&mut state, psi_balance);
         assert!(calc_res.is_err());
         assert_eq!(state.total_staked_amount, Uint256::from(1000u64));
     }
@@ -133,14 +122,15 @@ mod test {
             last_reward_amount: Uint256::from(24_500u64),
             total_staked_amount: Uint256::from(50_000u64),
         };
-        let nasset_balance = Uint256::from(80_000u64);
+        let psi_balance = Uint256::from(80_000u64);
 
-        calculate_reward_index(&mut state, nasset_balance).unwrap();
-        assert_eq!(Uint256::from(5_500u64), state.last_reward_amount);
-        //245 + 5_500 / 50_000
+        calculate_reward_index(&mut state, psi_balance).unwrap();
+        // 80k - 24_500
+        assert_eq!(state.last_reward_amount, Uint256::from(55_500u64));
+        //245 + 55_500 / 50_000
         assert_eq!(
-            Decimal256::from_str("245.11").unwrap(),
-            state.global_reward_index
+            state.global_reward_index,
+            Decimal256::from_str("246.11").unwrap(),
         );
         assert_eq!(state.total_staked_amount, Uint256::from(50_000u64));
     }

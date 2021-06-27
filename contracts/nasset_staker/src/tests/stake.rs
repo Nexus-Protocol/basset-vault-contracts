@@ -379,13 +379,19 @@ fn two_users_stake_partially_unstake_stake_again() {
     let new_rewards_amount = Uint128::from(1_000u64);
     // -= SOME REWARDS COME (nasset balance increased) =-
     {
-        deps.querier.with_token_balances(&[(
-            &nasset_token,
-            &[(
-                &MOCK_CONTRACT_ADDR.to_string(),
-                &(deposit_1_amount + deposit_2_amount + new_rewards_amount),
-            )],
-        )]);
+        deps.querier.with_token_balances(&[
+            (
+                &nasset_token,
+                &[(
+                    &MOCK_CONTRACT_ADDR.to_string(),
+                    &(deposit_1_amount + deposit_2_amount),
+                )],
+            ),
+            (
+                &psi_token,
+                &[(&MOCK_CONTRACT_ADDR.to_string(), &new_rewards_amount)],
+            ),
+        ]);
     }
 
     let withdraw_1_amount: Uint128 = 30u128.into();
@@ -450,17 +456,24 @@ fn two_users_stake_partially_unstake_stake_again() {
     // subtract rewards sent to user_1
     // subtract user_1 unstaked casset
     {
-        deps.querier.with_token_balances(&[(
-            &nasset_token,
-            &[(
-                &MOCK_CONTRACT_ADDR.to_string(),
-                &((deposit_1_amount + deposit_2_amount + new_rewards_amount)
-                    .checked_sub(withdraw_1_amount)
-                    .unwrap()
-                    .checked_sub(rewards_1_amount)
-                    .unwrap()),
-            )],
-        )]);
+        deps.querier.with_token_balances(&[
+            (
+                &nasset_token,
+                &[(
+                    &MOCK_CONTRACT_ADDR.to_string(),
+                    &((deposit_1_amount + deposit_2_amount)
+                        .checked_sub(withdraw_1_amount)
+                        .unwrap()),
+                )],
+            ),
+            (
+                &psi_token,
+                &[(
+                    &MOCK_CONTRACT_ADDR.to_string(),
+                    &(new_rewards_amount.checked_sub(rewards_1_amount).unwrap()),
+                )],
+            ),
+        ]);
     }
 
     // -= USER 2 partially unstake =-
