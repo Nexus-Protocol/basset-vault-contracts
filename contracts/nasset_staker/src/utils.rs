@@ -60,6 +60,15 @@ fn calculate_reward_index(state: &mut State, psi_balance: Uint256) -> Result<(),
     Ok(())
 }
 
+pub fn issue_reward(state: &mut State, staker_state: &mut StakerState) -> Uint256 {
+    let claim_amount = staker_state.pending_rewards * Uint256::one();
+    staker_state.pending_rewards =
+        staker_state.pending_rewards - Decimal256::from_uint256(claim_amount);
+    state.last_reward_amount = state.last_reward_amount - claim_amount;
+
+    claim_amount
+}
+
 #[cfg(test)]
 mod test {
     use super::calculate_reward_index;

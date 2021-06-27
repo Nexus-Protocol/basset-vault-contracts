@@ -114,25 +114,34 @@ pub fn unstake_casset(
     utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
     utils::update_staker_reward(&state, &mut staker_state);
 
-    let claim_amount = staker_state.pending_rewards * Uint256::one();
-    staker_state.pending_rewards =
-        staker_state.pending_rewards - Decimal256::from_uint256(claim_amount);
-    state.last_reward_amount = state.last_reward_amount - claim_amount;
-
+    let claim_amount = utils::issue_reward(&mut state, &mut staker_state);
     utils::decrease_staked_amount(&mut state, &mut staker_state, amount_to_unstake);
 
     store_state(deps.storage, &state)?;
     store_staker_state(deps.storage, &staker, &staker_state)?;
 
-    Ok(Response {
-        messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: config.nasset_token.to_string(),
+    let mut messages = vec![CosmosMsg::Wasm(WasmMsg::Execute {
+        contract_addr: config.nasset_token.to_string(),
+        send: vec![],
+        msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            recipient: recipient.clone(),
+            amount: amount_to_unstake.into(),
+        })?,
+    })];
+
+    if !claim_amount.is_zero() {
+        messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: config.psi_token.to_string(),
             send: vec![],
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: recipient.clone(),
-                amount: (amount_to_unstake + claim_amount).into(),
+                amount: claim_amount.into(),
             })?,
-        })],
+        }));
+    }
+
+    Ok(Response {
+        messages,
         submessages: vec![],
         attributes: vec![
             attr("action", "unstake"),
@@ -162,17 +171,14 @@ pub fn claim_rewards(
     utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
     utils::update_staker_reward(&state, &mut staker_state);
 
-    let claim_amount = staker_state.pending_rewards * Uint256::one();
-    staker_state.pending_rewards =
-        staker_state.pending_rewards - Decimal256::from_uint256(claim_amount);
-    state.last_reward_amount = state.last_reward_amount - claim_amount;
+    let claim_amount = utils::issue_reward(&mut state, &mut staker_state);
 
     store_state(deps.storage, &state)?;
     store_staker_state(deps.storage, &staker, &staker_state)?;
 
     let messages: Vec<CosmosMsg> = if !claim_amount.is_zero() {
         vec![CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: config.nasset_token.to_string(),
+            contract_addr: config.psi_token.to_string(),
             send: vec![],
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: recipient.clone(),
