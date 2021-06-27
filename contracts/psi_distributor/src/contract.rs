@@ -1,16 +1,19 @@
-use cosmwasm_bignumber::{Decimal256, Uint256};
+use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::{
     entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult,
 };
 
 use crate::{
     commands, queries,
-    state::{store_config, store_state, Config, State},
+    state::{store_config, Config, RewardShare, RewardsDistribution},
     ContractResult,
 };
-use yield_optimizer::casset_staking::{
+use yield_optimizer::psi_distributor::{
     AnyoneMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
 };
+
+const NASSET_STAKER_REWARD_SHARE: u64 = 70;
+const GOVERNANCE_STAKER_REWARD_SHARE: u64 = 30;
 
 #[entry_point]
 pub fn instantiate(
@@ -19,21 +22,26 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> ContractResult<Response> {
+    let nasset_staker_addr = deps.api.addr_validate(&msg.nasset_staker_contract)?;
+    let governance_addr = deps.api.addr_validate(&msg.governance_contract)?;
+
+    let rewards_distribution = vec![
+        RewardShare {
+            recepient: nasset_staker_addr,
+            share: Decimal256::percent(NASSET_STAKER_REWARD_SHARE),
+        },
+        RewardShare {
+            recepient: governance_addr.clone(),
+            share: Decimal256::percent(GOVERNANCE_STAKER_REWARD_SHARE),
+        },
+    ];
+
     let config = Config {
-        casset_token: deps.api.addr_validate(&msg.casset_token)?,
-        aterra_token: deps.api.addr_validate(&msg.aterra_token)?,
-        stable_denom: msg.stable_denom,
-        basset_farmer_contract: deps.api.addr_validate(&msg.basset_farmer_contract)?,
-        anchor_market_contract: deps.api.addr_validate(&msg.anchor_market_contract)?,
+        nasset_token_addr: deps.api.addr_validate(&msg.nasset_token_contract)?,
+        governance_addr,
+        rewards_distribution: RewardsDistribution::new(rewards_distribution)?,
     };
     store_config(deps.storage, &config)?;
-
-    let state = State {
-        global_reward_index: Decimal256::zero(),
-        last_reward_amount: Decimal256::zero(),
-        total_staked_amount: Uint256::zero(),
-    };
-    store_state(deps.storage, &state)?;
 
     Ok(Response::default())
 }
@@ -46,16 +54,11 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> ContractResult<Response> {
     match msg {
-        ExecuteMsg::Receive(msg) => commands::receive_cw20(deps, env, info, msg),
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
-            AnyoneMsg::UpdateIndex => commands::update_global_index(deps, env),
-
-            AnyoneMsg::ClaimRewards { to } => commands::claim_rewards(deps, env, info.sender, to),
-
-            AnyoneMsg::Unstake { amount, to } => {
-                commands::unstake_casset(deps, env, info.sender, amount, to)
-            }
+            AnyoneMsg::DistributeRewards => commands::distribute_rewards(deps, env),
         },
+        //TODO
+        //ExecuteMsg::GovernanceMsg
     }
 }
 

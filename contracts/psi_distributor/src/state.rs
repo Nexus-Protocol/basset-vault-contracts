@@ -1,36 +1,52 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Addr, StdResult, Storage, Uint128};
-use cw_storage_plus::{Item, Map};
+use cosmwasm_bignumber::Decimal256;
+use cosmwasm_std::{Addr, StdError, StdResult, Storage};
+use cw_storage_plus::Item;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
-    pub casset_token: Addr,
-    pub aterra_token: Addr,
-    pub stable_denom: String,
-    pub basset_farmer_contract: Addr,
-    pub anchor_market_contract: Addr,
+    pub nasset_token_addr: Addr,
+    pub governance_addr: Addr,
+    pub rewards_distribution: RewardsDistribution,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct RewardShare {
+    pub recepient: Addr,
+    pub share: Decimal256,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct RewardsDistribution {
+    distribution: Vec<RewardShare>,
+}
+
+impl RewardsDistribution {
+    pub fn new(rewards_distribution: Vec<RewardShare>) -> StdResult<RewardsDistribution> {
+        let total_percentage: Decimal256 = rewards_distribution
+            .iter()
+            .map(|rs| rs.share)
+            .fold(Decimal256::zero(), |sum, share| sum + share);
+        if total_percentage != Decimal256::one() {
+            return Err(StdError::generic_err(format!(
+                "wrong rewards distribution, total sum should be one, but equals {}",
+                total_percentage
+            )));
+        }
+
+        Ok(RewardsDistribution {
+            distribution: rewards_distribution,
+        })
+    }
+
+    pub fn distribution(&self) -> &Vec<RewardShare> {
+        &self.distribution
+    }
 }
 
 const CONFIG: Item<Config> = Item::new("config");
-const STATE: Item<State> = Item::new("state");
-const STAKERS: Map<&Addr, StakerState> = Map::new("stakers");
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
-pub struct State {
-    pub global_reward_index: Decimal256,
-    pub last_reward_amount: Decimal256,
-    pub total_staked_amount: Uint256,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
-pub struct StakerState {
-    pub staked_amount: Uint256,
-    pub reward_index: Decimal256,
-    pub pending_rewards: Decimal256,
-}
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
     CONFIG.load(storage)
@@ -40,31 +56,74 @@ pub fn store_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()>
     CONFIG.save(storage, config)
 }
 
-pub fn config_set_casset_token(storage: &mut dyn Storage, casset_token: Addr) -> StdResult<Config> {
-    CONFIG.update(storage, |mut config| -> StdResult<_> {
-        config.casset_token = casset_token;
-        Ok(config)
-    })
-}
+#[cfg(test)]
+mod test {
+    use cosmwasm_bignumber::Decimal256;
+    use cosmwasm_std::Addr;
 
-pub fn load_staker_state(storage: &dyn Storage, addr: &Addr) -> StdResult<StakerState> {
-    STAKERS
-        .may_load(storage, addr)
-        .map(|res| res.unwrap_or_default())
-}
+    use super::{RewardShare, RewardsDistribution};
 
-pub fn store_staker_state(
-    storage: &mut dyn Storage,
-    addr: &Addr,
-    state: &StakerState,
-) -> StdResult<()> {
-    STAKERS.save(storage, addr, state)
-}
+    #[test]
+    pub fn zero_shares() {
+        let rewards_distribution = RewardsDistribution::new(vec![]);
+        assert!(rewards_distribution.is_err())
+    }
 
-pub fn load_state(storage: &dyn Storage) -> StdResult<State> {
-    STATE.load(storage)
-}
+    #[test]
+    pub fn one_element() {
+        let one_share = RewardShare {
+            recepient: Addr::unchecked("xxx"),
+            share: Decimal256::percent(100),
+        };
+        let rewards_distribution = RewardsDistribution::new(vec![one_share]);
+        assert!(rewards_distribution.is_ok())
+    }
 
-pub fn store_state(storage: &mut dyn Storage, state: &State) -> StdResult<()> {
-    STATE.save(storage, state)
+    #[test]
+    pub fn wrong_total_distribution_1() {
+        let rewards = vec![
+            RewardShare {
+                recepient: Addr::unchecked("uuu"),
+                share: Decimal256::percent(10),
+            },
+            RewardShare {
+                recepient: Addr::unchecked("xxx"),
+                share: Decimal256::percent(15),
+            },
+        ];
+        let rewards_distribution = RewardsDistribution::new(rewards);
+        assert!(rewards_distribution.is_err())
+    }
+
+    #[test]
+    pub fn wrong_total_distribution_2() {
+        let rewards = vec![
+            RewardShare {
+                recepient: Addr::unchecked("uuu"),
+                share: Decimal256::percent(10),
+            },
+            RewardShare {
+                recepient: Addr::unchecked("xxx"),
+                share: Decimal256::percent(1125),
+            },
+        ];
+        let rewards_distribution = RewardsDistribution::new(rewards);
+        assert!(rewards_distribution.is_err())
+    }
+
+    #[test]
+    pub fn right_total_distribution() {
+        let rewards = vec![
+            RewardShare {
+                recepient: Addr::unchecked("uuu"),
+                share: Decimal256::percent(10),
+            },
+            RewardShare {
+                recepient: Addr::unchecked("xxx"),
+                share: Decimal256::percent(90),
+            },
+        ];
+        let rewards_distribution = RewardsDistribution::new(rewards);
+        assert!(rewards_distribution.is_ok())
+    }
 }
