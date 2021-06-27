@@ -109,6 +109,7 @@ fn proper_initialization() {
                 msg: to_binary(&NAssetStakerInstantiateMsg {
                     nasset_token: nluna_contract_addr.clone(),
                     psi_token: psi_token.clone(),
+                    governance_contract: governance_contract.clone()
                 })
                 .unwrap(),
                 send: vec![],

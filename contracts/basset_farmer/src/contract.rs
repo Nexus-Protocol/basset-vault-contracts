@@ -127,6 +127,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                         msg: to_binary(&NAssetStakerInstantiateMsg {
                             nasset_token: nasset_token.to_string(),
                             psi_token: config.psi_token.to_string(),
+                            governance_contract: config.governance_contract.to_string(),
                         })?,
                         send: vec![],
                         label: "".to_string(),

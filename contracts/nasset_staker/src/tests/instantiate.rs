@@ -9,10 +9,12 @@ fn proper_initialization() {
     let mut deps = mock_dependencies(&[]);
     let nasset_token = "addr0001".to_string();
     let psi_token = "addr0002".to_string();
+    let governance_contract = "addr0003".to_string();
 
     let msg = yield_optimizer::nasset_staker::InstantiateMsg {
         nasset_token: nasset_token.clone(),
         psi_token: psi_token.clone(),
+        governance_contract: governance_contract.clone(),
     };
 
     let env = mock_env();
@@ -23,6 +25,7 @@ fn proper_initialization() {
     let config: Config = load_config(&deps.storage).unwrap();
     assert_eq!(nasset_token, config.nasset_token);
     assert_eq!(psi_token, config.psi_token);
+    assert_eq!(governance_contract, config.governance_addr);
 
     let state = load_state(&deps.storage).unwrap();
     assert_eq!(state.last_reward_amount, Uint256::zero());

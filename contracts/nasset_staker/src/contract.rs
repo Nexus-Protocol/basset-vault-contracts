@@ -20,6 +20,7 @@ pub fn instantiate(
     let config = Config {
         nasset_token: deps.api.addr_validate(&msg.nasset_token)?,
         psi_token: deps.api.addr_validate(&msg.psi_token)?,
+        governance_addr: deps.api.addr_validate(&msg.governance_contract)?,
     };
     store_config(deps.storage, &config)?;
 

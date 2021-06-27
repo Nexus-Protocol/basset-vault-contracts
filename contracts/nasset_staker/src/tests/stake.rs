@@ -1,29 +1,27 @@
-use crate::state::{load_config, load_staker_state, load_state, Config, StakerState, State};
+use crate::state::{load_staker_state, load_state, StakerState, State};
 use crate::tests::mock_dependencies;
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
     testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR},
-    Addr, Coin, CosmosMsg, Decimal, WasmMsg,
+    Addr, CosmosMsg, WasmMsg,
 };
 use cosmwasm_std::{to_binary, Uint128};
 use cw20::Cw20ReceiveMsg;
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use std::str::FromStr;
-use yield_optimizer::{
-    basset_farmer::ExecuteMsg as BAssetFarmerExecuteMsg,
-    nasset_staker::{AnyoneMsg, Cw20HookMsg, ExecuteMsg},
-    querier::{AnchorMarketEpochStateResponse, BorrowerInfoResponse},
-};
+use yield_optimizer::nasset_staker::{AnyoneMsg, Cw20HookMsg, ExecuteMsg};
 
 #[test]
 fn first_stake() {
     //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
     let psi_token = "addr0002".to_string();
+    let governance_contract = "addr0003".to_string();
 
     let msg = yield_optimizer::nasset_staker::InstantiateMsg {
         nasset_token: nasset_token.clone(),
         psi_token: psi_token.clone(),
+        governance_contract,
     };
 
     let mut deps = mock_dependencies(&[]);
@@ -94,10 +92,12 @@ fn stake_and_unstake() {
     //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
     let psi_token = "addr0002".to_string();
+    let governance_contract = "addr0003".to_string();
 
     let msg = yield_optimizer::nasset_staker::InstantiateMsg {
         nasset_token: nasset_token.clone(),
         psi_token: psi_token.clone(),
+        governance_contract,
     };
 
     let mut deps = mock_dependencies(&[]);
@@ -190,10 +190,12 @@ fn stake_and_unstake_partially() {
     //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
     let psi_token = "addr0002".to_string();
+    let governance_contract = "addr0003".to_string();
 
     let msg = yield_optimizer::nasset_staker::InstantiateMsg {
         nasset_token: nasset_token.clone(),
         psi_token: psi_token.clone(),
+        governance_contract,
     };
 
     let mut deps = mock_dependencies(&[]);
@@ -279,10 +281,12 @@ fn two_users_stake_partially_unstake_stake_again() {
     //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
     let psi_token = "addr0002".to_string();
+    let governance_contract = "addr0003".to_string();
 
     let msg = yield_optimizer::nasset_staker::InstantiateMsg {
         nasset_token: nasset_token.clone(),
         psi_token: psi_token.clone(),
+        governance_contract,
     };
 
     let mut deps = mock_dependencies(&[]);
@@ -581,10 +585,12 @@ fn first_staker_come_but_rewards_already_there() {
     //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
     let psi_token = "addr0002".to_string();
+    let governance_contract = "addr0003".to_string();
 
     let msg = yield_optimizer::nasset_staker::InstantiateMsg {
         nasset_token: nasset_token.clone(),
         psi_token: psi_token.clone(),
+        governance_contract,
     };
 
     let mut deps = mock_dependencies(&[]);
