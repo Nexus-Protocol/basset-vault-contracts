@@ -33,6 +33,7 @@ fn proper_initialization() {
     let nluna_staker_contract = "addr0014".to_string();
     let psi_distributor_contract = "addr0015".to_string();
     let governance_contract = "addr0016".to_string();
+    let psi_token = "addr0011".to_string();
     let over_loan_balance_value = "1.01".to_string();
     let mut deps = mock_dependencies(&[]);
 
@@ -50,7 +51,7 @@ fn proper_initialization() {
         anc_stable_swap_contract: "addr0008".to_string(),
         psi_stable_swap_contract: "addr0009".to_string(),
         aterra_token: aterra_token.clone(),
-        psi_token: "addr0011".to_string(),
+        psi_token: psi_token.clone(),
         basset_farmer_config_contract: "addr0012".to_string(),
         stable_denom: stable_denom.clone(),
         claiming_rewards_delay: 1000,
@@ -107,6 +108,7 @@ fn proper_initialization() {
                 code_id: nasset_staker_code_id,
                 msg: to_binary(&NAssetStakerInstantiateMsg {
                     nasset_token: nluna_contract_addr.clone(),
+                    psi_token: psi_token.clone(),
                 })
                 .unwrap(),
                 send: vec![],

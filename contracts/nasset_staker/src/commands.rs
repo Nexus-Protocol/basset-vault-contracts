@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     attr, from_binary, to_binary, Addr, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdError,
-    WasmMsg,
+    Uint128, WasmMsg,
 };
 
 use crate::utils;
@@ -16,12 +16,12 @@ use crate::{state::Config, ContractResult};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ReceiveMsg;
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
-use yield_optimizer::nasset_staker::Cw20HookMsg;
+use yield_optimizer::{nasset_staker::Cw20HookMsg, querier::query_token_balance};
 
 pub fn update_global_index(deps: DepsMut, env: Env) -> ContractResult<Response> {
     let config = load_config(deps.storage)?;
     let mut state = load_state(deps.storage)?;
-    utils::update_global_reward(deps.as_ref(), env, &config, &mut state, None)?;
+    utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
 
     store_state(deps.storage, &state)?;
 
@@ -74,7 +74,7 @@ pub fn stake_nasset(
     let mut staker_state = load_staker_state(deps.storage, &staker)?;
     let mut state = load_state(deps.storage)?;
 
-    utils::update_global_reward(deps.as_ref(), env, &config, &mut state, Some(stake_amount))?;
+    utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
     utils::update_staker_reward(&state, &mut staker_state);
 
     utils::increase_staked_amount(&mut state, &mut staker_state, stake_amount);
@@ -111,7 +111,7 @@ pub fn unstake_casset(
     let config: Config = load_config(deps.storage)?;
     let mut state = load_state(deps.storage)?;
 
-    utils::update_global_reward(deps.as_ref(), env, &config, &mut state, None)?;
+    utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
     utils::update_staker_reward(&state, &mut staker_state);
 
     let claim_amount = staker_state.pending_rewards * Uint256::one();
@@ -159,7 +159,7 @@ pub fn claim_rewards(
     let mut state = load_state(deps.storage)?;
     let mut staker_state = load_staker_state(deps.storage, &staker)?;
 
-    utils::update_global_reward(deps.as_ref(), env, &config, &mut state, None)?;
+    utils::update_global_reward(deps.as_ref(), env, &config, &mut state)?;
     utils::update_staker_reward(&state, &mut staker_state);
 
     let claim_amount = staker_state.pending_rewards * Uint256::one();
@@ -192,4 +192,41 @@ pub fn claim_rewards(
         ],
         data: None,
     })
+}
+
+pub fn claim_remainder(deps: DepsMut, env: Env) -> ContractResult<Response> {
+    let config: Config = load_config(deps.storage)?;
+    let state = load_state(deps.storage)?;
+
+    if state.total_staked_amount.is_zero() {
+        let psi_balance: Uint128 =
+            query_token_balance(deps.as_ref(), &config.psi_token, &env.contract.address)?;
+
+        if psi_balance.is_zero() {
+            Err(StdError::generic_err("nothing to claim").into())
+        } else {
+            Ok(Response {
+                messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: config.psi_token.to_string(),
+                    send: vec![],
+                    msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                        recipient: config.governance_addr.to_string(),
+                        amount: psi_balance,
+                    })?,
+                })],
+                submessages: vec![],
+                attributes: vec![
+                    attr("action", "claim_remainder"),
+                    attr("amout", psi_balance),
+                ],
+                data: None,
+            })
+        }
+    } else {
+        Err(StdError::generic_err(format!(
+            "wait until there will be 0 staked amount, currently: {}",
+            state.total_staked_amount
+        ))
+        .into())
+    }
 }

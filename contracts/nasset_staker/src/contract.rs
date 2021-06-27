@@ -19,6 +19,7 @@ pub fn instantiate(
 ) -> ContractResult<Response> {
     let config = Config {
         nasset_token: deps.api.addr_validate(&msg.nasset_token)?,
+        psi_token: deps.api.addr_validate(&msg.psi_token)?,
     };
     store_config(deps.storage, &config)?;
 
@@ -49,6 +50,8 @@ pub fn execute(
             AnyoneMsg::Unstake { amount, to } => {
                 commands::unstake_casset(deps, env, info.sender, amount, to)
             }
+
+            AnyoneMsg::ClaimRemainder => commands::claim_remainder(deps, env),
         },
     }
 }

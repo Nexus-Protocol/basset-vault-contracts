@@ -116,6 +116,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
             let nasset_token = res.get_contract_address();
             config_set_casset_token(deps.storage, deps.api.addr_validate(nasset_token)?)?;
             let child_contracts_code_id = load_child_contracts_code_id(deps.as_ref().storage)?;
+            let config = load_config(deps.storage)?;
 
             Ok(Response {
                 messages: vec![],
@@ -125,6 +126,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                         code_id: child_contracts_code_id.nasset_staker,
                         msg: to_binary(&NAssetStakerInstantiateMsg {
                             nasset_token: nasset_token.to_string(),
+                            psi_token: config.psi_token.to_string(),
                         })?,
                         send: vec![],
                         label: "".to_string(),

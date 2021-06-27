@@ -19,9 +19,11 @@ use yield_optimizer::{
 fn first_stake() {
     //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
+    let psi_token = "addr0002".to_string();
 
     let msg = yield_optimizer::nasset_staker::InstantiateMsg {
         nasset_token: nasset_token.clone(),
+        psi_token: psi_token.clone(),
     };
 
     let mut deps = mock_dependencies(&[]);
@@ -91,9 +93,11 @@ fn first_stake() {
 fn stake_and_unstake() {
     //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
+    let psi_token = "addr0002".to_string();
 
     let msg = yield_optimizer::nasset_staker::InstantiateMsg {
         nasset_token: nasset_token.clone(),
+        psi_token: psi_token.clone(),
     };
 
     let mut deps = mock_dependencies(&[]);
@@ -185,9 +189,11 @@ fn stake_and_unstake() {
 fn stake_and_unstake_partially() {
     //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
+    let psi_token = "addr0002".to_string();
 
     let msg = yield_optimizer::nasset_staker::InstantiateMsg {
         nasset_token: nasset_token.clone(),
+        psi_token: psi_token.clone(),
     };
 
     let mut deps = mock_dependencies(&[]);
@@ -272,9 +278,11 @@ fn stake_and_unstake_partially() {
 fn two_users_stake_partially_unstake_stake_again() {
     //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
+    let psi_token = "addr0002".to_string();
 
     let msg = yield_optimizer::nasset_staker::InstantiateMsg {
         nasset_token: nasset_token.clone(),
+        psi_token: psi_token.clone(),
     };
 
     let mut deps = mock_dependencies(&[]);
@@ -568,5 +576,82 @@ fn two_users_stake_partially_unstake_stake_again() {
     }
 }
 
+#[test]
+fn first_staker_come_but_rewards_already_there() {
+    //numbers for reward calc get 'reward_calc_first_reward'
+    let nasset_token = "addr0001".to_string();
+    let psi_token = "addr0002".to_string();
+
+    let msg = yield_optimizer::nasset_staker::InstantiateMsg {
+        nasset_token: nasset_token.clone(),
+        psi_token: psi_token.clone(),
+    };
+
+    let mut deps = mock_dependencies(&[]);
+
+    // -= INITIALIZATION =-
+    {
+        let env = mock_env();
+        let info = mock_info("addr0010", &[]);
+        let _ = crate::contract::instantiate(deps.as_mut(), env, info, msg.clone()).unwrap();
+    }
+
+    //first farmer come
+    let user_1_address = Addr::unchecked("addr9999".to_string());
+    //it is staked_nasset_amount
+    let deposit_1_amount: Uint128 = 100u128.into();
+    //rewards already there
+    let rewards: Uint128 = 1000u64.into();
+    {
+        deps.querier.with_token_balances(&[
+            (
+                &nasset_token,
+                &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
+            ),
+            (&psi_token, &[(&MOCK_CONTRACT_ADDR.to_string(), &rewards)]),
+        ]);
+
+        // -= USER SEND nAsset tokens to nasset_staker =-
+        {
+            let cw20_deposit_msg = Cw20ReceiveMsg {
+                sender: user_1_address.to_string(),
+                amount: deposit_1_amount,
+                msg: to_binary(&Cw20HookMsg::Stake).unwrap(),
+            };
+
+            let info = mock_info(&nasset_token, &vec![]);
+            let res = crate::contract::execute(
+                deps.as_mut(),
+                mock_env(),
+                info,
+                ExecuteMsg::Receive(cw20_deposit_msg),
+            )
+            .unwrap();
+
+            assert_eq!(res.messages, vec![]);
+            assert_eq!(res.submessages, vec![]);
+
+            let state: State = load_state(&deps.storage).unwrap();
+            assert_eq!(
+                State {
+                    global_reward_index: Decimal256::zero(),
+                    last_reward_amount: Uint256::zero(),
+                    total_staked_amount: deposit_1_amount.into(),
+                },
+                state
+            );
+
+            let staker_state: StakerState =
+                load_staker_state(&deps.storage, &user_1_address).unwrap();
+            assert_eq!(
+                StakerState {
+                    staked_amount: Uint256::from(deposit_1_amount),
+                    reward_index: Decimal256::zero(),
+                    pending_rewards: Decimal256::zero(),
+                },
+                staker_state
+            );
+        }
+    }
+}
 //TODO: claim rewards test (in new file)
-//TODO: first user comes, but there is already some rewards! Should we gave them to him, or what?

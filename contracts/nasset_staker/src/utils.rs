@@ -10,19 +10,15 @@ pub fn update_global_reward(
     env: Env,
     config: &Config,
     state: &mut State,
-    incoming_staking_amount: Option<Uint256>,
 ) -> Result<(), ContractError> {
     if state.total_staked_amount.is_zero() {
         return Ok(());
     }
 
-    let nasset_balance: Uint256 =
-        query_token_balance(deps, &config.nasset_token, &env.contract.address)?.into();
-    // balance already increased, so subtract deposit amount
-    let balance_before_incoming_amount =
-        nasset_balance - incoming_staking_amount.unwrap_or(Uint256::zero());
+    let psi_balance: Uint256 =
+        query_token_balance(deps, &config.psi_token, &env.contract.address)?.into();
 
-    calculate_reward_index(state, balance_before_incoming_amount)?;
+    calculate_reward_index(state, psi_balance)?;
 
     Ok(())
 }
@@ -44,16 +40,15 @@ pub fn decrease_staked_amount(state: &mut State, staker_state: &mut StakerState,
     staker_state.staked_amount = staker_state.staked_amount - amount;
 }
 
-fn calculate_reward_index(state: &mut State, nasset_balance: Uint256) -> Result<(), ContractError> {
-    let last_balance = state.total_staked_amount + state.last_reward_amount;
-    if nasset_balance < last_balance {
+fn calculate_reward_index(state: &mut State, psi_balance: Uint256) -> Result<(), ContractError> {
+    if psi_balance < state.last_reward_amount {
         return Err(StdError::generic_err(
             "last nasset balance is bigger than current balance, impossible case",
         )
         .into());
     }
 
-    let new_reward_amount: Uint256 = nasset_balance - last_balance;
+    let new_reward_amount: Uint256 = psi_balance - state.last_reward_amount;
     if new_reward_amount.is_zero() {
         return Ok(());
     }

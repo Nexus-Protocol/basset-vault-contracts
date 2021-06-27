@@ -8,6 +8,8 @@ use cw_storage_plus::{Item, Map};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub nasset_token: Addr,
+    pub psi_token: Addr,
+    pub governance_addr: Addr,
 }
 
 const CONFIG: Item<Config> = Item::new("config");

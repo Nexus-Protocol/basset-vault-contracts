@@ -7,6 +7,7 @@ use cw20::Cw20ReceiveMsg;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub nasset_token: String,
+    pub psi_token: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -22,6 +23,7 @@ pub enum AnyoneMsg {
     UpdateIndex,
     ClaimRewards { to: Option<String> },
     Unstake { amount: Uint256, to: Option<String> },
+    ClaimRemainder,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
