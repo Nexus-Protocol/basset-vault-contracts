@@ -16,12 +16,25 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     Anyone { anyone_msg: AnyoneMsg },
+    GovernanceMsg { governance_msg: GovernanceMsg },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AnyoneMsg {
     DistributeRewards,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum GovernanceMsg {
+    UpdateConfig {
+        nasset_token_addr: Option<String>,
+        governance_addr: Option<String>,
+    },
+    UpdateRewardsDistribution {
+        distribution: Vec<(String, u64)>,
+    },
 }
 
 /// We currently take no arguments for migrations

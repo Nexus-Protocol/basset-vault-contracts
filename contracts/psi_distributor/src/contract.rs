@@ -4,12 +4,14 @@ use cosmwasm_std::{
 };
 
 use crate::{
-    commands, queries,
-    state::{store_config, Config, RewardShare, RewardsDistribution},
+    commands,
+    error::ContractError,
+    queries,
+    state::{load_config, store_config, Config, RewardShare, RewardsDistribution},
     ContractResult,
 };
 use yield_optimizer::psi_distributor::{
-    AnyoneMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
+    AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, MigrateMsg, QueryMsg,
 };
 
 const NASSET_STAKER_REWARD_SHARE: u64 = 70;
@@ -57,8 +59,22 @@ pub fn execute(
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
             AnyoneMsg::DistributeRewards => commands::distribute_rewards(deps, env),
         },
-        //TODO
-        //ExecuteMsg::GovernanceMsg
+        ExecuteMsg::GovernanceMsg { governance_msg } => {
+            let config = load_config(deps.storage)?;
+            if info.sender != config.governance_addr {
+                return Err(ContractError::Unauthorized {});
+            }
+
+            match governance_msg {
+                GovernanceMsg::UpdateConfig {
+                    nasset_token_addr,
+                    governance_addr,
+                } => commands::update_config(deps, config, nasset_token_addr, governance_addr),
+                GovernanceMsg::UpdateRewardsDistribution { distribution } => {
+                    commands::update_distribution(deps, config, distribution)
+                }
+            }
+        }
     }
 }
 
