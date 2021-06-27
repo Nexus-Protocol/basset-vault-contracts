@@ -1,3 +1,4 @@
+mod claim_rewards;
 mod instantiate;
 mod stake;
 

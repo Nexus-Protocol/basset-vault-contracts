@@ -107,7 +107,6 @@ pub fn unstake_casset(
     if staker_state.staked_amount < amount_to_unstake {
         return Err(StdError::generic_err("not enought casset to unstake").into());
     }
-
     let config: Config = load_config(deps.storage)?;
     let mut state = load_state(deps.storage)?;
 

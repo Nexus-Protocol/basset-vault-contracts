@@ -13,7 +13,6 @@ use yield_optimizer::nasset_staker::{AnyoneMsg, Cw20HookMsg, ExecuteMsg};
 
 #[test]
 fn first_stake() {
-    //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
     let psi_token = "addr0002".to_string();
     let governance_contract = "addr0003".to_string();
@@ -89,7 +88,6 @@ fn first_stake() {
 
 #[test]
 fn stake_and_unstake() {
-    //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
     let psi_token = "addr0002".to_string();
     let governance_contract = "addr0003".to_string();
@@ -187,7 +185,6 @@ fn stake_and_unstake() {
 
 #[test]
 fn stake_and_unstake_partially() {
-    //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
     let psi_token = "addr0002".to_string();
     let governance_contract = "addr0003".to_string();
@@ -278,7 +275,6 @@ fn stake_and_unstake_partially() {
 
 #[test]
 fn two_users_stake_partially_unstake_stake_again() {
-    //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
     let psi_token = "addr0002".to_string();
     let governance_contract = "addr0003".to_string();
@@ -617,7 +613,6 @@ fn two_users_stake_partially_unstake_stake_again() {
 
 #[test]
 fn first_staker_come_but_rewards_already_there() {
-    //numbers for reward calc get 'reward_calc_first_reward'
     let nasset_token = "addr0001".to_string();
     let psi_token = "addr0002".to_string();
     let governance_contract = "addr0003".to_string();
@@ -695,4 +690,389 @@ fn first_staker_come_but_rewards_already_there() {
         }
     }
 }
-//TODO: claim rewards test (in new file)
+
+#[test]
+fn stake_and_unstake_after_rewards_already_there() {
+    let nasset_token = "addr0001".to_string();
+    let psi_token = "addr0002".to_string();
+    let governance_contract = "addr0003".to_string();
+
+    let msg = yield_optimizer::nasset_staker::InstantiateMsg {
+        nasset_token: nasset_token.clone(),
+        psi_token: psi_token.clone(),
+        governance_contract,
+    };
+
+    let mut deps = mock_dependencies(&[]);
+
+    // -= INITIALIZATION =-
+    {
+        let env = mock_env();
+        let info = mock_info("addr0010", &[]);
+        let _ = crate::contract::instantiate(deps.as_mut(), env, info, msg.clone()).unwrap();
+    }
+
+    //first farmer come
+    let user_1_address = Addr::unchecked("addr9999".to_string());
+    //it is staked_nasset_amount
+    let deposit_1_amount: Uint128 = 100u128.into();
+    //rewards already there
+    let rewards_before_stake: Uint128 = 1000u64.into();
+    let rewards_after_stake: Uint128 = 5000u64.into();
+    {
+        deps.querier.with_token_balances(&[
+            (
+                &nasset_token,
+                &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
+            ),
+            (
+                &psi_token,
+                &[(&MOCK_CONTRACT_ADDR.to_string(), &rewards_before_stake)],
+            ),
+        ]);
+
+        // -= USER SEND nAsset tokens to nasset_staker =-
+        {
+            let cw20_deposit_msg = Cw20ReceiveMsg {
+                sender: user_1_address.to_string(),
+                amount: deposit_1_amount,
+                msg: to_binary(&Cw20HookMsg::Stake).unwrap(),
+            };
+
+            let info = mock_info(&nasset_token, &vec![]);
+            let res = crate::contract::execute(
+                deps.as_mut(),
+                mock_env(),
+                info,
+                ExecuteMsg::Receive(cw20_deposit_msg),
+            )
+            .unwrap();
+
+            assert_eq!(res.messages, vec![]);
+            assert_eq!(res.submessages, vec![]);
+
+            let state: State = load_state(&deps.storage).unwrap();
+            assert_eq!(
+                State {
+                    global_reward_index: Decimal256::zero(),
+                    last_reward_amount: Uint256::zero(),
+                    total_staked_amount: deposit_1_amount.into(),
+                },
+                state
+            );
+
+            let staker_state: StakerState =
+                load_staker_state(&deps.storage, &user_1_address).unwrap();
+            assert_eq!(
+                StakerState {
+                    staked_amount: Uint256::from(deposit_1_amount),
+                    reward_index: Decimal256::zero(),
+                    pending_rewards: Decimal256::zero(),
+                },
+                staker_state
+            );
+        }
+    }
+
+    {
+        deps.querier.with_token_balances(&[
+            (
+                &nasset_token,
+                &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
+            ),
+            (
+                &psi_token,
+                &[(
+                    &MOCK_CONTRACT_ADDR.to_string(),
+                    &(rewards_before_stake + rewards_after_stake),
+                )],
+            ),
+        ]);
+
+        // -= USER SEND UNSTAKE all =-
+        {
+            let unstake_msg = ExecuteMsg::Anyone {
+                anyone_msg: AnyoneMsg::Unstake {
+                    amount: deposit_1_amount.into(),
+                    to: None,
+                },
+            };
+            let info = mock_info(&user_1_address.to_string(), &vec![]);
+            let res =
+                crate::contract::execute(deps.as_mut(), mock_env(), info, unstake_msg).unwrap();
+
+            assert_eq!(
+                res.messages,
+                vec![
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: nasset_token.clone(),
+                        send: vec![],
+                        msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                            recipient: user_1_address.to_string(),
+                            amount: deposit_1_amount.into(),
+                        })
+                        .unwrap(),
+                    }),
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: psi_token.clone(),
+                        send: vec![],
+                        msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                            recipient: user_1_address.to_string(),
+                            amount: (rewards_after_stake + rewards_before_stake).into(),
+                        })
+                        .unwrap(),
+                    }),
+                ]
+            );
+            assert!(res.submessages.is_empty());
+
+            let state: State = load_state(&deps.storage).unwrap();
+            assert_eq!(
+                State {
+                    global_reward_index: Decimal256::from_str("60").unwrap(),
+                    last_reward_amount: Uint256::zero(),
+                    total_staked_amount: Uint256::zero(),
+                },
+                state
+            );
+
+            let staker_state: StakerState =
+                load_staker_state(&deps.storage, &user_1_address).unwrap();
+            assert_eq!(
+                StakerState {
+                    staked_amount: Uint256::zero(),
+                    reward_index: Decimal256::from_str("60").unwrap(),
+                    pending_rewards: Decimal256::zero(),
+                },
+                staker_state
+            );
+        }
+    }
+}
+
+#[test]
+fn second_staker_after_rewards_already_there() {
+    let nasset_token = "addr0001".to_string();
+    let psi_token = "addr0002".to_string();
+    let governance_contract = "addr0003".to_string();
+
+    let msg = yield_optimizer::nasset_staker::InstantiateMsg {
+        nasset_token: nasset_token.clone(),
+        psi_token: psi_token.clone(),
+        governance_contract,
+    };
+
+    let mut deps = mock_dependencies(&[]);
+
+    // -= INITIALIZATION =-
+    {
+        let env = mock_env();
+        let info = mock_info("addr0010", &[]);
+        let _ = crate::contract::instantiate(deps.as_mut(), env, info, msg.clone()).unwrap();
+    }
+
+    let user_1_address = Addr::unchecked("addr9999".to_string());
+    let deposit_1_amount: Uint128 = 100u128.into();
+    let user_2_address = Addr::unchecked("addr6666".to_string());
+    let deposit_2_amount: Uint128 = 300u128.into();
+    //rewards already there
+    let rewards_before_stake: Uint128 = 1000u64.into();
+    let rewards_after_stake: Uint128 = 5000u64.into();
+    {
+        deps.querier.with_token_balances(&[
+            (
+                &nasset_token,
+                &[(&MOCK_CONTRACT_ADDR.to_string(), &deposit_1_amount)],
+            ),
+            (
+                &psi_token,
+                &[(&MOCK_CONTRACT_ADDR.to_string(), &rewards_before_stake)],
+            ),
+        ]);
+
+        // -= USER SEND nAsset tokens to nasset_staker =-
+        {
+            let cw20_deposit_msg = Cw20ReceiveMsg {
+                sender: user_1_address.to_string(),
+                amount: deposit_1_amount,
+                msg: to_binary(&Cw20HookMsg::Stake).unwrap(),
+            };
+
+            let info = mock_info(&nasset_token, &vec![]);
+            let res = crate::contract::execute(
+                deps.as_mut(),
+                mock_env(),
+                info,
+                ExecuteMsg::Receive(cw20_deposit_msg),
+            )
+            .unwrap();
+
+            assert_eq!(res.messages, vec![]);
+            assert_eq!(res.submessages, vec![]);
+
+            let state: State = load_state(&deps.storage).unwrap();
+            assert_eq!(
+                State {
+                    global_reward_index: Decimal256::zero(),
+                    last_reward_amount: Uint256::zero(),
+                    total_staked_amount: deposit_1_amount.into(),
+                },
+                state
+            );
+
+            let staker_state: StakerState =
+                load_staker_state(&deps.storage, &user_1_address).unwrap();
+            assert_eq!(
+                StakerState {
+                    staked_amount: Uint256::from(deposit_1_amount),
+                    reward_index: Decimal256::zero(),
+                    pending_rewards: Decimal256::zero(),
+                },
+                staker_state
+            );
+        }
+    }
+
+    {
+        //new rewards comes
+        deps.querier.with_token_balances(&[
+            (
+                &nasset_token,
+                &[(
+                    &MOCK_CONTRACT_ADDR.to_string(),
+                    &(deposit_1_amount + deposit_2_amount),
+                )],
+            ),
+            (
+                &psi_token,
+                &[(
+                    &MOCK_CONTRACT_ADDR.to_string(),
+                    &(rewards_before_stake + rewards_after_stake),
+                )],
+            ),
+        ]);
+
+        // -= USER 2 SEND nAsset tokens to nasset_staker =-
+        {
+            let cw20_deposit_msg = Cw20ReceiveMsg {
+                sender: user_2_address.to_string(),
+                amount: deposit_2_amount,
+                msg: to_binary(&Cw20HookMsg::Stake).unwrap(),
+            };
+
+            let info = mock_info(&nasset_token, &vec![]);
+            crate::contract::execute(
+                deps.as_mut(),
+                mock_env(),
+                info,
+                ExecuteMsg::Receive(cw20_deposit_msg),
+            )
+            .unwrap();
+
+            let state: State = load_state(&deps.storage).unwrap();
+            assert_eq!(
+                State {
+                    global_reward_index: Decimal256::from_str("60").unwrap(),
+                    last_reward_amount: (rewards_after_stake + rewards_before_stake).into(),
+                    total_staked_amount: (deposit_2_amount + deposit_1_amount).into(),
+                },
+                state
+            );
+
+            let staker_state: StakerState =
+                load_staker_state(&deps.storage, &user_2_address).unwrap();
+            assert_eq!(
+                StakerState {
+                    staked_amount: Uint256::from(deposit_2_amount),
+                    reward_index: Decimal256::from_str("60").unwrap(),
+                    pending_rewards: Decimal256::zero(),
+                },
+                staker_state
+            );
+        }
+    }
+
+    {
+        //rewards for second user comes
+        let rewards_for_second_user = Uint128::from(500u64);
+        deps.querier.with_token_balances(&[
+            (
+                &nasset_token,
+                &[(
+                    &MOCK_CONTRACT_ADDR.to_string(),
+                    &(deposit_1_amount + deposit_2_amount),
+                )],
+            ),
+            (
+                &psi_token,
+                &[(
+                    &MOCK_CONTRACT_ADDR.to_string(),
+                    &(rewards_before_stake + rewards_after_stake + rewards_for_second_user),
+                )],
+            ),
+        ]);
+
+        // -= SECOND USER SEND UNSTAKE all =-
+        {
+            let unstake_msg = ExecuteMsg::Anyone {
+                anyone_msg: AnyoneMsg::Unstake {
+                    amount: deposit_2_amount.into(),
+                    to: None,
+                },
+            };
+            let info = mock_info(&user_2_address.to_string(), &vec![]);
+            let res =
+                crate::contract::execute(deps.as_mut(), mock_env(), info, unstake_msg).unwrap();
+
+            assert_eq!(
+                res.messages,
+                vec![
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: nasset_token.clone(),
+                        send: vec![],
+                        msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                            recipient: user_2_address.to_string(),
+                            amount: deposit_2_amount.into(),
+                        })
+                        .unwrap(),
+                    }),
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: psi_token.clone(),
+                        send: vec![],
+                        msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                            recipient: user_2_address.to_string(),
+                            //second user have 3/4 rewards share
+                            //500 * 3/4 = 375
+                            amount: 375u64.into(),
+                        })
+                        .unwrap(),
+                    }),
+                ]
+            );
+            assert!(res.submessages.is_empty());
+
+            let state: State = load_state(&deps.storage).unwrap();
+            println!("state.last_reward_amount: {}", state.last_reward_amount);
+            assert_eq!(
+                State {
+                    // old_index += 500/400
+                    global_reward_index: Decimal256::from_str("61.25").unwrap(),
+                    last_reward_amount: 125u64.into(), //500 - claimed 375
+                    total_staked_amount: deposit_1_amount.into(),
+                },
+                state
+            );
+
+            let staker_state: StakerState =
+                load_staker_state(&deps.storage, &user_2_address).unwrap();
+            assert_eq!(
+                StakerState {
+                    staked_amount: Uint256::zero(),
+                    reward_index: Decimal256::from_str("61.25").unwrap(),
+                    pending_rewards: Decimal256::zero(),
+                },
+                staker_state
+            );
+        }
+    }
+}
