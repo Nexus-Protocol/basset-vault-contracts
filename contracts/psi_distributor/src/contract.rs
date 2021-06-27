@@ -29,11 +29,11 @@ pub fn instantiate(
 
     let rewards_distribution = vec![
         RewardShare {
-            recepient: nasset_staker_addr,
+            recipient: nasset_staker_addr,
             share: Decimal256::percent(NASSET_STAKER_REWARD_SHARE),
         },
         RewardShare {
-            recepient: governance_addr.clone(),
+            recipient: governance_addr.clone(),
             share: Decimal256::percent(GOVERNANCE_STAKER_REWARD_SHARE),
         },
     ];
@@ -59,6 +59,7 @@ pub fn execute(
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
             AnyoneMsg::DistributeRewards => commands::distribute_rewards(deps, env),
         },
+
         ExecuteMsg::GovernanceMsg { governance_msg } => {
             let config = load_config(deps.storage)?;
             if info.sender != config.governance_addr {
@@ -70,6 +71,7 @@ pub fn execute(
                     nasset_token_addr,
                     governance_addr,
                 } => commands::update_config(deps, config, nasset_token_addr, governance_addr),
+
                 GovernanceMsg::UpdateRewardsDistribution { distribution } => {
                     commands::update_distribution(deps, config, distribution)
                 }

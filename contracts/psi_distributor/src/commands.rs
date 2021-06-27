@@ -37,12 +37,12 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
             contract_addr: config.nasset_token_addr.to_string(),
             send: vec![],
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                recipient: reward_share.recepient.to_string(),
+                recipient: reward_share.recipient.to_string(),
                 amount: reward.into(),
             })?,
         }));
 
-        attributes.push(attr("recepient", reward_share.recepient.to_string()));
+        attributes.push(attr("recepient", reward_share.recipient.to_string()));
         attributes.push(attr("reward_amount", reward));
     }
 
@@ -81,7 +81,7 @@ pub fn update_distribution(
         .into_iter()
         .map(|(addr_str, percent)| {
             let rew = RewardShare {
-                recepient: deps.api.addr_validate(&addr_str)?,
+                recipient: deps.api.addr_validate(&addr_str)?,
                 share: Decimal256::percent(percent),
             };
             Ok(rew)

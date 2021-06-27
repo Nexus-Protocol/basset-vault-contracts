@@ -10,7 +10,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         .rewards_distribution
         .distribution()
         .iter()
-        .map(|dis| (dis.recepient.to_string(), dis.share))
+        .map(|dis| (dis.recipient.to_string(), dis.share))
         .collect();
 
     Ok(ConfigResponse {

@@ -14,7 +14,7 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct RewardShare {
-    pub recepient: Addr,
+    pub recipient: Addr,
     pub share: Decimal256,
 }
 
@@ -72,7 +72,7 @@ mod test {
     #[test]
     pub fn one_element() {
         let one_share = RewardShare {
-            recepient: Addr::unchecked("xxx"),
+            recipient: Addr::unchecked("xxx"),
             share: Decimal256::percent(100),
         };
         let rewards_distribution = RewardsDistribution::new(vec![one_share]);
@@ -83,11 +83,11 @@ mod test {
     pub fn wrong_total_distribution_1() {
         let rewards = vec![
             RewardShare {
-                recepient: Addr::unchecked("uuu"),
+                recipient: Addr::unchecked("uuu"),
                 share: Decimal256::percent(10),
             },
             RewardShare {
-                recepient: Addr::unchecked("xxx"),
+                recipient: Addr::unchecked("xxx"),
                 share: Decimal256::percent(15),
             },
         ];
@@ -99,11 +99,11 @@ mod test {
     pub fn wrong_total_distribution_2() {
         let rewards = vec![
             RewardShare {
-                recepient: Addr::unchecked("uuu"),
+                recipient: Addr::unchecked("uuu"),
                 share: Decimal256::percent(10),
             },
             RewardShare {
-                recepient: Addr::unchecked("xxx"),
+                recipient: Addr::unchecked("xxx"),
                 share: Decimal256::percent(1125),
             },
         ];
@@ -115,11 +115,11 @@ mod test {
     pub fn right_total_distribution() {
         let rewards = vec![
             RewardShare {
-                recepient: Addr::unchecked("uuu"),
+                recipient: Addr::unchecked("uuu"),
                 share: Decimal256::percent(10),
             },
             RewardShare {
-                recepient: Addr::unchecked("xxx"),
+                recipient: Addr::unchecked("xxx"),
                 share: Decimal256::percent(90),
             },
         ];
