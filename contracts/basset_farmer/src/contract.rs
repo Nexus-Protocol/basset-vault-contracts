@@ -11,12 +11,14 @@ use crate::{
         load_config, store_child_contracts_code_id, store_config,
         update_loan_state_part_of_loan_repaid, ChildContractsCodeId,
     },
+    SubmsgIds, TOO_HIGH_BORROW_DEMAND_ERR_MSG,
 };
 use crate::{error::ContractError, response::MsgInstantiateContractResponse};
 use crate::{state::Config, ContractResult};
 use cw20::MinterResponse;
 use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
+use std::convert::TryFrom;
 use std::str::FromStr;
 use yield_optimizer::{
     basset_farmer::{AnyoneMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, YourselfMsg},
@@ -24,18 +26,6 @@ use yield_optimizer::{
     psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg,
     querier::get_basset_in_custody,
 };
-
-pub const SUBMSG_ID_INIT_NASSET: u64 = 1;
-pub const SUBMSG_ID_REDEEM_STABLE: u64 = 2;
-pub const SUBMSG_ID_REPAY_LOAN: u64 = 3;
-pub const SUBMSG_ID_BORROWING: u64 = 4;
-pub const SUBMSG_ID_INIT_NASSET_STAKER: u64 = 5;
-pub const SUBMSG_ID_INIT_PSI_DISTRIBUTOR: u64 = 6;
-pub const SUBMSG_ID_REDEEM_STABLE_ON_REMAINDER: u64 = 7;
-//withdrawing from Anchor Deposit error
-pub const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
-//borrowing error
-pub const TOO_HIGH_BORROW_AMOUNT_ERR_MSG: &str = "borrow amount too high";
 
 #[entry_point]
 pub fn instantiate(
@@ -96,7 +86,7 @@ pub fn instantiate(
             }
             .into(),
             gas_limit: None,
-            id: SUBMSG_ID_INIT_NASSET,
+            id: SubmsgIds::InitNAsset.id(),
             reply_on: ReplyOn::Success,
         }],
         attributes: vec![attr("action", "initialization")],
@@ -106,8 +96,9 @@ pub fn instantiate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
-    match msg.id {
-        SUBMSG_ID_INIT_NASSET => {
+    let submessage_enum = SubmsgIds::try_from(msg.id)?;
+    match submessage_enum {
+        SubmsgIds::InitNAsset => {
             let data = msg.result.unwrap().data.unwrap();
             let res: MsgInstantiateContractResponse = Message::parse_from_bytes(data.as_slice())
                 .map_err(|_| {
@@ -135,7 +126,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                     }
                     .into(),
                     gas_limit: None,
-                    id: SUBMSG_ID_INIT_NASSET_STAKER,
+                    id: SubmsgIds::InitNAssetStaker.id(),
                     reply_on: ReplyOn::Success,
                 }],
                 attributes: vec![
@@ -146,7 +137,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
             })
         }
 
-        SUBMSG_ID_INIT_NASSET_STAKER => {
+        SubmsgIds::InitNAssetStaker => {
             let data = msg.result.unwrap().data.unwrap();
             let res: MsgInstantiateContractResponse = Message::parse_from_bytes(data.as_slice())
                 .map_err(|_| {
@@ -174,7 +165,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                     }
                     .into(),
                     gas_limit: None,
-                    id: SUBMSG_ID_INIT_PSI_DISTRIBUTOR,
+                    id: SubmsgIds::InitPsiDistributor.id(),
                     reply_on: ReplyOn::Success,
                 }],
                 attributes: vec![
@@ -185,7 +176,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
             })
         }
 
-        SUBMSG_ID_INIT_PSI_DISTRIBUTOR => {
+        SubmsgIds::InitPsiDistributor => {
             let data = msg.result.unwrap().data.unwrap();
             let res: MsgInstantiateContractResponse = Message::parse_from_bytes(data.as_slice())
                 .map_err(|_| {
@@ -206,7 +197,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
             })
         }
 
-        SUBMSG_ID_REDEEM_STABLE => match msg.result {
+        SubmsgIds::RedeemStableOnRepayLoan => match msg.result {
             cosmwasm_std::ContractResult::Err(err_msg) => {
                 if err_msg
                     .to_lowercase()
@@ -225,22 +216,18 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
             cosmwasm_std::ContractResult::Ok(_) => commands::repay_logic_on_reply(deps, env),
         },
 
-        SUBMSG_ID_REPAY_LOAN => {
+        SubmsgIds::RepayLoan => {
             let _ = update_loan_state_part_of_loan_repaid(deps.storage)?;
             Ok(Response::default())
         }
 
-        SUBMSG_ID_BORROWING => commands::borrow_logic_on_reply(deps, env),
+        SubmsgIds::Borrowing => commands::borrow_logic_on_reply(deps, env),
 
-        SUBMSG_ID_REDEEM_STABLE_ON_REMAINDER => {
+        SubmsgIds::RedeemStableOnRemainder => {
             let config: Config = load_config(deps.storage)?;
             //we can't repay loan to unlock aTerra (cause we have 0 loan here),
             //so try to use stable balance in any case (error or not)
             commands::buy_psi_on_remainded_stable_coins(deps.as_ref(), env, config)
-        }
-
-        unknown => {
-            Err(StdError::generic_err(format!("unknown reply message id: {}", unknown)).into())
         }
     }
 }

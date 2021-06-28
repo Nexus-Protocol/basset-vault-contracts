@@ -1,9 +1,8 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{attr, to_binary, Coin, CosmosMsg, ReplyOn, Response, SubMsg, Uint128, WasmMsg};
 
-use crate::contract::{SUBMSG_ID_REDEEM_STABLE, SUBMSG_ID_REPAY_LOAN};
 use crate::state::Config;
-use crate::ContractResult;
+use crate::{ContractResult, SubmsgIds};
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use yield_optimizer::{
     psi_distributor::{
@@ -30,6 +29,7 @@ pub enum RepayLoanAction {
     Nothing,
 }
 
+//TODO: add tests for 'to_response' method
 impl RepayLoanAction {
     pub fn repaying_loan_amount(&self) -> Uint256 {
         match self {
@@ -62,7 +62,7 @@ impl RepayLoanAction {
                         }
                         .into(),
                         gas_limit: None,
-                        id: SUBMSG_ID_REPAY_LOAN,
+                        id: SubmsgIds::RepayLoan.id(),
                         reply_on: ReplyOn::Success,
                     }],
                     attributes: vec![attr("action", "repay_loan"), attr("amount", amount)],
@@ -84,7 +84,7 @@ impl RepayLoanAction {
                     }
                     .into(),
                     gas_limit: None,
-                    id: SUBMSG_ID_REDEEM_STABLE,
+                    id: SubmsgIds::RedeemStableOnRepayLoan.id(),
                     //Always because Anchor can block withdrawing
                     //if there are too many borrowers
                     reply_on: ReplyOn::Always,
@@ -114,7 +114,7 @@ impl RepayLoanAction {
                             }
                             .into(),
                             gas_limit: None,
-                            id: SUBMSG_ID_REPAY_LOAN,
+                            id: SubmsgIds::RepayLoan.id(),
                             reply_on: ReplyOn::Success,
                         },
                         SubMsg {
@@ -129,7 +129,7 @@ impl RepayLoanAction {
                             }
                             .into(),
                             gas_limit: None,
-                            id: SUBMSG_ID_REDEEM_STABLE,
+                            id: SubmsgIds::RedeemStableOnRepayLoan.id(),
                             reply_on: ReplyOn::Success,
                         },
                     ],

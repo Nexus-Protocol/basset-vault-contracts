@@ -5,7 +5,6 @@ use cosmwasm_std::{
 
 use crate::{
     commands,
-    contract::{SUBMSG_ID_BORROWING, SUBMSG_ID_REDEEM_STABLE_ON_REMAINDER},
     state::{
         load_aim_buffer_size, load_config, load_repaying_loan_state,
         load_stable_balance_before_selling_anc, store_aim_buffer_size,
@@ -16,6 +15,7 @@ use crate::{
         calc_after_borrow_action, get_repay_loan_action, is_anc_rewards_claimable,
         split_profit_to_handle_interest,
     },
+    SubmsgIds,
 };
 use crate::{error::ContractError, state::load_last_rewards_claiming_height};
 use crate::{state::Config, ContractResult};
@@ -311,7 +311,10 @@ fn borrow_logic(
             }
             .into(),
             gas_limit: None,
-            id: SUBMSG_ID_BORROWING,
+            id: SubmsgIds::Borrowing.id(),
+            // If can't borrow from Anchor we can't do anything, so just return error, consequence:
+            // 1. user will not be able to deposit
+            // 2. Rebalance return error
             reply_on: ReplyOn::Success,
         }],
         attributes: vec![
@@ -536,7 +539,7 @@ pub fn claim_remainded_stables(deps: Deps, env: Env) -> ContractResult<Response>
                     }
                     .into(),
                     gas_limit: None,
-                    id: SUBMSG_ID_REDEEM_STABLE_ON_REMAINDER,
+                    id: SubmsgIds::RedeemStableOnRemainder.id(),
                     //Always because Anchor can block withdrawing
                     //if there are too many borrowers
                     reply_on: ReplyOn::Always,

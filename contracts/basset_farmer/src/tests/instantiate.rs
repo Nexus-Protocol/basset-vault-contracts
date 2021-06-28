@@ -1,9 +1,7 @@
 use crate::{
-    contract::{
-        SUBMSG_ID_INIT_NASSET, SUBMSG_ID_INIT_NASSET_STAKER, SUBMSG_ID_INIT_PSI_DISTRIBUTOR,
-    },
     response::MsgInstantiateContractResponse,
     state::{load_config, Config},
+    SubmsgIds,
 };
 
 use cosmwasm_bignumber::Decimal256;
@@ -82,7 +80,7 @@ fn proper_initialization() {
             }
             .into(),
             gas_limit: None,
-            id: SUBMSG_ID_INIT_NASSET,
+            id: SubmsgIds::InitNAsset.id(),
             reply_on: ReplyOn::Success,
         }]
     );
@@ -93,7 +91,7 @@ fn proper_initialization() {
 
     // store nLuna token address
     let reply_msg = Reply {
-        id: SUBMSG_ID_INIT_NASSET,
+        id: SubmsgIds::InitNAsset.id(),
         result: ContractResult::Ok(SubcallResponse {
             events: vec![],
             data: Some(cw20_instantiate_response.write_to_bytes().unwrap().into()),
@@ -118,7 +116,7 @@ fn proper_initialization() {
             }
             .into(),
             gas_limit: None,
-            id: SUBMSG_ID_INIT_NASSET_STAKER,
+            id: SubmsgIds::InitNAssetStaker.id(),
             reply_on: ReplyOn::Success,
         }]
     );
@@ -134,7 +132,7 @@ fn proper_initialization() {
     cw20_instantiate_response_2.set_contract_address(nluna_staker_contract.clone());
     // store psi_distributor contract address
     let reply_msg_2 = Reply {
-        id: SUBMSG_ID_INIT_NASSET_STAKER,
+        id: SubmsgIds::InitNAssetStaker.id(),
         result: ContractResult::Ok(SubcallResponse {
             events: vec![],
             data: Some(cw20_instantiate_response_2.write_to_bytes().unwrap().into()),
@@ -158,7 +156,7 @@ fn proper_initialization() {
             }
             .into(),
             gas_limit: None,
-            id: SUBMSG_ID_INIT_PSI_DISTRIBUTOR,
+            id: SubmsgIds::InitPsiDistributor.id(),
             reply_on: ReplyOn::Success,
         }]
     );
@@ -174,7 +172,7 @@ fn proper_initialization() {
     cw20_instantiate_response_2.set_contract_address(psi_distributor_contract.clone());
     // store nasset_staker contract address
     let reply_msg_3 = Reply {
-        id: SUBMSG_ID_INIT_PSI_DISTRIBUTOR,
+        id: SubmsgIds::InitPsiDistributor.id(),
         result: ContractResult::Ok(SubcallResponse {
             events: vec![],
             data: Some(cw20_instantiate_response_2.write_to_bytes().unwrap().into()),

@@ -1,15 +1,10 @@
-use crate::{
-    contract::{
-        SUBMSG_ID_INIT_NASSET, SUBMSG_ID_INIT_NASSET_STAKER, SUBMSG_ID_INIT_PSI_DISTRIBUTOR,
-    },
-    response::MsgInstantiateContractResponse,
-};
+use crate::{response::MsgInstantiateContractResponse, SubmsgIds};
 
 use crate::tests::mock_dependencies;
 use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    to_binary, ContractResult, CosmosMsg, Decimal, Reply, SubcallResponse, Uint128, WasmMsg,
+    to_binary, ContractResult, CosmosMsg, Reply, SubcallResponse, Uint128, WasmMsg,
 };
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 use protobuf::Message;
@@ -78,7 +73,7 @@ fn deposit_basset() {
 
         // store nLuna token address
         let reply_msg = Reply {
-            id: SUBMSG_ID_INIT_NASSET,
+            id: SubmsgIds::InitNAsset.id(),
             result: ContractResult::Ok(SubcallResponse {
                 events: vec![],
                 data: Some(cw20_instantiate_response.write_to_bytes().unwrap().into()),
@@ -91,7 +86,7 @@ fn deposit_basset() {
         cw20_instantiate_response_2.set_contract_address(nasset_staking_contract.clone());
         // store nasset_staker contract address
         let reply_msg_2 = Reply {
-            id: SUBMSG_ID_INIT_NASSET_STAKER,
+            id: SubmsgIds::InitNAssetStaker.id(),
             result: ContractResult::Ok(SubcallResponse {
                 events: vec![],
                 data: Some(cw20_instantiate_response_2.write_to_bytes().unwrap().into()),
@@ -103,7 +98,7 @@ fn deposit_basset() {
         cw20_instantiate_response_2.set_contract_address(psi_distributor_contract.clone());
         // store psi_distributor contract address
         let reply_msg_2 = Reply {
-            id: SUBMSG_ID_INIT_PSI_DISTRIBUTOR,
+            id: SubmsgIds::InitPsiDistributor.id(),
             result: ContractResult::Ok(SubcallResponse {
                 events: vec![],
                 data: Some(cw20_instantiate_response_2.write_to_bytes().unwrap().into()),

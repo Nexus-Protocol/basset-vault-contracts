@@ -1,10 +1,7 @@
 use crate::{
-    contract::{
-        SUBMSG_ID_INIT_NASSET, SUBMSG_ID_INIT_NASSET_STAKER, SUBMSG_ID_INIT_PSI_DISTRIBUTOR,
-        SUBMSG_ID_REDEEM_STABLE, SUBMSG_ID_REPAY_LOAN, TOO_HIGH_BORROW_DEMAND_ERR_MSG,
-    },
     response::MsgInstantiateContractResponse,
     state::{load_repaying_loan_state, store_config, RepayingLoanState},
+    SubmsgIds, TOO_HIGH_BORROW_DEMAND_ERR_MSG,
 };
 
 use crate::tests::mock_dependencies;
@@ -97,7 +94,7 @@ fn repay_loan_without_problems() {
 
         // store nLuna token address
         let reply_msg = Reply {
-            id: SUBMSG_ID_INIT_NASSET,
+            id: SubmsgIds::InitNAsset.id(),
             result: ContractResult::Ok(SubcallResponse {
                 events: vec![],
                 data: Some(cw20_instantiate_response.write_to_bytes().unwrap().into()),
@@ -110,7 +107,7 @@ fn repay_loan_without_problems() {
         cw20_instantiate_response_2.set_contract_address(nluna_staker_contract.clone());
         // store psi_distributor contract address
         let reply_msg_2 = Reply {
-            id: SUBMSG_ID_INIT_NASSET_STAKER,
+            id: SubmsgIds::InitNAssetStaker.id(),
             result: ContractResult::Ok(SubcallResponse {
                 events: vec![],
                 data: Some(cw20_instantiate_response_2.write_to_bytes().unwrap().into()),
@@ -122,7 +119,7 @@ fn repay_loan_without_problems() {
         cw20_instantiate_response_2.set_contract_address(psi_distributor_contract.clone());
         // store nasset_staker contract address
         let reply_msg_3 = Reply {
-            id: SUBMSG_ID_INIT_PSI_DISTRIBUTOR,
+            id: SubmsgIds::InitPsiDistributor.id(),
             result: ContractResult::Ok(SubcallResponse {
                 events: vec![],
                 data: Some(cw20_instantiate_response_2.write_to_bytes().unwrap().into()),
@@ -206,7 +203,7 @@ fn repay_loan_without_problems() {
                 }
                 .into(),
                 gas_limit: None,
-                id: SUBMSG_ID_REDEEM_STABLE,
+                id: SubmsgIds::RedeemStableOnRepayLoan.id(),
                 reply_on: ReplyOn::Always,
             }]
         );
@@ -218,7 +215,7 @@ fn repay_loan_without_problems() {
 
         //sending Ok reply, means aterra was successfuly redeemed
         let reply_msg = Reply {
-            id: SUBMSG_ID_REDEEM_STABLE,
+            id: SubmsgIds::RedeemStableOnRepayLoan.id(),
             result: ContractResult::Ok(SubcallResponse {
                 events: vec![],
                 //we don't use it
@@ -264,7 +261,7 @@ fn repay_loan_without_problems() {
                 }
                 .into(),
                 gas_limit: None,
-                id: SUBMSG_ID_REPAY_LOAN,
+                id: SubmsgIds::RepayLoan.id(),
                 reply_on: ReplyOn::Success,
             }]
         );
@@ -380,14 +377,14 @@ fn repay_loan_fail_to_redeem_aterra() {
             }
             .into(),
             gas_limit: None,
-            id: SUBMSG_ID_REDEEM_STABLE,
+            id: SubmsgIds::RedeemStableOnRepayLoan.id(),
             reply_on: ReplyOn::Always,
         }]
     );
 
     // -= REDEEM failed =-
     let reply_1_msg = Reply {
-        id: SUBMSG_ID_REDEEM_STABLE,
+        id: SubmsgIds::RedeemStableOnRepayLoan.id(),
         result: ContractResult::Err(format!(
             "fail to redeem aterra, cause: {}",
             TOO_HIGH_BORROW_DEMAND_ERR_MSG,
@@ -410,7 +407,7 @@ fn repay_loan_fail_to_redeem_aterra() {
                 }
                 .into(),
                 gas_limit: None,
-                id: SUBMSG_ID_REPAY_LOAN,
+                id: SubmsgIds::RepayLoan.id(),
                 reply_on: ReplyOn::Success,
             },
             SubMsg {
@@ -427,7 +424,7 @@ fn repay_loan_fail_to_redeem_aterra() {
                 }
                 .into(),
                 gas_limit: None,
-                id: SUBMSG_ID_REDEEM_STABLE,
+                id: SubmsgIds::RedeemStableOnRepayLoan.id(),
                 reply_on: ReplyOn::Success,
             }
         ]
@@ -443,7 +440,7 @@ fn repay_loan_fail_to_redeem_aterra() {
         )],
     )]);
     let reply_2_msg = Reply {
-        id: SUBMSG_ID_REPAY_LOAN,
+        id: SubmsgIds::RepayLoan.id(),
         result: ContractResult::Ok(SubcallResponse {
             events: vec![],
             data: None,
@@ -458,7 +455,7 @@ fn repay_loan_fail_to_redeem_aterra() {
     );
 
     let reply_3_msg = Reply {
-        id: SUBMSG_ID_REDEEM_STABLE,
+        id: SubmsgIds::RedeemStableOnRepayLoan.id(),
         result: ContractResult::Ok(SubcallResponse {
             events: vec![],
             data: None,
@@ -480,7 +477,7 @@ fn repay_loan_fail_to_redeem_aterra() {
                 }
                 .into(),
                 gas_limit: None,
-                id: SUBMSG_ID_REPAY_LOAN,
+                id: SubmsgIds::RepayLoan.id(),
                 reply_on: ReplyOn::Success,
             },
             SubMsg {
@@ -497,7 +494,7 @@ fn repay_loan_fail_to_redeem_aterra() {
                 }
                 .into(),
                 gas_limit: None,
-                id: SUBMSG_ID_REDEEM_STABLE,
+                id: SubmsgIds::RedeemStableOnRepayLoan.id(),
                 reply_on: ReplyOn::Success,
             }
         ]
@@ -509,7 +506,7 @@ fn repay_loan_fail_to_redeem_aterra() {
         &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128::zero())],
     )]);
     let reply_4_msg = Reply {
-        id: SUBMSG_ID_REPAY_LOAN,
+        id: SubmsgIds::RepayLoan.id(),
         result: ContractResult::Ok(SubcallResponse {
             events: vec![],
             data: None,
@@ -520,7 +517,7 @@ fn repay_loan_fail_to_redeem_aterra() {
     let updated_repaying_state = load_repaying_loan_state(deps.as_mut().storage).unwrap();
     assert_eq!(updated_repaying_state.to_repay_amount, Uint256::zero());
     let reply_5_msg = Reply {
-        id: SUBMSG_ID_REDEEM_STABLE,
+        id: SubmsgIds::RedeemStableOnRepayLoan.id(),
         result: ContractResult::Ok(SubcallResponse {
             events: vec![],
             data: None,
