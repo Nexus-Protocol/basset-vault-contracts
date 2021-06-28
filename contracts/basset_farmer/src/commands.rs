@@ -1,11 +1,11 @@
 use cosmwasm_std::{
-    attr, from_binary, to_binary, Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo,
-    ReplyOn, Response, StdError, SubMsg, Uint128, WasmMsg,
+    attr, from_binary, to_binary, Addr, CosmosMsg, DepsMut, Env, MessageInfo, ReplyOn, Response,
+    StdError, SubMsg, WasmMsg,
 };
 
 use crate::{
     commands,
-    contract::{SUBMSG_ID_BORROWING, SUBMSG_ID_REDEEM_STABLE},
+    contract::SUBMSG_ID_BORROWING,
     state::{
         load_aim_buffer_size, load_config, load_repaying_loan_state,
         load_stable_balance_before_selling_anc, store_aim_buffer_size,
@@ -28,7 +28,7 @@ use yield_optimizer::{
     get_tax_info,
     querier::{
         get_basset_in_custody, query_aterra_state, query_balance, query_borrower_info,
-        query_supply, query_token_balance, AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg,
+        query_supply, query_token_balance, AnchorMarketMsg, AnchorOverseerMsg,
         BorrowerInfoResponse,
     },
     terraswap_pair::Cw20HookMsg as TerraswapCw20HookMsg,
@@ -101,7 +101,7 @@ pub fn deposit_basset(
     let nasset_to_mint = if farmer_basset_share == Decimal256::one() {
         deposit_amount
     } else {
-        // 'casset_supply' can't be zero here, cause we already mint some for first farmer
+        // 'nasset_supply' can't be zero here, cause we already mint some for first farmer
         nasset_supply * farmer_basset_share / (Decimal256::one() - farmer_basset_share)
     };
 
@@ -150,7 +150,7 @@ pub fn receive_cw20_withdraw(
     cw20_msg: Cw20ReceiveMsg,
 ) -> ContractResult<Response> {
     let contract_addr = info.sender;
-    // only cAsset contract can execute this message
+    // only nAsset contract can execute this message
     let config: Config = load_config(deps.storage)?;
     if contract_addr != config.nasset_token {
         return Err(ContractError::Unauthorized {});
@@ -167,7 +167,7 @@ pub fn withdraw_basset(
     env: Env,
     config: Config,
     farmer: Addr,
-    casset_to_withdraw_amount: Uint256,
+    nasset_to_withdraw_amount: Uint256,
 ) -> ContractResult<Response> {
     //basset_in_contract_address is always zero (except Deposit stage)
     let basset_in_custody = get_basset_in_custody(
@@ -176,18 +176,18 @@ pub fn withdraw_basset(
         &env.contract.address,
     )?;
 
-    let casset_token_supply = query_supply(&deps.querier, &config.nasset_token)?;
+    let nasset_token_supply = query_supply(&deps.querier, &config.nasset_token)?;
 
     let share_to_withdraw: Decimal256 = Decimal256::from_ratio(
-        casset_to_withdraw_amount.0,
-        Uint256::from(casset_token_supply).0,
+        nasset_to_withdraw_amount.0,
+        Uint256::from(nasset_token_supply).0,
     );
     let basset_to_withdraw: Uint256 = basset_in_custody * share_to_withdraw;
 
     //1. rebalance in a way you don't have basset_to_withdraw
     //2. unlock basset from custody
     //3. send basset to farmer
-    //4. burn casset
+    //4. burn nasset
     let mut rebalance_response = rebalance(
         deps,
         env,
@@ -222,7 +222,7 @@ pub fn withdraw_basset(
         .push(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.nasset_token.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Burn {
-                amount: casset_to_withdraw_amount.into(),
+                amount: nasset_to_withdraw_amount.into(),
             })?,
             send: vec![],
         }));
@@ -232,7 +232,7 @@ pub fn withdraw_basset(
         .push(attr("action", "withdraw"));
     rebalance_response
         .attributes
-        .push(attr("casset_amount", casset_to_withdraw_amount));
+        .push(attr("nasset_amount", nasset_to_withdraw_amount));
 
     Ok(rebalance_response)
 }

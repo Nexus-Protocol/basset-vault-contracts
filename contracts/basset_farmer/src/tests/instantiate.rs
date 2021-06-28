@@ -172,7 +172,7 @@ fn proper_initialization() {
 
     let mut cw20_instantiate_response_2 = MsgInstantiateContractResponse::new();
     cw20_instantiate_response_2.set_contract_address(psi_distributor_contract.clone());
-    // store casset_staker contract address
+    // store nasset_staker contract address
     let reply_msg_3 = Reply {
         id: SUBMSG_ID_INIT_PSI_DISTRIBUTOR,
         result: ContractResult::Ok(SubcallResponse {

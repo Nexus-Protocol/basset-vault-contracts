@@ -28,7 +28,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         custody_basset_contract: config.anchor_custody_basset_contract.to_string(),
         anc_stable_swap_contract: config.anc_stable_swap_contract.to_string(),
         psi_stable_swap_contract: config.psi_stable_swap_contract.to_string(),
-        casset_token: config.nasset_token.to_string(),
+        nasset_token: config.nasset_token.to_string(),
         basset_token: config.basset_token.to_string(),
         aterra_token: config.aterra_token.to_string(),
         psi_token: config.psi_token.to_string(),

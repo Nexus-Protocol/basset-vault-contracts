@@ -7,7 +7,7 @@ use cosmwasm_std::{
 use crate::{
     commands, queries,
     state::{
-        config_set_casset_token, config_set_psi_distributor, load_child_contracts_code_id,
+        config_set_nasset_token, config_set_psi_distributor, load_child_contracts_code_id,
         load_config, store_child_contracts_code_id, store_config,
         update_loan_state_part_of_loan_repaid, ChildContractsCodeId,
     },
@@ -114,7 +114,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                 })?;
 
             let nasset_token = res.get_contract_address();
-            config_set_casset_token(deps.storage, deps.api.addr_validate(nasset_token)?)?;
+            config_set_nasset_token(deps.storage, deps.api.addr_validate(nasset_token)?)?;
             let child_contracts_code_id = load_child_contracts_code_id(deps.as_ref().storage)?;
             let config = load_config(deps.storage)?;
 
@@ -155,7 +155,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
             let nasset_staker = res.get_contract_address();
             let config = load_config(deps.as_ref().storage)?;
             let child_contracts_code_id = load_child_contracts_code_id(deps.as_ref().storage)?;
-            //we do not need to save casset_staker addr here, cause there is no direct interactions
+            //we do not need to save nasset_staker addr here, cause there is no direct interactions
 
             Ok(Response {
                 messages: vec![],

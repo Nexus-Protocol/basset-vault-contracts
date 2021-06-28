@@ -206,7 +206,7 @@ fn stake_and_unstake_partially() {
 
     //first farmer come
     let user_1_address = Addr::unchecked("addr9999".to_string());
-    //it is staked_casset_amount
+    //it is staked_nasset_amount
     let deposit_1_amount: Uint128 = 100u128.into();
     let withdraw_amount: Uint128 = 30u128.into();
     {
@@ -461,7 +461,7 @@ fn two_users_stake_partially_unstake_stake_again() {
     }
 
     // subtract rewards sent to user_1
-    // subtract user_1 unstaked casset
+    // subtract user_1 unstaked nasset
     {
         deps.querier.with_token_balances(&[
             (

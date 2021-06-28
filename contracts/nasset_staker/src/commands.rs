@@ -13,7 +13,7 @@ use crate::{
     state::{load_staker_state, load_state},
 };
 use crate::{state::Config, ContractResult};
-use cosmwasm_bignumber::{Decimal256, Uint256};
+use cosmwasm_bignumber::Uint256;
 use cw20::Cw20ReceiveMsg;
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use yield_optimizer::{nasset_staker::Cw20HookMsg, querier::query_token_balance};
@@ -85,12 +85,12 @@ pub fn stake_nasset(
     Ok(Response {
         messages: vec![],
         submessages: vec![],
-        attributes: vec![attr("action", "stake"), attr("casset_amount", stake_amount)],
+        attributes: vec![attr("action", "stake"), attr("nasset_amount", stake_amount)],
         data: None,
     })
 }
 
-pub fn unstake_casset(
+pub fn unstake_nasset(
     deps: DepsMut,
     env: Env,
     staker: Addr,
@@ -105,7 +105,7 @@ pub fn unstake_casset(
 
     let mut staker_state = load_staker_state(deps.storage, &staker)?;
     if staker_state.staked_amount < amount_to_unstake {
-        return Err(StdError::generic_err("not enought casset to unstake").into());
+        return Err(StdError::generic_err("not enought nasset to unstake").into());
     }
     let config: Config = load_config(deps.storage)?;
     let mut state = load_state(deps.storage)?;

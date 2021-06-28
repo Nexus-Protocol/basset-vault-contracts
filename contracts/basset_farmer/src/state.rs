@@ -2,13 +2,12 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Addr, Decimal, StdResult, Storage, Uint128};
+use cosmwasm_std::{Addr, StdResult, Storage, Uint128};
 use cw_storage_plus::Item;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub governance_contract: Addr,
-    //TODO: test that this value is SET after initialization
     pub psi_distributor_addr: Addr,
     pub anchor_token: Addr,
     pub anchor_overseer_contract: Addr,
@@ -19,7 +18,6 @@ pub struct Config {
     pub nasset_token: Addr,
     pub basset_token: Addr,
     pub aterra_token: Addr,
-    //what part of profit from selling ANC spend to buy PSI
     pub psi_token: Addr,
     pub basset_farmer_config_contract: Addr,
     pub stable_denom: String,
@@ -61,9 +59,9 @@ pub fn store_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()>
     CONFIG.save(storage, config)
 }
 
-pub fn config_set_casset_token(storage: &mut dyn Storage, casset_token: Addr) -> StdResult<Config> {
+pub fn config_set_nasset_token(storage: &mut dyn Storage, nasset_token: Addr) -> StdResult<Config> {
     CONFIG.update(storage, |mut config| -> StdResult<_> {
-        config.nasset_token = casset_token;
+        config.nasset_token = nasset_token;
         Ok(config)
     })
 }

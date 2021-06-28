@@ -49,7 +49,7 @@ pub fn execute(
             AnyoneMsg::ClaimRewards { to } => commands::claim_rewards(deps, env, info.sender, to),
 
             AnyoneMsg::Unstake { amount, to } => {
-                commands::unstake_casset(deps, env, info.sender, amount, to)
+                commands::unstake_nasset(deps, env, info.sender, amount, to)
             }
 
             AnyoneMsg::ClaimRemainder => commands::claim_remainder(deps, env),

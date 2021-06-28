@@ -10,7 +10,7 @@ pub struct InstantiateMsg {
     pub nasset_staker_code_id: u64,
     pub psi_distributor_code_id: u64,
     pub basset_token_addr: String,
-    //Luna / ETH / Sol, will be converted to cLuna, cETH, cSol
+    //Luna / ETH / Sol, will be converted to nLuna, nETH, nSol
     pub collateral_token_symbol: String,
     pub governance_addr: String,
     pub anchor_token: String,
@@ -78,7 +78,7 @@ pub struct ConfigResponse {
     pub custody_basset_contract: String,
     pub anc_stable_swap_contract: String,
     pub psi_stable_swap_contract: String,
-    pub casset_token: String,
+    pub nasset_token: String,
     pub basset_token: String,
     pub aterra_token: String,
     pub psi_token: String,
