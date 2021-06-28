@@ -1052,7 +1052,6 @@ fn second_staker_after_rewards_already_there() {
             assert!(res.submessages.is_empty());
 
             let state: State = load_state(&deps.storage).unwrap();
-            println!("state.last_reward_amount: {}", state.last_reward_amount);
             assert_eq!(
                 State {
                     // old_index += 500/400
