@@ -31,6 +31,7 @@ pub const SUBMSG_ID_REPAY_LOAN: u64 = 3;
 pub const SUBMSG_ID_BORROWING: u64 = 4;
 pub const SUBMSG_ID_INIT_NASSET_STAKER: u64 = 5;
 pub const SUBMSG_ID_INIT_PSI_DISTRIBUTOR: u64 = 6;
+pub const SUBMSG_ID_REDEEM_STABLE_ON_REMAINDER: u64 = 7;
 //withdrawing from Anchor Deposit error
 pub const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
 //borrowing error
@@ -231,6 +232,13 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
 
         SUBMSG_ID_BORROWING => commands::borrow_logic_on_reply(deps, env),
 
+        SUBMSG_ID_REDEEM_STABLE_ON_REMAINDER => {
+            let config: Config = load_config(deps.storage)?;
+            //we can't repay loan to unlock aTerra (cause we have 0 loan here),
+            //so try to use stable balance in any case (error or not)
+            commands::buy_psi_on_remainded_stable_coins(deps.as_ref(), env, config)
+        }
+
         unknown => {
             Err(StdError::generic_err(format!("unknown reply message id: {}", unknown)).into())
         }
@@ -262,6 +270,8 @@ pub fn execute(
             }
 
             AnyoneMsg::HonestWork => commands::claim_anc_rewards(deps, env),
+
+            AnyoneMsg::ClaimRemainder => commands::claim_remainded_stables(deps.as_ref(), env),
         },
 
         ExecuteMsg::Yourself { yourself_msg } => {

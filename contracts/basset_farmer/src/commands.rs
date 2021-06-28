@@ -1,11 +1,11 @@
 use cosmwasm_std::{
-    attr, from_binary, to_binary, Addr, CosmosMsg, DepsMut, Env, MessageInfo, ReplyOn, Response,
-    StdError, SubMsg, WasmMsg,
+    attr, from_binary, to_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, ReplyOn,
+    Response, StdError, SubMsg, Uint128, WasmMsg,
 };
 
 use crate::{
     commands,
-    contract::SUBMSG_ID_BORROWING,
+    contract::{SUBMSG_ID_BORROWING, SUBMSG_ID_REDEEM_STABLE_ON_REMAINDER},
     state::{
         load_aim_buffer_size, load_config, load_repaying_loan_state,
         load_stable_balance_before_selling_anc, store_aim_buffer_size,
@@ -28,10 +28,11 @@ use yield_optimizer::{
     get_tax_info,
     querier::{
         get_basset_in_custody, query_aterra_state, query_balance, query_borrower_info,
-        query_supply, query_token_balance, AnchorMarketMsg, AnchorOverseerMsg,
+        query_supply, query_token_balance, AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg,
         BorrowerInfoResponse,
     },
-    terraswap_pair::Cw20HookMsg as TerraswapCw20HookMsg,
+    terraswap::{Asset, AssetInfo},
+    terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
 };
 
 pub fn receive_cw20(
@@ -500,4 +501,103 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
     let tax_info = get_tax_info(deps.as_ref(), &config.stable_denom)?;
 
     action_with_profit.to_response(&config, &tax_info)
+}
+
+pub fn claim_remainded_stables(deps: Deps, env: Env) -> ContractResult<Response> {
+    let config: Config = load_config(deps.storage)?;
+    let borrower_info: BorrowerInfoResponse =
+        query_borrower_info(deps, &config.anchor_market_contract, &env.contract.address)?;
+    let borrowed_amount = borrower_info.loan_amount;
+
+    if !borrowed_amount.is_zero() {
+        Err(StdError::generic_err(format!(
+            "wait until there will be 0 loan amount (no bAsset stakers), current loan: {}",
+            borrowed_amount
+        ))
+        .into())
+    } else {
+        let aterra_balance =
+            query_token_balance(deps, &config.aterra_token, &env.contract.address)?;
+
+        if aterra_balance.is_zero() {
+            buy_psi_on_remainded_stable_coins(deps, env, config)
+        } else {
+            Ok(Response {
+                messages: vec![],
+                submessages: vec![SubMsg {
+                    msg: WasmMsg::Execute {
+                        contract_addr: config.aterra_token.to_string(),
+                        msg: to_binary(&Cw20ExecuteMsg::Send {
+                            contract: config.anchor_market_contract.to_string(),
+                            amount: aterra_balance,
+                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
+                        })?,
+                        send: vec![],
+                    }
+                    .into(),
+                    gas_limit: None,
+                    id: SUBMSG_ID_REDEEM_STABLE_ON_REMAINDER,
+                    //Always because Anchor can block withdrawing
+                    //if there are too many borrowers
+                    reply_on: ReplyOn::Always,
+                }],
+                attributes: vec![
+                    attr("action", "distribute_remainded_rewards"),
+                    attr("selling_aterra", aterra_balance),
+                ],
+                data: None,
+            })
+        }
+    }
+}
+
+/// spend all stables we have, buy PSI and send it to Governance contract.
+/// To governance directly because there is no nAsset in that moment, so
+/// no reason to send PSI tokens to nAsset_staker (through psi_distributor)
+pub fn buy_psi_on_remainded_stable_coins(
+    deps: Deps,
+    env: Env,
+    config: Config,
+) -> ContractResult<Response> {
+    let stable_coin_balance = query_balance(
+        &deps.querier,
+        &env.contract.address,
+        config.stable_denom.clone(),
+    )?;
+
+    if stable_coin_balance.is_zero() {
+        Ok(Response::default())
+    } else {
+        let tax_info = get_tax_info(deps, &config.stable_denom)?;
+        let stable_coin_to_buy_psi: Uint128 =
+            tax_info.subtract_tax(stable_coin_balance.into()).into();
+        let swap_asset = Asset {
+            info: AssetInfo::NativeToken {
+                denom: config.stable_denom.clone(),
+            },
+            amount: stable_coin_to_buy_psi,
+        };
+
+        Ok(Response {
+            messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: config.psi_stable_swap_contract.to_string(),
+                msg: to_binary(&TerraswapExecuteMsg::Swap {
+                    offer_asset: swap_asset,
+                    max_spread: None,
+                    belief_price: None,
+                    to: Some(config.governance_contract.to_string()),
+                })?,
+                send: vec![Coin {
+                    denom: config.stable_denom.clone(),
+                    amount: stable_coin_to_buy_psi,
+                }],
+            })],
+            submessages: vec![],
+            attributes: vec![
+                attr("action", "distribute_remainded_rewards"),
+                attr("bying_psi", stable_coin_to_buy_psi),
+            ],
+            data: None,
+        })
+    }
 }

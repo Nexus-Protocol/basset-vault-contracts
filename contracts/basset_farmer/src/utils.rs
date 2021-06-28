@@ -11,7 +11,7 @@ use yield_optimizer::{
     },
     querier::{AnchorMarketCw20Msg, AnchorMarketMsg},
     terraswap::{Asset, AssetInfo},
-    terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
+    terraswap_pair::ExecuteMsg as TerraswapExecuteMsg,
     TaxInfo,
 };
 

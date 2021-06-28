@@ -47,6 +47,10 @@ pub enum YourselfMsg {
 pub enum AnyoneMsg {
     HonestWork,
     Rebalance,
+    // Because basset_farmer always have more UST than loan,
+    // then when last user will withdraw bAsset some UST remains in contract.
+    // This command utilise it.
+    ClaimRemainder,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

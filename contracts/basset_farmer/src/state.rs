@@ -106,6 +106,7 @@ pub fn store_aim_buffer_size(storage: &mut dyn Storage, aim_buf_size: &Uint256) 
     AIM_BUFFER_SIZE.save(storage, aim_buf_size)
 }
 
+//TODO: maybe it is a good idea to store aTerra and aTerra_exchange_rate here too?!
 pub fn load_stable_balance_before_selling_anc(storage: &dyn Storage) -> StdResult<Uint128> {
     STABLE_BALANCE_BEFORE_SELL_ANC.load(storage)
 }
