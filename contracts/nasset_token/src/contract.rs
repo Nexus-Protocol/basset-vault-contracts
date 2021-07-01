@@ -1,7 +1,7 @@
 use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 
 use crate::ContractResult;
-use crate::{commands, state::save_rewards_contract};
+use crate::{commands, state::save_config_holder_contract};
 use cw20_base::allowances::{execute_decrease_allowance, execute_increase_allowance};
 use cw20_base::contract::instantiate as cw20_instantiate;
 use cw20_base::contract::query as cw20_query;
@@ -15,10 +15,9 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> ContractResult<Response> {
-    let rewards_contract = deps.api.addr_validate(&msg.rewards_contract)?;
-    save_rewards_contract(deps.storage, &rewards_contract)?;
+    let config_holder_contract = deps.api.addr_validate(&msg.config_holder_contract)?;
+    save_config_holder_contract(deps.storage, &config_holder_contract)?;
 
-    println!("minter: {:?}", msg.mint);
     cw20_instantiate(
         deps,
         env,

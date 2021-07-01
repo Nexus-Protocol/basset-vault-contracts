@@ -2,7 +2,7 @@ use cosmwasm_std::{
     to_binary, Binary, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128, WasmMsg,
 };
 
-use crate::{state::load_rewards_contract, ContractResult};
+use crate::{querier::query_rewards_contract, ContractResult};
 use cw20_base::allowances::{
     execute_burn_from as cw20_burn_from, execute_send_from as cw20_send_from,
     execute_transfer_from as cw20_transfer_from,
@@ -11,7 +11,7 @@ use cw20_base::contract::{
     execute_burn as cw20_burn, execute_mint as cw20_mint, execute_send as cw20_send,
     execute_transfer as cw20_transfer,
 };
-use yield_optimizer::nasset_rewards::{
+use yield_optimizer::nasset_token_rewards::{
     ExecuteMsg as NAssetRewardsExecuteMsg, TokenMsg as NassetRewardsTokenMsg,
 };
 
@@ -23,7 +23,7 @@ pub fn transfer(
     amount: Uint128,
 ) -> ContractResult<Response> {
     let sender = info.sender.to_string();
-    let rewards_contract = load_rewards_contract(deps.as_ref().storage)?;
+    let rewards_contract = query_rewards_contract(deps.as_ref())?;
 
     let res: Response = cw20_transfer(deps, env, info, recipient.clone(), amount)?;
 
@@ -65,7 +65,7 @@ pub fn burn(
     amount: Uint128,
 ) -> ContractResult<Response> {
     let sender = info.sender.to_string();
-    let rewards_contract = load_rewards_contract(deps.as_ref().storage)?;
+    let rewards_contract = query_rewards_contract(deps.as_ref())?;
 
     let res: Response = cw20_burn(deps, env, info, amount)?;
     Ok(Response {
@@ -93,7 +93,7 @@ pub fn mint(
     recipient: String,
     amount: Uint128,
 ) -> ContractResult<Response> {
-    let rewards_contract = load_rewards_contract(deps.as_ref().storage)?;
+    let rewards_contract = query_rewards_contract(deps.as_ref())?;
 
     let res: Response = cw20_mint(deps, env, info, recipient.clone(), amount)?;
     Ok(Response {
@@ -123,7 +123,7 @@ pub fn send(
     msg: Binary,
 ) -> ContractResult<Response> {
     let sender = info.sender.to_string();
-    let rewards_contract = load_rewards_contract(deps.as_ref().storage)?;
+    let rewards_contract = query_rewards_contract(deps.as_ref())?;
 
     let res: Response = cw20_send(deps, env, info, contract.clone(), amount, msg)?;
     Ok(Response {
@@ -169,7 +169,7 @@ pub fn transfer_from(
     recipient: String,
     amount: Uint128,
 ) -> ContractResult<Response> {
-    let rewards_contract = load_rewards_contract(deps.as_ref().storage)?;
+    let rewards_contract = query_rewards_contract(deps.as_ref())?;
 
     let res: Response =
         cw20_transfer_from(deps, env, info, owner.clone(), recipient.clone(), amount)?;
@@ -211,7 +211,7 @@ pub fn burn_from(
     owner: String,
     amount: Uint128,
 ) -> ContractResult<Response> {
-    let rewards_contract = load_rewards_contract(deps.as_ref().storage)?;
+    let rewards_contract = query_rewards_contract(deps.as_ref())?;
 
     let res: Response = cw20_burn_from(deps, env, info, owner.clone(), amount)?;
     Ok(Response {
@@ -241,7 +241,7 @@ pub fn send_from(
     amount: Uint128,
     msg: Binary,
 ) -> ContractResult<Response> {
-    let rewards_contract = load_rewards_contract(deps.as_ref().storage)?;
+    let rewards_contract = query_rewards_contract(deps.as_ref())?;
 
     let res: Response = cw20_send_from(
         deps,

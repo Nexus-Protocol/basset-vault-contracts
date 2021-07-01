@@ -1,30 +1,27 @@
-use cosmwasm_std::{
-    testing::{MockApi, MockQuerier, MockStorage},
-    to_binary, CosmosMsg, Uint128, WasmMsg,
-};
+use cosmwasm_std::{to_binary, Api, CosmosMsg, Querier, Storage, Uint128, WasmMsg};
 use cosmwasm_std::{DepsMut, OwnedDeps};
 
 use cw20::{Cw20ReceiveMsg, MinterResponse, TokenInfoResponse};
 use cw20_base::contract::{query_minter, query_token_info};
 use cw20_base::msg::ExecuteMsg;
-use yield_optimizer::nasset_rewards::{
+use yield_optimizer::nasset_token::InstantiateMsg as TokenInstantiateMsg;
+use yield_optimizer::nasset_token_rewards::{
     ExecuteMsg as NAssetRewardsExecuteMsg, TokenMsg as NassetRewardsTokenMsg,
 };
-use yield_optimizer::nasset_token::InstantiateMsg as TokenInstantiateMsg;
 
+use super::mock_dependencies;
+use super::{MOCK_CONFIG_HOLDER_CONTRACT_ADDR, MOCK_OWNER_ADDR, MOCK_REWARDS_CONTRACT_ADDR};
 use crate::{
     contract::{execute, instantiate},
-    state::load_rewards_contract,
+    state::load_config_holder_contract,
 };
-use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-
-use super::{MOCK_OWNER_ADDR, MOCK_REWARDS_CONTRACT_ADDR};
+use cosmwasm_std::testing::{mock_env, mock_info};
 
 const CANONICAL_LENGTH: usize = 20;
 
 // this will set up the init for other tests
-fn do_init_with_minter(
-    deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>,
+fn do_init_with_minter<A: Storage, B: Api, C: Querier>(
+    deps: &mut OwnedDeps<A, B, C>,
     minter: String,
     cap: Option<Uint128>,
 ) -> TokenInfoResponse {
@@ -32,18 +29,17 @@ fn do_init_with_minter(
 }
 
 // this will set up the init for other tests
-fn _do_init(
-    deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>,
+fn _do_init<A: Storage, B: Api, C: Querier>(
+    deps: &mut OwnedDeps<A, B, C>,
     mint: Option<MinterResponse>,
 ) -> TokenInfoResponse {
-    let rewards_contract = MOCK_REWARDS_CONTRACT_ADDR;
     let instantiate_msg = TokenInstantiateMsg {
         name: "nluna".to_string(),
         symbol: "NLUNA".to_string(),
         decimals: 6,
         initial_balances: vec![],
         mint: mint.clone(),
-        rewards_contract: rewards_contract.to_string(),
+        config_holder_contract: MOCK_CONFIG_HOLDER_CONTRACT_ADDR.to_string(),
     };
 
     let info = mock_info(MOCK_OWNER_ADDR, &[]);
@@ -87,7 +83,7 @@ fn proper_initialization() {
             minter: MOCK_OWNER_ADDR.to_string(),
             cap: None,
         }),
-        rewards_contract: MOCK_REWARDS_CONTRACT_ADDR.to_string(),
+        config_holder_contract: MOCK_REWARDS_CONTRACT_ADDR.to_string(),
     };
     let info = mock_info(MOCK_OWNER_ADDR, &[]);
     let res = instantiate(deps.as_mut(), mock_env(), info, instantiate_msg).unwrap();
@@ -112,7 +108,7 @@ fn proper_initialization() {
     );
 
     assert_eq!(
-        load_rewards_contract(&deps.storage).unwrap(),
+        load_config_holder_contract(&deps.storage).unwrap(),
         MOCK_REWARDS_CONTRACT_ADDR.to_string()
     );
 }
