@@ -84,7 +84,7 @@ pub fn load_holders(
 
     let holders: Result<Vec<_>, StdError> = HOLDERS
         .range(storage, start, None, Order::Ascending)
-        .map(|item| holder_to_response(item))
+        .map(holder_to_response)
         .take(limit)
         .collect();
 

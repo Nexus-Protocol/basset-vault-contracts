@@ -1,4 +1,4 @@
-// mod claim_rewards;
+mod claim_rewards;
 // mod holder_receive_rewards;
 mod instantiate;
 
