@@ -1,5 +1,4 @@
 mod claim_rewards;
-// mod holder_receive_rewards;
 mod instantiate;
 
 use cosmwasm_bignumber::Uint256;
