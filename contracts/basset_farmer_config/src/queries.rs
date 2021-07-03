@@ -10,15 +10,15 @@ use crate::state::{load_config, Config};
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let config: Config = load_config(deps.storage)?;
     Ok(ConfigResponse {
-        governance_contract_addr: config.governance_contract_addr,
-        oracle_addr: config.oracle_addr,
-        basset_token_addr: config.basset_token_addr,
-        stable_denom: config.stable_denom,
-        borrow_ltv_max: config.borrow_ltv_max,
-        borrow_ltv_min: config.borrow_ltv_min,
-        borrow_ltv_aim: config.borrow_ltv_aim,
-        basset_max_ltv: config.basset_max_ltv,
-        buffer_part: config.buffer_part,
+        governance_contract: config.governance_contract.to_string(),
+        oracle_contract: config.oracle_contract.to_string(),
+        basset_token: config.basset_token.to_string(),
+        stable_denom: config.stable_denom.clone(),
+        borrow_ltv_max: config.get_borrow_ltv_max(),
+        borrow_ltv_min: config.get_borrow_ltv_min(),
+        borrow_ltv_aim: config.get_borrow_ltv_aim(),
+        basset_max_ltv: config.get_basset_max_ltv(),
+        buffer_part: config.get_buffer_part(),
     })
 }
 
@@ -31,8 +31,8 @@ pub fn borrower_action(
 
     let price: PriceResponse = query_price(
         deps,
-        &config.oracle_addr,
-        config.basset_token_addr.to_string(),
+        &config.oracle_contract,
+        config.basset_token.to_string(),
         config.stable_denom.to_string(),
         None,
     )?;
@@ -41,11 +41,11 @@ pub fn borrower_action(
         price.rate,
         borrowed_amount,
         locked_basset_amount,
-        config.basset_max_ltv,
-        config.borrow_ltv_max,
-        config.borrow_ltv_min,
-        config.borrow_ltv_aim,
-        config.buffer_part,
+        config.get_basset_max_ltv(),
+        config.get_borrow_ltv_max(),
+        config.get_borrow_ltv_min(),
+        config.get_borrow_ltv_aim(),
+        config.get_buffer_part(),
     );
     Ok(response)
 }

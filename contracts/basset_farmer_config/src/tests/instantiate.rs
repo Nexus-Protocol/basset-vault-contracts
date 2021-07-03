@@ -11,7 +11,7 @@ fn proper_initialization() {
 
     let msg = yield_optimizer::basset_farmer_config::InstantiateMsg {
         governance_contract_addr: "addr0000".to_string(),
-        oracle_addr: "addr0001".to_string(),
+        oracle_contract_addr: "addr0001".to_string(),
         basset_token_addr: "addr0002".to_string(),
         stable_denom: "uust".to_string(),
         borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
@@ -27,19 +27,13 @@ fn proper_initialization() {
 
     // it worked, let's query the state
     let config: Config = load_config(&deps.storage).unwrap();
-    assert_eq!(
-        msg.governance_contract_addr,
-        config.governance_contract_addr
-    );
-    assert_eq!(msg.oracle_addr, config.oracle_addr);
-    assert_eq!(msg.basset_token_addr, config.basset_token_addr);
+    assert_eq!(msg.governance_contract_addr, config.governance_contract);
+    assert_eq!(msg.oracle_contract_addr, config.oracle_contract);
+    assert_eq!(msg.basset_token_addr, config.basset_token);
     assert_eq!(msg.stable_denom, config.stable_denom);
-    assert_eq!(msg.borrow_ltv_max, config.borrow_ltv_max);
-    assert_eq!(msg.borrow_ltv_min, config.borrow_ltv_min);
-    assert_eq!(msg.basset_max_ltv, config.basset_max_ltv);
-    assert_eq!(
-        msg.governance_contract_addr,
-        config.governance_contract_addr
-    );
-    assert_eq!(msg.buffer_part, config.buffer_part);
+    assert_eq!(msg.borrow_ltv_max, config.get_borrow_ltv_max());
+    assert_eq!(msg.borrow_ltv_min, config.get_borrow_ltv_min());
+    assert_eq!(msg.borrow_ltv_aim, config.get_borrow_ltv_aim());
+    assert_eq!(msg.basset_max_ltv, config.get_basset_max_ltv());
+    assert_eq!(msg.buffer_part, config.get_buffer_part());
 }

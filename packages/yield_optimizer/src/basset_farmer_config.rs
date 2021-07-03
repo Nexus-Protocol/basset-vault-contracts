@@ -7,7 +7,7 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub governance_contract_addr: String,
-    pub oracle_addr: String,
+    pub oracle_contract_addr: String,
     pub basset_token_addr: String,
     pub stable_denom: String,
     pub borrow_ltv_max: Decimal256,
@@ -27,6 +27,7 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum GovernanceMsg {
     UpdateConfig {
+        governance_addr: Option<String>,
         oracle_addr: Option<String>,
         basset_token_addr: Option<String>,
         stable_denom: Option<String>,
@@ -54,9 +55,9 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ConfigResponse {
-    pub governance_contract_addr: Addr,
-    pub oracle_addr: Addr,
-    pub basset_token_addr: Addr,
+    pub governance_contract: String,
+    pub oracle_contract: String,
+    pub basset_token: String,
     pub stable_denom: String,
     pub borrow_ltv_max: Decimal256,
     pub borrow_ltv_min: Decimal256,

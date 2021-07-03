@@ -1,3 +1,4 @@
+mod change_config;
 mod instantiate;
 
 use cosmwasm_bignumber::Uint256;

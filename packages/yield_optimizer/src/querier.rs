@@ -162,7 +162,7 @@ pub fn query_price(
     oracle_addr: &Addr,
     base: String,
     quote: String,
-    time_contraints: Option<TimeConstraints>,
+    time_constraints: Option<TimeConstraints>,
 ) -> StdResult<PriceResponse> {
     let oracle_price: PriceResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
@@ -170,9 +170,9 @@ pub fn query_price(
             msg: to_binary(&OracleQueryMsg::Price { base, quote })?,
         }))?;
 
-    if let Some(time_contraints) = time_contraints {
-        let valid_update_time = (time_contraints.block_time.nanos() / 1_000_000)
-            - time_contraints.valid_timeframe_millis;
+    if let Some(time_constraints) = time_constraints {
+        let valid_update_time = (time_constraints.block_time.nanos() / 1_000_000)
+            - time_constraints.valid_timeframe_millis;
         if oracle_price.last_updated_base < valid_update_time
             || oracle_price.last_updated_quote < valid_update_time
         {

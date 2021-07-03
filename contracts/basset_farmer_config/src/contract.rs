@@ -20,17 +20,17 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> ContractResult<Response> {
-    let config = Config {
-        governance_contract_addr: deps.api.addr_validate(&msg.governance_contract_addr)?,
-        oracle_addr: deps.api.addr_validate(&msg.oracle_addr)?,
-        basset_token_addr: deps.api.addr_validate(&msg.basset_token_addr)?,
-        stable_denom: msg.stable_denom,
-        borrow_ltv_max: msg.borrow_ltv_max,
-        borrow_ltv_min: msg.borrow_ltv_min,
-        borrow_ltv_aim: msg.borrow_ltv_aim,
-        basset_max_ltv: msg.basset_max_ltv,
-        buffer_part: msg.buffer_part,
-    };
+    let config = Config::new(
+        deps.api.addr_validate(&msg.governance_contract_addr)?,
+        deps.api.addr_validate(&msg.oracle_contract_addr)?,
+        deps.api.addr_validate(&msg.basset_token_addr)?,
+        msg.stable_denom,
+        msg.borrow_ltv_max,
+        msg.borrow_ltv_min,
+        msg.borrow_ltv_aim,
+        msg.basset_max_ltv,
+        msg.buffer_part,
+    )?;
 
     save_config(deps.storage, &config)?;
 
@@ -47,12 +47,13 @@ pub fn execute(
     match msg {
         ExecuteMsg::GovernanceMsg { governance_msg } => {
             let config = load_config(deps.storage)?;
-            if info.sender != config.governance_contract_addr {
+            if info.sender != config.governance_contract {
                 return Err(ContractError::Unauthorized {});
             }
 
             match governance_msg {
                 GovernanceMsg::UpdateConfig {
+                    governance_addr,
                     oracle_addr,
                     basset_token_addr,
                     stable_denom,
@@ -64,6 +65,7 @@ pub fn execute(
                 } => commands::update_config(
                     deps,
                     config,
+                    governance_addr,
                     oracle_addr,
                     basset_token_addr,
                     stable_denom,
