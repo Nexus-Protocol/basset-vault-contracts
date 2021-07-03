@@ -4,7 +4,6 @@ use terra_cosmwasm::TerraQuerier;
 
 pub mod basset_farmer;
 pub mod basset_farmer_config;
-pub mod nasset_staker;
 pub mod nasset_token;
 pub mod nasset_token_config_holder;
 pub mod nasset_token_rewards;

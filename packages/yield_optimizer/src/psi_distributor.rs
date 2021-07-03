@@ -1,14 +1,12 @@
-use cosmwasm_std::{Addr, Decimal};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_bignumber::{Decimal256, Uint256};
-use cw20::Cw20ReceiveMsg;
+use cosmwasm_bignumber::Decimal256;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub nasset_token_contract: String,
-    pub nasset_staker_contract: String,
+    pub nasset_token_rewards_contract: String,
     pub governance_contract: String,
 }
 

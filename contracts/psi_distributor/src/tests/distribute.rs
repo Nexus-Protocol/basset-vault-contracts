@@ -11,12 +11,12 @@ use yield_optimizer::psi_distributor::{AnyoneMsg, ExecuteMsg};
 fn distribute_rewards() {
     let mut deps = mock_dependencies(&[]);
     let nasset_token_contract = "addr0001".to_string();
-    let nasset_staker_contract = "addr0002".to_string();
+    let nasset_token_rewards_contract = "addr0002".to_string();
     let governance_addr = "addr0003".to_string();
 
     let msg = yield_optimizer::psi_distributor::InstantiateMsg {
         nasset_token_contract: nasset_token_contract.clone(),
-        nasset_staker_contract: nasset_staker_contract.clone(),
+        nasset_token_rewards_contract: nasset_token_rewards_contract.clone(),
         governance_contract: governance_addr.clone(),
     };
 
@@ -49,7 +49,7 @@ fn distribute_rewards() {
                     contract_addr: nasset_token_contract.clone(),
                     send: vec![],
                     msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                        recipient: nasset_staker_contract.clone(),
+                        recipient: nasset_token_rewards_contract.clone(),
                         amount: Uint128::from(700u64),
                     })
                     .unwrap(),

@@ -37,10 +37,11 @@ pub struct RepayingLoanState {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
-pub struct ChildContractsCodeId {
-    pub nasset_token: u64,
-    pub nasset_staker: u64,
-    pub psi_distributor: u64,
+pub struct ChildContractsInfo {
+    pub nasset_token_code_id: u64,
+    pub nasset_token_rewards_code_id: u64,
+    pub psi_distributor_code_id: u64,
+    pub collateral_token_symbol: String,
 }
 
 const CONFIG: Item<Config> = Item::new("config");
@@ -49,7 +50,16 @@ const AIM_BUFFER_SIZE: Item<Uint256> = Item::new("aim_buf_size");
 const STABLE_BALANCE_BEFORE_SELL_ANC: Item<Uint128> = Item::new("balance_before_sell_anc");
 const LAST_REWARDS_CLAIMING_HEIGHT: Item<u64> = Item::new("last_rewards_claiming_height");
 //need that only for instantiating
-const CHILD_CONTRACTS_CODE_ID: Item<ChildContractsCodeId> = Item::new("child_contracts_code_id");
+const CHILD_CONTRACTS_INFO: Item<ChildContractsInfo> = Item::new("child_contracts_code_id");
+const NASSET_TOKEN_CONFIG_HOLDER: Item<Addr> = Item::new("nasset_token_config_holder");
+
+pub fn load_nasset_token_config_holder(storage: &dyn Storage) -> StdResult<Addr> {
+    NASSET_TOKEN_CONFIG_HOLDER.load(storage)
+}
+
+pub fn store_nasset_token_config_holder(storage: &mut dyn Storage, addr: &Addr) -> StdResult<()> {
+    NASSET_TOKEN_CONFIG_HOLDER.save(storage, addr)
+}
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
     CONFIG.load(storage)
@@ -118,15 +128,15 @@ pub fn store_stable_balance_before_selling_anc(
     STABLE_BALANCE_BEFORE_SELL_ANC.save(storage, balance)
 }
 
-pub fn load_child_contracts_code_id(storage: &dyn Storage) -> StdResult<ChildContractsCodeId> {
-    CHILD_CONTRACTS_CODE_ID.load(storage)
+pub fn load_child_contracts_info(storage: &dyn Storage) -> StdResult<ChildContractsInfo> {
+    CHILD_CONTRACTS_INFO.load(storage)
 }
 
-pub fn store_child_contracts_code_id(
+pub fn store_child_contracts_info(
     storage: &mut dyn Storage,
-    child_contracts_code_id: &ChildContractsCodeId,
+    child_contracts_info: &ChildContractsInfo,
 ) -> StdResult<()> {
-    CHILD_CONTRACTS_CODE_ID.save(storage, child_contracts_code_id)
+    CHILD_CONTRACTS_INFO.save(storage, child_contracts_info)
 }
 
 pub fn load_last_rewards_claiming_height(storage: &dyn Storage) -> StdResult<u64> {

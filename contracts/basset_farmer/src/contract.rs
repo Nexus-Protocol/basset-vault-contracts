@@ -1,28 +1,34 @@
 use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::{
-    attr, entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, ReplyOn,
-    Response, StdError, StdResult, SubMsg, WasmMsg,
+    attr, entry_point, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
+    ReplyOn, Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 
 use crate::{
     commands, queries,
     state::{
-        config_set_nasset_token, config_set_psi_distributor, load_child_contracts_code_id,
-        load_config, store_child_contracts_code_id, store_config,
-        update_loan_state_part_of_loan_repaid, ChildContractsCodeId,
+        config_set_nasset_token, config_set_psi_distributor, load_child_contracts_info,
+        load_config, load_nasset_token_config_holder, store_child_contracts_info, store_config,
+        store_nasset_token_config_holder, update_loan_state_part_of_loan_repaid,
+        ChildContractsInfo,
     },
     SubmsgIds, TOO_HIGH_BORROW_DEMAND_ERR_MSG,
 };
 use crate::{error::ContractError, response::MsgInstantiateContractResponse};
 use crate::{state::Config, ContractResult};
 use cw20::MinterResponse;
-use cw20_base::msg::InstantiateMsg as TokenInstantiateMsg;
 use protobuf::Message;
 use std::convert::TryFrom;
 use std::str::FromStr;
 use yield_optimizer::{
     basset_farmer::{AnyoneMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, YourselfMsg},
-    nasset_staker::InstantiateMsg as NAssetStakerInstantiateMsg,
+    nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
+    nasset_token_config_holder::{
+        AnyoneMsg as NAssetTokenConfigHolderAnyoneMsg,
+        ExecuteMsg as NAssetTokenConfigHolderExecuteMsg,
+        InstantiateMsg as NAssetTokenConfigHolderInstantiateMsg,
+    },
+    nasset_token_rewards::InstantiateMsg as NAssetTokenRewardsInstantiateMsg,
     psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg,
     querier::get_basset_in_custody,
 };
@@ -30,7 +36,7 @@ use yield_optimizer::{
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> ContractResult<Response> {
@@ -40,7 +46,7 @@ pub fn instantiate(
         anchor_custody_basset_contract: deps
             .api
             .addr_validate(&msg.anchor_custody_basset_contract)?,
-        governance_contract: deps.api.addr_validate(&msg.governance_addr)?,
+        governance_contract: deps.api.addr_validate(&msg.governance_contract)?,
         anchor_token: deps.api.addr_validate(&msg.anchor_token)?,
         anchor_overseer_contract: deps.api.addr_validate(&msg.anchor_overseer_contract)?,
         anchor_market_contract: deps.api.addr_validate(&msg.anchor_market_contract)?,
@@ -58,38 +64,32 @@ pub fn instantiate(
     };
     store_config(deps.storage, &config)?;
 
-    let child_contracts_code_id = ChildContractsCodeId {
-        nasset_token: msg.nasset_token_code_id,
-        nasset_staker: msg.nasset_staker_code_id,
-        psi_distributor: msg.psi_distributor_code_id,
+    let child_contracts_info = ChildContractsInfo {
+        nasset_token_code_id: msg.nasset_token_code_id,
+        nasset_token_rewards_code_id: msg.nasset_token_rewards_code_id,
+        psi_distributor_code_id: msg.psi_distributor_code_id,
+        collateral_token_symbol: msg.collateral_token_symbol,
     };
-    store_child_contracts_code_id(deps.storage, &child_contracts_code_id)?;
+    store_child_contracts_info(deps.storage, &child_contracts_info)?;
 
     Ok(Response {
         messages: vec![],
         submessages: vec![SubMsg {
             msg: WasmMsg::Instantiate {
                 admin: None,
-                code_id: msg.nasset_token_code_id,
-                msg: to_binary(&TokenInstantiateMsg {
-                    name: "nexus basset token share representation".to_string(),
-                    symbol: format!("n{}", msg.collateral_token_symbol),
-                    decimals: 6,
-                    initial_balances: vec![],
-                    mint: Some(MinterResponse {
-                        minter: env.contract.address.to_string(),
-                        cap: None,
-                    }),
+                code_id: msg.nasset_token_config_holder_code_id,
+                msg: to_binary(&NAssetTokenConfigHolderInstantiateMsg {
+                    governance_contract_addr: msg.governance_contract,
                 })?,
                 send: vec![],
                 label: "".to_string(),
             }
             .into(),
             gas_limit: None,
-            id: SubmsgIds::InitNAsset.id(),
+            id: SubmsgIds::InitNAssetConfigHolder.id(),
             reply_on: ReplyOn::Success,
         }],
-        attributes: vec![attr("action", "initialization")],
+        attributes: vec![],
         data: None,
     })
 }
@@ -98,6 +98,56 @@ pub fn instantiate(
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
     let submessage_enum = SubmsgIds::try_from(msg.id)?;
     match submessage_enum {
+        SubmsgIds::InitNAssetConfigHolder => {
+            let data = msg.result.unwrap().data.unwrap();
+            let res: MsgInstantiateContractResponse = Message::parse_from_bytes(data.as_slice())
+                .map_err(|_| {
+                    StdError::parse_err("MsgInstantiateContractResponse", "failed to parse data")
+                })?;
+
+            let nasset_token_config_holder = res.get_contract_address();
+            store_nasset_token_config_holder(
+                deps.storage,
+                &Addr::unchecked(nasset_token_config_holder),
+            )?;
+            let child_contracts_info = load_child_contracts_info(deps.as_ref().storage)?;
+
+            Ok(Response {
+                messages: vec![],
+                submessages: vec![SubMsg {
+                    msg: WasmMsg::Instantiate {
+                        admin: None,
+                        code_id: child_contracts_info.nasset_token_code_id,
+                        msg: to_binary(&NAssetTokenInstantiateMsg {
+                            name: "nexus bAsset token share representation".to_string(),
+                            symbol: format!("n{}", child_contracts_info.collateral_token_symbol),
+                            decimals: 6,
+                            initial_balances: vec![],
+                            mint: Some(MinterResponse {
+                                minter: env.contract.address.to_string(),
+                                cap: None,
+                            }),
+                            config_holder_contract: nasset_token_config_holder.to_string(),
+                        })?,
+                        send: vec![],
+                        label: "".to_string(),
+                    }
+                    .into(),
+                    gas_limit: None,
+                    id: SubmsgIds::InitNAsset.id(),
+                    reply_on: ReplyOn::Success,
+                }],
+                attributes: vec![
+                    attr("action", "nasset_token_config_holder_initialized"),
+                    attr(
+                        "nasset_token_config_holder_addr",
+                        nasset_token_config_holder,
+                    ),
+                ],
+                data: None,
+            })
+        }
+
         SubmsgIds::InitNAsset => {
             let data = msg.result.unwrap().data.unwrap();
             let res: MsgInstantiateContractResponse = Message::parse_from_bytes(data.as_slice())
@@ -107,7 +157,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
 
             let nasset_token = res.get_contract_address();
             config_set_nasset_token(deps.storage, deps.api.addr_validate(nasset_token)?)?;
-            let child_contracts_code_id = load_child_contracts_code_id(deps.as_ref().storage)?;
+            let child_contracts_info = load_child_contracts_info(deps.as_ref().storage)?;
             let config = load_config(deps.storage)?;
 
             Ok(Response {
@@ -115,18 +165,18 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                 submessages: vec![SubMsg {
                     msg: WasmMsg::Instantiate {
                         admin: None,
-                        code_id: child_contracts_code_id.nasset_staker,
-                        msg: to_binary(&NAssetStakerInstantiateMsg {
-                            nasset_token: nasset_token.to_string(),
-                            psi_token: config.psi_token.to_string(),
-                            governance_contract: config.governance_contract.to_string(),
+                        code_id: child_contracts_info.nasset_token_rewards_code_id,
+                        msg: to_binary(&NAssetTokenRewardsInstantiateMsg {
+                            psi_token_addr: config.psi_token.to_string(),
+                            nasset_token_addr: nasset_token.to_string(),
+                            governance_contract_addr: config.governance_contract.to_string(),
                         })?,
                         send: vec![],
                         label: "".to_string(),
                     }
                     .into(),
                     gas_limit: None,
-                    id: SubmsgIds::InitNAssetStaker.id(),
+                    id: SubmsgIds::InitNAssetRewards.id(),
                     reply_on: ReplyOn::Success,
                 }],
                 attributes: vec![
@@ -137,27 +187,37 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
             })
         }
 
-        SubmsgIds::InitNAssetStaker => {
+        SubmsgIds::InitNAssetRewards => {
             let data = msg.result.unwrap().data.unwrap();
             let res: MsgInstantiateContractResponse = Message::parse_from_bytes(data.as_slice())
                 .map_err(|_| {
                     StdError::parse_err("MsgInstantiateContractResponse", "failed to parse data")
                 })?;
 
-            let nasset_staker = res.get_contract_address();
+            //we do not need to save nasset_token_rewards addr, cause there is no direct interactions
+            let nasset_token_rewards = res.get_contract_address();
             let config = load_config(deps.as_ref().storage)?;
-            let child_contracts_code_id = load_child_contracts_code_id(deps.as_ref().storage)?;
-            //we do not need to save nasset_staker addr here, cause there is no direct interactions
+            let child_contracts_info = load_child_contracts_info(deps.as_ref().storage)?;
+            let nasset_token_config_holder = load_nasset_token_config_holder(deps.storage)?;
 
             Ok(Response {
-                messages: vec![],
+                messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: nasset_token_config_holder.to_string(),
+                    send: vec![],
+                    msg: to_binary(&NAssetTokenConfigHolderExecuteMsg::Anyone {
+                        anyone_msg: NAssetTokenConfigHolderAnyoneMsg::SetTokenRewardsContract {
+                            nasset_token_rewards_contract_addr: nasset_token_rewards.to_string(),
+                        },
+                    })
+                    .unwrap(),
+                })],
                 submessages: vec![SubMsg {
                     msg: WasmMsg::Instantiate {
                         admin: None,
-                        code_id: child_contracts_code_id.psi_distributor,
+                        code_id: child_contracts_info.psi_distributor_code_id,
                         msg: to_binary(&PsiDistributorInstantiateMsg {
                             nasset_token_contract: config.nasset_token.to_string(),
-                            nasset_staker_contract: nasset_staker.to_string(),
+                            nasset_token_rewards_contract: nasset_token_rewards.to_string(),
                             governance_contract: config.governance_contract.to_string(),
                         })?,
                         send: vec![],
@@ -169,8 +229,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                     reply_on: ReplyOn::Success,
                 }],
                 attributes: vec![
-                    attr("action", "nasset_staker_initialized"),
-                    attr("nasset_staker_addr", nasset_staker),
+                    attr("action", "nasset_token_rewards_initialized"),
+                    attr("nasset_token_rewards_addr", nasset_token_rewards),
                 ],
                 data: None,
             })

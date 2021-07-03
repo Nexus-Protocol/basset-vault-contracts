@@ -7,12 +7,13 @@ use cw20::Cw20ReceiveMsg;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub nasset_token_code_id: u64,
-    pub nasset_staker_code_id: u64,
+    pub nasset_token_config_holder_code_id: u64,
+    pub nasset_token_rewards_code_id: u64,
     pub psi_distributor_code_id: u64,
     pub basset_token_addr: String,
     //Luna / ETH / Sol, will be converted to nLuna, nETH, nSol
     pub collateral_token_symbol: String,
-    pub governance_addr: String,
+    pub governance_contract: String,
     pub anchor_token: String,
     pub anchor_market_contract: String,
     pub anchor_overseer_contract: String,
@@ -106,10 +107,11 @@ pub enum RebalanceResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct ChildContractsCodeIdResponse {
-    pub nasset_token: u64,
-    pub nasset_staker: u64,
-    pub psi_distributor: u64,
+pub struct ChildContractsInfoResponse {
+    pub nasset_token_code_id: u64,
+    pub nasset_token_rewards_code_id: u64,
+    pub psi_distributor_code_id: u64,
+    pub collateral_token_symbol: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

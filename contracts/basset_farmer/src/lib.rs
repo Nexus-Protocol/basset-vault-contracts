@@ -19,8 +19,9 @@ type ContractResult<T> = Result<T, ContractError>;
 pub const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
 
 pub enum SubmsgIds {
+    InitNAssetConfigHolder,
     InitNAsset,
-    InitNAssetStaker,
+    InitNAssetRewards,
     InitPsiDistributor,
     RedeemStableOnRepayLoan,
     RepayLoan,
@@ -33,8 +34,11 @@ impl TryFrom<u64> for SubmsgIds {
 
     fn try_from(v: u64) -> Result<Self, Self::Error> {
         match v {
+            x if x == SubmsgIds::InitNAssetConfigHolder.id() => {
+                Ok(SubmsgIds::InitNAssetConfigHolder)
+            }
             x if x == SubmsgIds::InitNAsset.id() => Ok(SubmsgIds::InitNAsset),
-            x if x == SubmsgIds::InitNAssetStaker.id() => Ok(SubmsgIds::InitNAssetStaker),
+            x if x == SubmsgIds::InitNAssetRewards.id() => Ok(SubmsgIds::InitNAssetRewards),
             x if x == SubmsgIds::InitPsiDistributor.id() => Ok(SubmsgIds::InitPsiDistributor),
             x if x == SubmsgIds::RedeemStableOnRepayLoan.id() => {
                 Ok(SubmsgIds::RedeemStableOnRepayLoan)
@@ -54,13 +58,14 @@ impl TryFrom<u64> for SubmsgIds {
 impl SubmsgIds {
     pub const fn id(&self) -> u64 {
         match self {
-            SubmsgIds::InitNAsset => 0,
-            SubmsgIds::InitNAssetStaker => 1,
-            SubmsgIds::InitPsiDistributor => 2,
-            SubmsgIds::RedeemStableOnRepayLoan => 3,
-            SubmsgIds::RepayLoan => 4,
-            SubmsgIds::Borrowing => 5,
-            SubmsgIds::RedeemStableOnRemainder => 6,
+            SubmsgIds::InitNAssetConfigHolder => 0,
+            SubmsgIds::InitNAsset => 1,
+            SubmsgIds::InitNAssetRewards => 2,
+            SubmsgIds::InitPsiDistributor => 3,
+            SubmsgIds::RedeemStableOnRepayLoan => 4,
+            SubmsgIds::RepayLoan => 5,
+            SubmsgIds::Borrowing => 6,
+            SubmsgIds::RedeemStableOnRemainder => 7,
         }
     }
 }

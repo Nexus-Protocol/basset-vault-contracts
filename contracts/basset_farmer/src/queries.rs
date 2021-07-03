@@ -2,7 +2,7 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Deps, Env, StdResult};
 use yield_optimizer::{
     basset_farmer::{
-        ChildContractsCodeIdResponse, ConfigResponse, IsRewardsClaimableResponse, RebalanceResponse,
+        ChildContractsInfoResponse, ConfigResponse, IsRewardsClaimableResponse, RebalanceResponse,
     },
     basset_farmer_config::{query_borrower_action, BorrowerActionResponse},
     querier::{
@@ -12,7 +12,7 @@ use yield_optimizer::{
     },
 };
 
-use crate::state::{load_child_contracts_code_id, load_config};
+use crate::state::{load_child_contracts_info, load_config};
 use crate::{
     state::{load_last_rewards_claiming_height, Config},
     utils::is_anc_rewards_claimable,
@@ -123,12 +123,13 @@ fn assert_max_borrow_factor(
     return true;
 }
 
-pub fn child_contracts_code_id(deps: Deps) -> StdResult<ChildContractsCodeIdResponse> {
-    let child_contracts_code_id = load_child_contracts_code_id(deps.storage)?;
-    Ok(ChildContractsCodeIdResponse {
-        nasset_token: child_contracts_code_id.nasset_token,
-        nasset_staker: child_contracts_code_id.nasset_staker,
-        psi_distributor: child_contracts_code_id.psi_distributor,
+pub fn child_contracts_code_id(deps: Deps) -> StdResult<ChildContractsInfoResponse> {
+    let child_contracts_info = load_child_contracts_info(deps.storage)?;
+    Ok(ChildContractsInfoResponse {
+        nasset_token_code_id: child_contracts_info.nasset_token_code_id,
+        nasset_token_rewards_code_id: child_contracts_info.nasset_token_rewards_code_id,
+        psi_distributor_code_id: child_contracts_info.psi_distributor_code_id,
+        collateral_token_symbol: child_contracts_info.collateral_token_symbol,
     })
 }
 

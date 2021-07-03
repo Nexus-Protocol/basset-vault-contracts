@@ -10,7 +10,7 @@ fn proper_initialization() {
 
     let msg = yield_optimizer::psi_distributor::InstantiateMsg {
         nasset_token_contract: "addr0000".to_string(),
-        nasset_staker_contract: "addr0001".to_string(),
+        nasset_token_rewards_contract: "addr0001".to_string(),
         governance_contract: "addr0002".to_string(),
     };
 
@@ -27,7 +27,7 @@ fn proper_initialization() {
         *distribution,
         vec![
             RewardShare {
-                recipient: Addr::unchecked(msg.nasset_staker_contract),
+                recipient: Addr::unchecked(msg.nasset_token_rewards_contract),
                 share: Decimal256::percent(70)
             },
             RewardShare {

@@ -1,5 +1,5 @@
+use super::instantiate::instantiate_basset_farmer;
 use crate::{
-    response::MsgInstantiateContractResponse,
     state::{load_repaying_loan_state, store_config, RepayingLoanState},
     SubmsgIds, TOO_HIGH_BORROW_DEMAND_ERR_MSG,
 };
@@ -12,7 +12,6 @@ use cosmwasm_std::{
     SubcallResponse, Uint128, WasmMsg,
 };
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
-use protobuf::Message;
 use std::str::FromStr;
 use yield_optimizer::{
     basset_farmer::ExecuteMsg,
@@ -24,26 +23,55 @@ use yield_optimizer::{
 
 #[test]
 fn repay_loan_without_problems() {
-    let nluna_contract_addr = "addr0001".to_string();
+    let nasset_contract_addr = "addr0001".to_string();
     let nasset_token_code_id = 10u64; //cw20 contract code
-    let nasset_staker_code_id = 11u64; //contract code
-    let psi_distributor_code_id = 12u64; //contract code
+    let nasset_token_config_holder_code_id = 11u64;
+    let nasset_token_rewards_code_id = 12u64; //contract code
+    let psi_distributor_code_id = 13u64; //contract code
     let aterra_token = "addr0010".to_string();
     let stable_denom = "uust".to_string();
     let anchor_market_contract = "addr0007".to_string();
-    let nluna_staker_contract = "addr0014".to_string();
     let psi_distributor_contract = "addr0015".to_string();
-    // let governance_contract = "addr0016".to_string();
+    let governance_contract = "addr0016".to_string();
+    let psi_token = "addr0011".to_string();
+    let nasset_token_config_holder_contract = "addr0017".to_string();
+    let nasset_token_rewards_contract = "addr0018".to_string();
     let over_loan_balance_value = "1.01".to_string();
     let basset_token_addr = "addr0002".to_string();
-    let anchor_custody_basset_contract = "addr0003".to_string();
-    let governance_addr = "addr0005".to_string();
-    let anchor_token = "addr0006".to_string();
     let anchor_overseer_contract = "addr0004".to_string();
-    let anchor_ust_swap_contract = "addr0008".to_string();
-    let ust_psi_swap_contract = "addr0009".to_string();
-    let psi_token = "addr0011".to_string();
-    let basset_farmer_config_contract = "addr0012".to_string();
+    let anchor_custody_basset_contract = "addr0003".to_string();
+    let basset_farmer_config_contract = "addr0011".to_string();
+
+    let msg = yield_optimizer::basset_farmer::InstantiateMsg {
+        nasset_token_code_id,
+        nasset_token_config_holder_code_id,
+        nasset_token_rewards_code_id,
+        psi_distributor_code_id,
+        collateral_token_symbol: "Luna".to_string(),
+        basset_token_addr: basset_token_addr.clone(),
+        anchor_custody_basset_contract: anchor_custody_basset_contract.clone(),
+        anchor_overseer_contract: anchor_overseer_contract.clone(),
+        governance_contract: governance_contract.clone(),
+        anchor_token: "addr0006".to_string(),
+        anchor_market_contract: anchor_market_contract.clone(),
+        anc_stable_swap_contract: "addr0008".to_string(),
+        psi_stable_swap_contract: "addr0009".to_string(),
+        aterra_token: aterra_token.clone(),
+        psi_token: psi_token.clone(),
+        basset_farmer_config_contract: basset_farmer_config_contract.clone(),
+        stable_denom: stable_denom.clone(),
+        claiming_rewards_delay: 1000,
+        over_loan_balance_value: over_loan_balance_value.clone(),
+    };
+    let mut deps = mock_dependencies(&[]);
+    instantiate_basset_farmer(
+        &mut deps,
+        msg.clone(),
+        &nasset_token_config_holder_contract,
+        &nasset_contract_addr,
+        &nasset_token_rewards_contract,
+        &psi_distributor_contract,
+    );
 
     let stable_coin_balance = Uint128::from(200u64);
     let loan_to_repay = Uint256::from(10_000u64);
@@ -52,81 +80,6 @@ fn repay_loan_without_problems() {
     let advised_buffer_size = Uint256::from(50u64);
     let aterra_balance = Uint256::from(200u64);
     let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
-
-    let mut deps = mock_dependencies(&[Coin {
-        denom: stable_denom.to_string(),
-        amount: stable_coin_balance,
-    }]);
-
-    //basset_farmer and custody_bluna have zero 'cluna' coins
-    deps.querier.with_token_balances(&[(
-        &nluna_contract_addr,
-        &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128(0))],
-    )]);
-
-    // -= INITIALIZATION =-
-    {
-        let init_msg = yield_optimizer::basset_farmer::InstantiateMsg {
-            nasset_token_code_id,
-            nasset_staker_code_id,
-            psi_distributor_code_id,
-            collateral_token_symbol: "Luna".to_string(),
-            basset_token_addr: basset_token_addr.clone(),
-            anchor_custody_basset_contract: anchor_custody_basset_contract.clone(),
-            governance_addr: governance_addr.to_string(),
-            anchor_overseer_contract,
-            anchor_token,
-            anchor_market_contract: anchor_market_contract.clone(),
-            anc_stable_swap_contract: anchor_ust_swap_contract,
-            psi_stable_swap_contract: ust_psi_swap_contract,
-            aterra_token: aterra_token.to_string(),
-            psi_token,
-            basset_farmer_config_contract: basset_farmer_config_contract.clone(),
-            stable_denom: stable_denom.to_string(),
-            claiming_rewards_delay: 1000,
-            over_loan_balance_value: over_loan_balance_value.clone(),
-        };
-
-        let info = mock_info("addr0000", &[]);
-        let _res = crate::contract::instantiate(deps.as_mut(), mock_env(), info, init_msg).unwrap();
-        let mut cw20_instantiate_response = MsgInstantiateContractResponse::new();
-        cw20_instantiate_response.set_contract_address(nluna_contract_addr.clone());
-
-        // store nLuna token address
-        let reply_msg = Reply {
-            id: SubmsgIds::InitNAsset.id(),
-            result: ContractResult::Ok(SubcallResponse {
-                events: vec![],
-                data: Some(cw20_instantiate_response.write_to_bytes().unwrap().into()),
-            }),
-        };
-
-        let _res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg.clone()).unwrap();
-
-        let mut cw20_instantiate_response_2 = MsgInstantiateContractResponse::new();
-        cw20_instantiate_response_2.set_contract_address(nluna_staker_contract.clone());
-        // store psi_distributor contract address
-        let reply_msg_2 = Reply {
-            id: SubmsgIds::InitNAssetStaker.id(),
-            result: ContractResult::Ok(SubcallResponse {
-                events: vec![],
-                data: Some(cw20_instantiate_response_2.write_to_bytes().unwrap().into()),
-            }),
-        };
-        let _res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg_2.clone()).unwrap();
-
-        let mut cw20_instantiate_response_2 = MsgInstantiateContractResponse::new();
-        cw20_instantiate_response_2.set_contract_address(psi_distributor_contract.clone());
-        // store nasset_staker contract address
-        let reply_msg_3 = Reply {
-            id: SubmsgIds::InitPsiDistributor.id(),
-            result: ContractResult::Ok(SubcallResponse {
-                events: vec![],
-                data: Some(cw20_instantiate_response_2.write_to_bytes().unwrap().into()),
-            }),
-        };
-        let _res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg_3.clone()).unwrap();
-    }
 
     deps.querier.with_token_balances(&[
         (
@@ -279,37 +232,69 @@ fn repay_loan_without_problems() {
 
 #[test]
 fn repay_loan_fail_to_redeem_aterra() {
-    let nluna_contract_addr = "addr0001".to_string();
-    // let nasset_token_code_id = 10u64; //cw20 contract code
-    // let nasset_staker_code_id = 11u64; //contract code
-    // let psi_distributor_code_id = 12u64; //contract code
+    let nasset_contract_addr = "addr0001".to_string();
+    let nasset_token_code_id = 10u64; //cw20 contract code
+    let nasset_token_config_holder_code_id = 11u64;
+    let nasset_token_rewards_code_id = 12u64; //contract code
+    let psi_distributor_code_id = 13u64; //contract code
     let aterra_token = "addr0010".to_string();
     let stable_denom = "uust".to_string();
     let anchor_market_contract = "addr0007".to_string();
-    // let nluna_staker_contract = "addr0014".to_string();
     let psi_distributor_contract = "addr0015".to_string();
-    // let governance_contract = "addr0016".to_string();
+    let governance_contract = "addr0016".to_string();
+    let psi_token = "addr0011".to_string();
+    let nasset_token_config_holder_contract = "addr0017".to_string();
+    let nasset_token_rewards_contract = "addr0018".to_string();
     let over_loan_balance_value = "1.01".to_string();
     let basset_token_addr = "addr0002".to_string();
-    let anchor_custody_basset_contract = "addr0003".to_string();
-    let governance_addr = "addr0005".to_string();
-    let anchor_token = "addr0006".to_string();
     let anchor_overseer_contract = "addr0004".to_string();
-    let anchor_ust_swap_contract = "addr0008".to_string();
-    let ust_psi_swap_contract = "addr0009".to_string();
-    let psi_token = "addr0011".to_string();
-    let basset_farmer_config_contract = "addr0012".to_string();
+    let anchor_custody_basset_contract = "addr0003".to_string();
+    let basset_farmer_config_contract = "addr0011".to_string();
+    let anchor_token = "addr0006".to_string();
+    let anc_stable_swap_contract = "addr0008".to_string();
+    let psi_stable_swap_contract = "addr0009".to_string();
+
+    let msg = yield_optimizer::basset_farmer::InstantiateMsg {
+        nasset_token_code_id,
+        nasset_token_config_holder_code_id,
+        nasset_token_rewards_code_id,
+        psi_distributor_code_id,
+        collateral_token_symbol: "Luna".to_string(),
+        basset_token_addr: basset_token_addr.clone(),
+        anchor_custody_basset_contract: anchor_custody_basset_contract.clone(),
+        anchor_overseer_contract: anchor_overseer_contract.clone(),
+        governance_contract: governance_contract.clone(),
+        anchor_token: anchor_token.clone(),
+        anchor_market_contract: anchor_market_contract.clone(),
+        anc_stable_swap_contract: anc_stable_swap_contract.clone(),
+        psi_stable_swap_contract: psi_stable_swap_contract.clone(),
+        aterra_token: aterra_token.clone(),
+        psi_token: psi_token.clone(),
+        basset_farmer_config_contract: basset_farmer_config_contract.clone(),
+        stable_denom: stable_denom.clone(),
+        claiming_rewards_delay: 1000,
+        over_loan_balance_value: over_loan_balance_value.clone(),
+    };
+    let mut deps = mock_dependencies(&[]);
+    instantiate_basset_farmer(
+        &mut deps,
+        msg.clone(),
+        &nasset_token_config_holder_contract,
+        &nasset_contract_addr,
+        &nasset_token_rewards_contract,
+        &psi_distributor_contract,
+    );
 
     let basset_farmer_config = crate::state::Config {
         anchor_custody_basset_contract: Addr::unchecked(anchor_custody_basset_contract.clone()),
-        governance_contract: Addr::unchecked(governance_addr.clone()),
+        governance_contract: Addr::unchecked(governance_contract.clone()),
         anchor_overseer_contract: Addr::unchecked(anchor_overseer_contract.clone()),
         anchor_token: Addr::unchecked(anchor_token.clone()),
-        nasset_token: Addr::unchecked(nluna_contract_addr.clone()),
+        nasset_token: Addr::unchecked(nasset_contract_addr.clone()),
         basset_token: Addr::unchecked(basset_token_addr.clone()),
         anchor_market_contract: Addr::unchecked(anchor_market_contract.clone()),
-        anc_stable_swap_contract: Addr::unchecked(anchor_ust_swap_contract.clone()),
-        psi_stable_swap_contract: Addr::unchecked(ust_psi_swap_contract.clone()),
+        anc_stable_swap_contract: Addr::unchecked(anc_stable_swap_contract.clone()),
+        psi_stable_swap_contract: Addr::unchecked(psi_stable_swap_contract.clone()),
         aterra_token: Addr::unchecked(aterra_token.clone()),
         psi_token: Addr::unchecked(psi_token.clone()),
         basset_farmer_config_contract: Addr::unchecked(basset_farmer_config_contract.clone()),
