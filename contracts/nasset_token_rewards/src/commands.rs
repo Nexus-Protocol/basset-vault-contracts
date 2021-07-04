@@ -43,7 +43,7 @@ pub fn update_global_index(deps: DepsMut, env: Env) -> ContractResult<Response> 
 
     // Zero nasset balance check
     if state.total_balance.is_zero() {
-        return Err(StdError::generic_err("nAsset amount is zero").into());
+        return Err(StdError::generic_err("nAsset balance is zero").into());
     }
 
     let config = load_config(deps.storage)?;

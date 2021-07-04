@@ -521,7 +521,7 @@ fn update_index_error_on_zero_nasset_amount() {
     assert!(response.is_err());
     let error = response.err().unwrap();
     if let ContractError::Std(StdError::GenericErr { msg }) = error {
-        assert_eq!("nAsset amount is zero", msg);
+        assert_eq!("nAsset balance is zero", msg);
     } else {
         panic!("wrong error");
     }
