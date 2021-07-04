@@ -37,12 +37,9 @@ impl Sdk {
 
         let mut deps = mock_dependencies(&[]);
 
-        // -= INITIALIZATION =-
-        {
-            let env = mock_env();
-            let info = mock_info("addr9999", &[]);
-            crate::contract::instantiate(deps.as_mut(), env, info, msg.clone()).unwrap();
-        }
+        let env = mock_env();
+        let info = mock_info("addr9999", &[]);
+        crate::contract::instantiate(deps.as_mut(), env, info, msg.clone()).unwrap();
 
         Sdk { deps }
     }

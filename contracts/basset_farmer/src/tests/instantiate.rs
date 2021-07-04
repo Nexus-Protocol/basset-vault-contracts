@@ -68,6 +68,7 @@ fn proper_initialization() {
     instantiate_basset_farmer(
         &mut deps,
         msg.clone(),
+        &psi_token,
         &nasset_token_config_holder_contract,
         &nasset_contract_addr,
         &nasset_token_rewards_contract,
@@ -104,6 +105,7 @@ fn proper_initialization() {
 pub fn instantiate_basset_farmer<A: Storage, B: Api, C: Querier>(
     deps: &mut OwnedDeps<A, B, C>,
     init_msg: yield_optimizer::basset_farmer::InstantiateMsg,
+    psi_token: &str,
     nasset_token_config_holder_contract: &str,
     nasset_contract_addr: &str,
     nasset_token_rewards_contract: &str,
@@ -298,9 +300,10 @@ pub fn instantiate_basset_farmer<A: Storage, B: Api, C: Querier>(
                 msg: WasmMsg::Instantiate {
                     code_id: init_msg.psi_distributor_code_id,
                     msg: to_binary(&PsiDistributorInstantiateMsg {
-                        nasset_token_contract: nasset_contract_addr.to_string(),
-                        nasset_token_rewards_contract: nasset_token_rewards_contract.to_string(),
-                        governance_contract: init_msg.governance_contract.clone(),
+                        psi_token_addr: psi_token.to_string(),
+                        nasset_token_rewards_contract_addr: nasset_token_rewards_contract
+                            .to_string(),
+                        governance_contract_addr: init_msg.governance_contract.clone(),
                     })
                     .unwrap(),
                     send: vec![],

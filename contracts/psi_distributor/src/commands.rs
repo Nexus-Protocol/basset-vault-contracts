@@ -1,4 +1,6 @@
-use cosmwasm_std::{attr, to_binary, CosmosMsg, DepsMut, Env, Response, StdResult, WasmMsg};
+use cosmwasm_std::{
+    attr, to_binary, CosmosMsg, DepsMut, Env, Response, StdError, StdResult, WasmMsg,
+};
 
 use crate::state::{load_config, store_config, RewardShare, RewardsDistribution};
 use crate::{state::Config, ContractResult};
@@ -8,33 +10,22 @@ use yield_optimizer::querier::query_token_balance;
 
 pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
     let config: Config = load_config(deps.storage)?;
-    let nasset_balance: Uint256 = query_token_balance(
-        deps.as_ref(),
-        &config.nasset_token_addr,
-        &env.contract.address,
-    )?
-    .into();
+    let psi_balance: Uint256 =
+        query_token_balance(deps.as_ref(), &config.psi_token, &env.contract.address)?.into();
 
-    let mut attributes =
-        Vec::with_capacity(config.rewards_distribution.distribution().len() * 2 + 1);
-    attributes.push(attr("action", "rewards_distribution"));
-
-    if nasset_balance.is_zero() {
-        attributes.push(attr("rewards_amount", "zero"));
-        return Ok(Response {
-            messages: vec![],
-            submessages: vec![],
-            attributes,
-            data: None,
-        });
+    if psi_balance.is_zero() {
+        return Err(StdError::generic_err("psi balance is zero").into());
     }
 
     let mut messages = Vec::with_capacity(config.rewards_distribution.distribution().len());
 
+    let mut attributes = Vec::with_capacity(config.rewards_distribution.distribution().len() * 2);
+    attributes.push(attr("action", "rewards_distribution"));
+
     for reward_share in config.rewards_distribution.distribution().iter() {
-        let reward = nasset_balance * reward_share.share;
+        let reward = psi_balance * reward_share.share;
         messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: config.nasset_token_addr.to_string(),
+            contract_addr: config.psi_token.to_string(),
             send: vec![],
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: reward_share.recipient.to_string(),
@@ -57,15 +48,15 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
 pub fn update_config(
     deps: DepsMut,
     mut current_config: Config,
-    nasset_token_addr: Option<String>,
-    governance_addr: Option<String>,
+    psi_token_addr: Option<String>,
+    governance_contract_addr: Option<String>,
 ) -> ContractResult<Response> {
-    if let Some(ref nasset_token_addr) = nasset_token_addr {
-        current_config.nasset_token_addr = deps.api.addr_validate(nasset_token_addr)?;
+    if let Some(ref psi_token_addr) = psi_token_addr {
+        current_config.psi_token = deps.api.addr_validate(psi_token_addr)?;
     }
 
-    if let Some(ref governance_addr) = governance_addr {
-        current_config.governance_addr = deps.api.addr_validate(governance_addr)?;
+    if let Some(ref governance_contract_addr) = governance_contract_addr {
+        current_config.governance_contract = deps.api.addr_validate(governance_contract_addr)?;
     }
 
     store_config(deps.storage, &current_config)?;

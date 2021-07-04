@@ -216,9 +216,9 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                         admin: None,
                         code_id: child_contracts_info.psi_distributor_code_id,
                         msg: to_binary(&PsiDistributorInstantiateMsg {
-                            nasset_token_contract: config.nasset_token.to_string(),
-                            nasset_token_rewards_contract: nasset_token_rewards.to_string(),
-                            governance_contract: config.governance_contract.to_string(),
+                            psi_token_addr: config.psi_token.to_string(),
+                            nasset_token_rewards_contract_addr: nasset_token_rewards.to_string(),
+                            governance_contract_addr: config.governance_contract.to_string(),
                         })?,
                         send: vec![],
                         label: "".to_string(),

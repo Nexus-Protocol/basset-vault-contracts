@@ -5,9 +5,9 @@ use cosmwasm_bignumber::Decimal256;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub nasset_token_contract: String,
-    pub nasset_token_rewards_contract: String,
-    pub governance_contract: String,
+    pub psi_token_addr: String,
+    pub nasset_token_rewards_contract_addr: String,
+    pub governance_contract_addr: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -27,17 +27,13 @@ pub enum AnyoneMsg {
 #[serde(rename_all = "snake_case")]
 pub enum GovernanceMsg {
     UpdateConfig {
-        nasset_token_addr: Option<String>,
-        governance_addr: Option<String>,
+        psi_token_contract_addr: Option<String>,
+        governance_contract_addr: Option<String>,
     },
     UpdateRewardsDistribution {
         distribution: Vec<(String, u64)>,
     },
 }
-
-/// We currently take no arguments for migrations
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct MigrateMsg {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -47,7 +43,7 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ConfigResponse {
-    pub nasset_token_addr: String,
-    pub governance_addr: String,
+    pub psi_token_addr: String,
+    pub governance_contract_addr: String,
     pub rewards_distribution: Vec<(String, Decimal256)>,
 }

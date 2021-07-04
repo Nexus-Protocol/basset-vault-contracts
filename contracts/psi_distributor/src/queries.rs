@@ -14,8 +14,8 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         .collect();
 
     Ok(ConfigResponse {
-        nasset_token_addr: config.nasset_token_addr.to_string(),
-        governance_addr: config.governance_addr.to_string(),
+        psi_token_addr: config.psi_token.to_string(),
+        governance_contract_addr: config.governance_contract.to_string(),
         rewards_distribution,
     })
 }

@@ -67,6 +67,7 @@ fn repay_loan_without_problems() {
     instantiate_basset_farmer(
         &mut deps,
         msg.clone(),
+        &psi_token,
         &nasset_token_config_holder_contract,
         &nasset_contract_addr,
         &nasset_token_rewards_contract,
@@ -279,6 +280,7 @@ fn repay_loan_fail_to_redeem_aterra() {
     instantiate_basset_farmer(
         &mut deps,
         msg.clone(),
+        &psi_token,
         &nasset_token_config_holder_contract,
         &nasset_contract_addr,
         &nasset_token_rewards_contract,

@@ -53,6 +53,7 @@ fn deposit_basset() {
     instantiate_basset_farmer(
         &mut deps,
         msg.clone(),
+        &psi_token,
         &nasset_token_config_holder_contract,
         &nasset_contract_addr,
         &nasset_token_rewards_contract,

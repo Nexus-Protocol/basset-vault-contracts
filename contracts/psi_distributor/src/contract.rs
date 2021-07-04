@@ -1,6 +1,6 @@
 use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult,
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
 
 use crate::{
@@ -11,7 +11,7 @@ use crate::{
     ContractResult,
 };
 use yield_optimizer::psi_distributor::{
-    AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, MigrateMsg, QueryMsg,
+    AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg,
 };
 
 const NASSET_TOKEN_HOLDERS_REWARDS_SHARE: u64 = 70;
@@ -24,8 +24,10 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> ContractResult<Response> {
-    let nasset_token_rewards_addr = deps.api.addr_validate(&msg.nasset_token_rewards_contract)?;
-    let governance_addr = deps.api.addr_validate(&msg.governance_contract)?;
+    let nasset_token_rewards_addr = deps
+        .api
+        .addr_validate(&msg.nasset_token_rewards_contract_addr)?;
+    let governance_contract = deps.api.addr_validate(&msg.governance_contract_addr)?;
 
     let rewards_distribution = vec![
         RewardShare {
@@ -33,14 +35,14 @@ pub fn instantiate(
             share: Decimal256::percent(NASSET_TOKEN_HOLDERS_REWARDS_SHARE),
         },
         RewardShare {
-            recipient: governance_addr.clone(),
+            recipient: governance_contract.clone(),
             share: Decimal256::percent(GOVERNANCE_STAKER_REWARDS_SHARE),
         },
     ];
 
     let config = Config {
-        nasset_token_addr: deps.api.addr_validate(&msg.nasset_token_contract)?,
-        governance_addr,
+        psi_token: deps.api.addr_validate(&msg.psi_token_addr)?,
+        governance_contract,
         rewards_distribution: RewardsDistribution::new(rewards_distribution)?,
     };
     store_config(deps.storage, &config)?;
@@ -62,15 +64,20 @@ pub fn execute(
 
         ExecuteMsg::GovernanceMsg { governance_msg } => {
             let config = load_config(deps.storage)?;
-            if info.sender != config.governance_addr {
+            if info.sender != config.governance_contract {
                 return Err(ContractError::Unauthorized {});
             }
 
             match governance_msg {
                 GovernanceMsg::UpdateConfig {
-                    nasset_token_addr,
-                    governance_addr,
-                } => commands::update_config(deps, config, nasset_token_addr, governance_addr),
+                    psi_token_contract_addr,
+                    governance_contract_addr,
+                } => commands::update_config(
+                    deps,
+                    config,
+                    psi_token_contract_addr,
+                    governance_contract_addr,
+                ),
 
                 GovernanceMsg::UpdateRewardsDistribution { distribution } => {
                     commands::update_distribution(deps, config, distribution)
@@ -85,14 +92,4 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config => to_binary(&queries::query_config(deps)?),
     }
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(_deps: DepsMut, _env: Env, _msg: Reply) -> ContractResult<Response> {
-    Ok(Response::default())
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> ContractResult<Response> {
-    Ok(Response::default())
 }
