@@ -83,15 +83,15 @@ pub fn execute(
 
             match governance_msg {
                 GovernanceMsg::UpdateConfig {
-                    psi_token,
-                    nasset_token,
-                    governance_contract,
+                    psi_token_contract_addr,
+                    nasset_token_contract_addr,
+                    governance_contract_addr,
                 } => commands::update_config(
                     deps,
                     config,
-                    psi_token,
-                    nasset_token,
-                    governance_contract,
+                    psi_token_contract_addr,
+                    nasset_token_contract_addr,
+                    governance_contract_addr,
                 ),
             }
         }

@@ -2,9 +2,6 @@ use cosmwasm_std::{Decimal, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_bignumber::{Decimal256, Uint256};
-use cw20::Cw20ReceiveMsg;
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub psi_token_addr: String,
@@ -33,9 +30,9 @@ pub enum AnyoneMsg {
 #[serde(rename_all = "snake_case")]
 pub enum GovernanceMsg {
     UpdateConfig {
-        psi_token: Option<String>,
-        nasset_token: Option<String>,
-        governance_contract: Option<String>,
+        psi_token_contract_addr: Option<String>,
+        nasset_token_contract_addr: Option<String>,
+        governance_contract_addr: Option<String>,
     },
 }
 
