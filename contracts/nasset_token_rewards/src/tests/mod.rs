@@ -2,6 +2,7 @@ mod change_config;
 mod claim_rewards;
 mod instantiate;
 mod sdk;
+mod update_index;
 
 use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};

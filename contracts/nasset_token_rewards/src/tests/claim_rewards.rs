@@ -143,6 +143,7 @@ fn second_user_comes_after_rewards_already_there() {
 
     //===============================================================================
     //second user deposit nasset
+    //existed rewards belong to first user
 
     let deposit_2_amount: Uint128 = 300u128.into();
     {
@@ -181,6 +182,8 @@ fn second_user_comes_after_rewards_already_there() {
         );
         assert!(response.submessages.is_empty());
 
+        //22.5 comes from: (first_user_reward / first_balance) + new_rewards / total_balance
+        //so, 1000 / 100 + 5000 / 400
         let holder = load_holder(&sdk.deps.storage, &user_1_address).unwrap();
         assert_eq!(deposit_1_amount, holder.balance);
         assert_eq!(Decimal::from_str("22.5").unwrap(), holder.index);
@@ -506,78 +509,5 @@ fn decrease_balance_should_update_index() {
     assert_eq!(Decimal::from_str("10").unwrap(), state.global_index);
     assert_eq!(Uint128(50), state.total_balance);
     assert_eq!(rewards, state.prev_reward_balance);
-    //===============================================================================
-}
-
-#[test]
-fn update_index_error_on_zero_nasset_amount() {
-    let mut sdk = Sdk::init();
-
-    //rewards balance is zero
-    sdk.set_psi_balance(Uint128::zero());
-
-    //===============================================================================
-    let response = sdk.update_index();
-    assert!(response.is_err());
-    let error = response.err().unwrap();
-    if let ContractError::Std(StdError::GenericErr { msg }) = error {
-        assert_eq!("nAsset balance is zero", msg);
-    } else {
-        panic!("wrong error");
-    }
-    //===============================================================================
-}
-
-#[test]
-fn update_index_error_on_zero_rewards() {
-    let mut sdk = Sdk::init();
-
-    //rewards balance is zero
-    sdk.set_psi_balance(Uint128::zero());
-
-    //deposit some nAsset
-    sdk.increase_user_balance(&Addr::unchecked("addr1000"), Uint128(200));
-
-    //===============================================================================
-    let response = sdk.update_index();
-    assert!(response.is_err());
-    let error = response.err().unwrap();
-    if let ContractError::Std(StdError::GenericErr { msg }) = error {
-        assert_eq!("No rewards have accrued yet", msg);
-    } else {
-        panic!("wrong error");
-    }
-    //===============================================================================
-}
-
-#[test]
-fn update_index_successfully_update() {
-    let mut sdk = Sdk::init();
-
-    //deposit some nAsset
-    sdk.increase_user_balance(&Addr::unchecked("addr1000"), Uint128(200));
-
-    //rewards balance is not zero
-    sdk.set_psi_balance(Uint128(200));
-
-    //===============================================================================
-    let response = sdk.update_index();
-    assert!(response.is_ok());
-    //===============================================================================
-}
-
-#[test]
-fn update_index_error_cause_increase_balance_already_update_it() {
-    let mut sdk = Sdk::init();
-
-    //rewards balance is not zero
-    sdk.set_psi_balance(Uint128(200));
-
-    //deposit some nAsset
-    sdk.increase_user_balance(&Addr::unchecked("addr1000"), Uint128(200));
-
-    //===============================================================================
-    let response = sdk.update_index();
-    assert!(response.is_err());
     //===============================================================================
 }
