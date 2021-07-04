@@ -92,18 +92,17 @@ impl Sdk {
         assert!(res.is_ok());
     }
 
-    pub fn update_index(&mut self) {
+    pub fn update_index(&mut self) -> ContractResult<Response> {
         let update_index_msg = yield_optimizer::nasset_token_rewards::AnyoneMsg::UpdateGlobalIndex;
         let info = mock_info(&"addr9999".to_string(), &vec![]);
-        let res = crate::contract::execute(
+        crate::contract::execute(
             self.deps.as_mut(),
             mock_env(),
             info,
             ExecuteMsg::Anyone {
                 anyone_msg: update_index_msg,
             },
-        );
-        assert!(res.is_ok());
+        )
     }
 
     pub fn claim_rewards(&mut self, sender: &Addr) -> ContractResult<Response<Empty>> {

@@ -51,10 +51,12 @@ pub fn execute(
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
             AnyoneMsg::UpdateGlobalIndex => commands::update_global_index(deps, env),
 
-            AnyoneMsg::ClaimRewards { recipient } => commands::claim_rewards(deps, info, recipient),
+            AnyoneMsg::ClaimRewards { recipient } => {
+                commands::claim_rewards(deps, env, info, recipient)
+            }
 
             AnyoneMsg::ClaimRewardsForSomeone { address } => {
-                commands::claim_rewards_for_someone(deps, address)
+                commands::claim_rewards_for_someone(deps, env, address)
             }
         },
 
@@ -66,11 +68,11 @@ pub fn execute(
 
             match token_msg {
                 TokenMsg::IncreaseBalance { address, amount } => {
-                    commands::increase_balance(deps, address, amount)
+                    commands::increase_balance(deps, env, &config, address, amount)
                 }
 
                 TokenMsg::DecreaseBalance { address, amount } => {
-                    commands::decrease_balance(deps, address, amount)
+                    commands::decrease_balance(deps, env, &config, address, amount)
                 }
             }
         }

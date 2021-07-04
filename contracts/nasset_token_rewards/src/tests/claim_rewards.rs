@@ -1,20 +1,13 @@
 use super::sdk::Sdk;
-use crate::tests::mock_dependencies;
 use crate::tests::sdk::PSI_TOKEN_ADDR;
 use crate::{
     error::ContractError,
-    state::{load_holder, load_state, Holder, State},
-};
-use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{
-    testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR},
-    Addr, CosmosMsg, Decimal, StdError, WasmMsg,
+    state::{load_holder, load_state},
 };
 use cosmwasm_std::{to_binary, Uint128};
-use cw20::Cw20ReceiveMsg;
+use cosmwasm_std::{Addr, CosmosMsg, Decimal, StdError, WasmMsg};
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use std::str::FromStr;
-use yield_optimizer::nasset_token_rewards::{AnyoneMsg, ExecuteMsg};
 
 #[test]
 fn increase_balance_and_claim_rewards() {
@@ -43,7 +36,6 @@ fn increase_balance_and_claim_rewards() {
     let rewards_after_receive_nasset: Uint128 = 5000u64.into();
     {
         sdk.set_psi_balance(rewards_before_receive_nasset + rewards_after_receive_nasset);
-        sdk.update_index();
     }
 
     //===============================================================================
@@ -99,11 +91,6 @@ fn claim_zero_rewards() {
         assert_eq!(Decimal::zero(), holder_state.index);
         assert_eq!(Decimal::zero(), holder_state.pending_rewards);
     }
-
-    //===============================================================================
-    //update global index (just to test for bugs)
-
-    sdk.update_index();
 
     //===============================================================================
     //first user claim rewards
@@ -162,7 +149,7 @@ fn second_user_comes_after_rewards_already_there() {
         sdk.increase_user_balance(&user_2_address, deposit_2_amount);
         let holder_state = load_holder(&sdk.deps.storage, &user_2_address).unwrap();
         assert_eq!(deposit_2_amount, holder_state.balance);
-        assert_eq!(Decimal::zero(), holder_state.index);
+        assert_eq!(Decimal::from_str("10").unwrap(), holder_state.index);
         assert_eq!(Decimal::zero(), holder_state.pending_rewards);
     }
 
@@ -172,12 +159,11 @@ fn second_user_comes_after_rewards_already_there() {
     let rewards_after_receive_nasset: Uint128 = 5000u64.into();
     {
         sdk.set_psi_balance(rewards_before_receive_nasset + rewards_after_receive_nasset);
-        sdk.update_index();
     }
 
     //===============================================================================
     //first user claim rewards
-
+    let rewards_1_amount = Uint128(2250);
     {
         let response = sdk.claim_rewards(&user_1_address).unwrap();
 
@@ -188,7 +174,7 @@ fn second_user_comes_after_rewards_already_there() {
                 send: vec![],
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_1_address.to_string(),
-                    amount: Uint128(1500), // total_rewards = 6k * share (1/4)
+                    amount: rewards_1_amount, // total_rewards = 1000 + 5k * share (1/4)
                 })
                 .unwrap(),
             })]
@@ -197,14 +183,23 @@ fn second_user_comes_after_rewards_already_there() {
 
         let holder = load_holder(&sdk.deps.storage, &user_1_address).unwrap();
         assert_eq!(deposit_1_amount, holder.balance);
-        assert_eq!(Decimal::from_str("15").unwrap(), holder.index);
+        assert_eq!(Decimal::from_str("22.5").unwrap(), holder.index);
         assert_eq!(Decimal::zero(), holder.pending_rewards);
 
         let state = load_state(&sdk.deps.storage).unwrap();
-        assert_eq!(Decimal::from_str("15").unwrap(), state.global_index);
+        assert_eq!(Decimal::from_str("22.5").unwrap(), state.global_index);
         assert_eq!(deposit_1_amount + deposit_2_amount, state.total_balance);
-        assert_eq!(Uint128(4500), state.prev_reward_balance);
+        assert_eq!(Uint128(3750), state.prev_reward_balance);
     }
+
+    //===============================================================================
+    // subtract rewards sent to user_1
+
+    sdk.set_psi_balance(
+        (rewards_before_receive_nasset + rewards_after_receive_nasset)
+            .checked_sub(rewards_1_amount)
+            .unwrap(),
+    );
 
     //===============================================================================
     //second user claim rewards
@@ -219,7 +214,7 @@ fn second_user_comes_after_rewards_already_there() {
                 send: vec![],
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_2_address.to_string(),
-                    amount: Uint128(4500), // total_rewards = 6k * share (3/4)
+                    amount: Uint128(3750), // total_rewards = 5k * share (3/4)
                 })
                 .unwrap(),
             })]
@@ -228,11 +223,11 @@ fn second_user_comes_after_rewards_already_there() {
 
         let holder = load_holder(&sdk.deps.storage, &user_2_address).unwrap();
         assert_eq!(deposit_2_amount, holder.balance);
-        assert_eq!(Decimal::from_str("15").unwrap(), holder.index);
+        assert_eq!(Decimal::from_str("22.5").unwrap(), holder.index);
         assert_eq!(Decimal::zero(), holder.pending_rewards);
 
         let state = load_state(&sdk.deps.storage).unwrap();
-        assert_eq!(Decimal::from_str("15").unwrap(), state.global_index);
+        assert_eq!(Decimal::from_str("22.5").unwrap(), state.global_index);
         assert_eq!(deposit_1_amount + deposit_2_amount, state.total_balance);
         assert_eq!(Uint128::zero(), state.prev_reward_balance);
     }
@@ -273,9 +268,6 @@ fn two_users_hold_partially_unhold_and_hold_again() {
 
     let new_rewards_amount: Uint128 = 1000u64.into();
     sdk.set_psi_balance(new_rewards_amount);
-    //TODO: why we should update index manually??????????
-    //what if in real word no one update between actions?
-    sdk.update_index();
 
     //===============================================================================
     //first user withdraw
@@ -283,7 +275,7 @@ fn two_users_hold_partially_unhold_and_hold_again() {
     let withdraw_1_amount: Uint128 = 30u128.into();
     sdk.decrease_user_balance(&user_1_address, withdraw_1_amount);
 
-    // 1/4(total stake share) * 1000 (dep1+ dep2)
+    // 1/4(total stake share) * 1000 (psi balance)
     let rewards_1_amount = Uint128::from(250u64);
     let holder_state = load_holder(&sdk.deps.storage, &user_1_address).unwrap();
     assert_eq!(
@@ -438,5 +430,154 @@ fn two_users_hold_partially_unhold_and_hold_again() {
         assert_eq!(Uint128::zero(), state.prev_reward_balance);
     }
 
+    //===============================================================================
+}
+
+#[test]
+fn increase_balance_should_update_index() {
+    let mut sdk = Sdk::init();
+    let user_address = Addr::unchecked("addr1000".to_string());
+
+    //rewards already there
+    let rewards: Uint128 = 1000u64.into();
+    sdk.set_psi_balance(rewards);
+
+    let state = load_state(&sdk.deps.storage).unwrap();
+    assert_eq!(Decimal::zero(), state.global_index);
+    assert_eq!(Uint128::zero(), state.total_balance);
+    assert_eq!(Uint128::zero(), state.prev_reward_balance);
+
+    //===============================================================================
+    //user deposit nasset
+    //this action should update index
+
+    let deposit_amount: Uint128 = 100u128.into();
+    sdk.increase_user_balance(&user_address, deposit_amount);
+    let holder_state = load_holder(&sdk.deps.storage, &user_address).unwrap();
+    assert_eq!(deposit_amount, holder_state.balance);
+    assert_eq!(Decimal::zero(), holder_state.index);
+    assert_eq!(Decimal::zero(), holder_state.pending_rewards);
+
+    let state = load_state(&sdk.deps.storage).unwrap();
+    assert_eq!(Decimal::from_str("10").unwrap(), state.global_index);
+    assert_eq!(deposit_amount, state.total_balance);
+    assert_eq!(rewards, state.prev_reward_balance);
+    //===============================================================================
+}
+
+#[test]
+fn decrease_balance_should_update_index() {
+    let mut sdk = Sdk::init();
+    let user_address = Addr::unchecked("addr1000".to_string());
+
+    //rewards balance is zero
+    sdk.set_psi_balance(Uint128::zero());
+
+    //===============================================================================
+    //user deposit nasset
+
+    let deposit_amount: Uint128 = 100u128.into();
+    sdk.increase_user_balance(&user_address, deposit_amount);
+    let holder_state = load_holder(&sdk.deps.storage, &user_address).unwrap();
+    assert_eq!(deposit_amount, holder_state.balance);
+    assert_eq!(Decimal::zero(), holder_state.index);
+    assert_eq!(Decimal::zero(), holder_state.pending_rewards);
+    //===============================================================================
+
+    //rewards coming
+    let rewards: Uint128 = 1000u64.into();
+    sdk.set_psi_balance(rewards);
+
+    //===============================================================================
+    //user send (decrease his amount) nasset
+    //this action should update index
+
+    let withdraw_amount: Uint128 = 50u128.into();
+    sdk.decrease_user_balance(&user_address, withdraw_amount);
+    let holder_state = load_holder(&sdk.deps.storage, &user_address).unwrap();
+    assert_eq!(Uint128(50), holder_state.balance);
+    assert_eq!(Decimal::from_str("10").unwrap(), holder_state.index);
+    assert_eq!(
+        Decimal::from_str("1000").unwrap(),
+        holder_state.pending_rewards
+    );
+
+    let state = load_state(&sdk.deps.storage).unwrap();
+    assert_eq!(Decimal::from_str("10").unwrap(), state.global_index);
+    assert_eq!(Uint128(50), state.total_balance);
+    assert_eq!(rewards, state.prev_reward_balance);
+    //===============================================================================
+}
+
+#[test]
+fn update_index_error_on_zero_nasset_amount() {
+    let mut sdk = Sdk::init();
+
+    //rewards balance is zero
+    sdk.set_psi_balance(Uint128::zero());
+
+    //===============================================================================
+    let response = sdk.update_index();
+    assert!(response.is_err());
+    let error = response.err().unwrap();
+    if let ContractError::Std(StdError::GenericErr { msg }) = error {
+        assert_eq!("nAsset amount is zero", msg);
+    } else {
+        panic!("wrong error");
+    }
+    //===============================================================================
+}
+
+#[test]
+fn update_index_error_on_zero_rewards() {
+    let mut sdk = Sdk::init();
+
+    //rewards balance is zero
+    sdk.set_psi_balance(Uint128::zero());
+
+    //deposit some nAsset
+    sdk.increase_user_balance(&Addr::unchecked("addr1000"), Uint128(200));
+
+    //===============================================================================
+    let response = sdk.update_index();
+    assert!(response.is_err());
+    let error = response.err().unwrap();
+    if let ContractError::Std(StdError::GenericErr { msg }) = error {
+        assert_eq!("No rewards have accrued yet", msg);
+    } else {
+        panic!("wrong error");
+    }
+    //===============================================================================
+}
+
+#[test]
+fn update_index_successfully_update() {
+    let mut sdk = Sdk::init();
+
+    //deposit some nAsset
+    sdk.increase_user_balance(&Addr::unchecked("addr1000"), Uint128(200));
+
+    //rewards balance is not zero
+    sdk.set_psi_balance(Uint128(200));
+
+    //===============================================================================
+    let response = sdk.update_index();
+    assert!(response.is_ok());
+    //===============================================================================
+}
+
+#[test]
+fn update_index_error_cause_increase_balance_already_update_it() {
+    let mut sdk = Sdk::init();
+
+    //rewards balance is not zero
+    sdk.set_psi_balance(Uint128(200));
+
+    //deposit some nAsset
+    sdk.increase_user_balance(&Addr::unchecked("addr1000"), Uint128(200));
+
+    //===============================================================================
+    let response = sdk.update_index();
+    assert!(response.is_err());
     //===============================================================================
 }
