@@ -1,4 +1,4 @@
-use cosmwasm_std::{from_binary, Addr, Binary, Deps, QueryRequest, StdResult, WasmQuery};
+use cosmwasm_std::{Addr, Binary, Deps, QueryRequest, StdResult, WasmQuery};
 
 use crate::state::load_config_holder_contract;
 use cosmwasm_storage::to_length_prefixed;
