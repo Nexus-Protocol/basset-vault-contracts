@@ -1,15 +1,11 @@
 use super::sdk::Sdk;
-use crate::tests::{
-    mock_dependencies,
-    sdk::{GOVERNANCE_CONTRACT_ADDR, NASSET_TOKEN_REWARDS_CONTRACT_ADDR, PSI_TOKEN_ADDR},
+use crate::{
+    error::ContractError,
+    tests::sdk::{GOVERNANCE_CONTRACT_ADDR, NASSET_TOKEN_REWARDS_CONTRACT_ADDR, PSI_TOKEN_ADDR},
 };
-use cosmwasm_std::{
-    testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR},
-    to_binary, Uint128,
-};
+use cosmwasm_std::{to_binary, StdError, Uint128};
 use cosmwasm_std::{CosmosMsg, WasmMsg};
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
-use yield_optimizer::psi_distributor::{AnyoneMsg, ExecuteMsg};
 
 #[test]
 fn distribute_rewards() {
@@ -57,5 +53,11 @@ fn distribute_rewards_with_zero_balance() {
 
     let response = sdk.distribute_rewards();
     assert!(response.is_err());
+    let error = response.err().unwrap();
+    if let ContractError::Std(StdError::GenericErr { msg }) = error {
+        assert_eq!("psi balance is zero", msg);
+    } else {
+        panic!("wrong error");
+    }
     //===============================================================================
 }
