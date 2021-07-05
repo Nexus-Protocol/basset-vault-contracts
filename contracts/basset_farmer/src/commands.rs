@@ -264,12 +264,13 @@ pub fn rebalance(
 
     match borrower_action {
         BorrowerActionResponse::Nothing {} => {
+            //TODO: return error here.
             return Ok(Response {
                 messages: vec![],
                 submessages: vec![],
                 attributes: vec![attr("action", "rebalance_not_needed")],
                 data: None,
-            })
+            });
         }
 
         BorrowerActionResponse::Borrow {

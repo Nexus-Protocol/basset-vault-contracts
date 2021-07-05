@@ -1,6 +1,7 @@
 mod deposit_basset;
 mod instantiate;
 mod repay_loan;
+mod sdk;
 
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
