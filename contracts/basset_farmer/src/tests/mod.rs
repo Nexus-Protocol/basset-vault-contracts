@@ -70,14 +70,7 @@ pub(crate) fn caps_to_map(caps: &[(&String, &Uint128)]) -> HashMap<String, Uint1
 pub struct TokenQuerier {
     // this lets us iterate over all pairs that match the first string
     balances: HashMap<String, HashMap<String, Uint128>>,
-}
-
-impl TokenQuerier {
-    pub fn new(balances: &[(&String, &[(&String, &Uint128)])]) -> Self {
-        TokenQuerier {
-            balances: array_to_hashmap(balances),
-        }
-    }
+    supplies: HashMap<String, Uint128>,
 }
 
 pub(crate) fn array_to_hashmap<K, V>(
@@ -153,13 +146,16 @@ impl WasmMockQuerier {
                     return borrower_info_res;
                 }
 
-                let balances: &HashMap<String, Uint128> =
-                    match self.token_querier.balances.get(contract_addr) {
-                        Some(balances) => balances,
+                let prefix_token_info = to_length_prefixed(b"token_info").to_vec();
+                let prefix_balance = to_length_prefixed(b"balance").to_vec();
+
+                if key.to_vec() == prefix_token_info {
+                    let token_supply = match self.token_querier.supplies.get(contract_addr) {
+                        Some(supply) => supply,
                         None => {
                             return SystemResult::Err(SystemError::InvalidRequest {
                                 error: format!(
-                                    "No balance info exists for the contract {}",
+                                    "No supply info exists for the contract {}",
                                     contract_addr
                                 ),
                                 request: key.into(),
@@ -167,21 +163,11 @@ impl WasmMockQuerier {
                         }
                     };
 
-                let prefix_token_info = to_length_prefixed(b"token_info").to_vec();
-                let prefix_balance = to_length_prefixed(b"balance").to_vec();
-
-                if key.to_vec() == prefix_token_info {
-                    let mut total_supply = Uint128::zero();
-
-                    for balance in balances {
-                        total_supply += *balance.1;
-                    }
-
                     SystemResult::Ok(ContractResult::from(to_binary(&TokenInfoResponse {
                         name: "some_token_name".to_string(),
                         symbol: "some_token_symbol".to_string(),
                         decimals: 6,
-                        total_supply,
+                        total_supply: *token_supply,
                     })))
                 } else if key[..prefix_balance.len()].to_vec() == prefix_balance {
                     let key_address: &[u8] = &key[prefix_balance.len()..];
@@ -197,6 +183,20 @@ impl WasmMockQuerier {
                             })
                         }
                     };
+
+                    let balances: &HashMap<String, Uint128> =
+                        match self.token_querier.balances.get(contract_addr) {
+                            Some(balances) => balances,
+                            None => {
+                                return SystemResult::Err(SystemError::InvalidRequest {
+                                    error: format!(
+                                        "No balance info exists for the contract {}",
+                                        contract_addr
+                                    ),
+                                    request: key.into(),
+                                })
+                            }
+                        };
 
                     let balance = match balances.get(&address.to_string()) {
                         Some(v) => v,
@@ -326,9 +326,12 @@ impl WasmMockQuerier {
         }
     }
 
-    // configure the mint whitelist mock querier
     pub fn with_token_balances(&mut self, balances: &[(&String, &[(&String, &Uint128)])]) {
-        self.token_querier = TokenQuerier::new(balances);
+        self.token_querier.balances = array_to_hashmap(balances);
+    }
+
+    pub fn with_token_supplies(&mut self, supplies: HashMap<String, Uint128>) {
+        self.token_querier.supplies = supplies;
     }
 
     pub fn with_loan(&mut self, borrowers_info: &[(&String, &[(&String, &BorrowerInfoResponse)])]) {

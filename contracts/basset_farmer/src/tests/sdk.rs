@@ -18,6 +18,8 @@ use cw20::Cw20ReceiveMsg;
 use cw20::MinterResponse;
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use protobuf::Message;
+use std::collections::HashMap;
+use std::iter::FromIterator;
 use std::str::FromStr;
 use yield_optimizer::basset_farmer::Cw20HookMsg;
 use yield_optimizer::basset_farmer_config::BorrowerActionResponse;
@@ -67,7 +69,7 @@ pub struct Sdk {
     basset_collateral_amount: Uint128,
     aterra_balance: Uint128,
     basset_balance: Uint128,
-    nasset_balance: Uint128,
+    nasset_supply: Uint128,
     aterra_exchange_rate: Decimal256,
     borrower_action: BorrowerActionResponse,
 }
@@ -112,7 +114,7 @@ impl Sdk {
             basset_collateral_amount: Uint128::zero(),
             aterra_balance: Uint128::zero(),
             basset_balance: Uint128::zero(),
-            nasset_balance: Uint128::zero(),
+            nasset_supply: Uint128::zero(),
             aterra_exchange_rate: Decimal256::zero(),
             borrower_action: BorrowerActionResponse::Nothing,
         }
@@ -436,9 +438,9 @@ impl Sdk {
         self.set_token_balances();
     }
 
-    pub fn set_nasset_balance(&mut self, value: Uint256) {
-        self.nasset_balance = value.into();
-        self.set_token_balances();
+    pub fn set_nasset_supply(&mut self, value: Uint256) {
+        self.nasset_supply = value.into();
+        self.set_token_supplies();
     }
 
     pub fn set_basset_balance(&mut self, value: Uint256) {
@@ -446,17 +448,23 @@ impl Sdk {
         self.set_token_balances();
     }
 
+    fn set_token_supplies(&mut self) {
+        let supplies = vec![(NASSET_CONTRACT_ADDR.to_string(), self.nasset_supply)];
+        let supplies = HashMap::from_iter(supplies.into_iter());
+        self.deps.querier.with_token_supplies(supplies)
+    }
+
     fn set_token_balances(&mut self) {
         self.deps.querier.with_token_balances(&[
             //TODO: looks like this value does not use by anyone
             //TODO: change it to return 'BorrowerResponse'
-            (
-                &ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
-                &[(
-                    &MOCK_CONTRACT_ADDR.to_string(),
-                    &self.basset_collateral_amount,
-                )],
-            ),
+            // (
+            //     &ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+            //     &[(
+            //         &MOCK_CONTRACT_ADDR.to_string(),
+            //         &self.basset_collateral_amount,
+            //     )],
+            // ),
             (
                 &ATERRA_TOKEN.to_string(),
                 &[(&MOCK_CONTRACT_ADDR.to_string(), &self.aterra_balance)],
@@ -464,11 +472,6 @@ impl Sdk {
             (
                 &BASSET_TOKEN_ADDR.to_string(),
                 &[(&MOCK_CONTRACT_ADDR.to_string(), &self.basset_balance)],
-            ),
-            //TODO: useless?! basset_farmer never own nasset tokens
-            (
-                &NASSET_CONTRACT_ADDR.to_string(),
-                &[(&MOCK_CONTRACT_ADDR.to_string(), &self.nasset_balance)],
             ),
         ]);
     }

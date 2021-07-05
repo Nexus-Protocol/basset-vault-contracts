@@ -280,3 +280,8 @@ fn repay_loan_fail_to_redeem_aterra() {
         assert_eq!(response, Response::default());
     }
 }
+
+// #[test]
+// fn limited_recursion_depth() {
+//     todo!()
+// }

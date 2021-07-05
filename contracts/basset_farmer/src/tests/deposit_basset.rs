@@ -45,7 +45,7 @@ fn deposit_basset() {
     let deposit_1_amount: Uint256 = 2_000_000_000u128.into();
     {
         // -= USER SEND bAsset tokens to basset_farmer =-
-        sdk.set_nasset_balance(Uint256::zero());
+        sdk.set_nasset_supply(Uint256::zero());
         sdk.set_basset_balance(deposit_1_amount);
 
         let response = sdk
@@ -88,7 +88,7 @@ fn deposit_basset() {
     let user_2_address = "addr6666".to_string();
     let deposit_2_amount: Uint256 = 6_000_000_000u128.into();
     {
-        sdk.set_nasset_balance(deposit_1_amount);
+        sdk.set_nasset_supply(deposit_1_amount);
         sdk.set_basset_balance(deposit_2_amount + deposit_1_amount);
         // -= USER SEND bAsset tokens to basset_farmer =-
         let response = sdk
@@ -126,3 +126,8 @@ fn deposit_basset() {
         );
     }
 }
+
+// #[test]
+// fn withdraw_tests() {
+//     todo!()
+// }
