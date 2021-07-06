@@ -3,6 +3,7 @@ use error::ContractError;
 mod commands;
 pub mod contract;
 pub mod error;
+mod price;
 mod queries;
 pub mod state;
 

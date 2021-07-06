@@ -21,6 +21,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
         borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         basset_max_ltv: Decimal256::from_str("0.5").unwrap(),
         buffer_part: Decimal256::from_str("0.018").unwrap(),
+        price_timeframe: 60,
     };
 
     {
@@ -42,6 +43,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
     let new_borrow_ltv_aim = Some(Decimal256::from_str("0.5").unwrap());
     let new_basset_max_ltv = Some(Decimal256::from_str("0.7").unwrap());
     let new_buffer_part = Some(Decimal256::from_str("0.99").unwrap());
+    let new_price_timeframe = Some(100);
 
     let change_config_msg = ExecuteMsg::GovernanceMsg {
         governance_msg: GovernanceMsg::UpdateConfig {
@@ -54,6 +56,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
             borrow_ltv_aim: new_borrow_ltv_aim,
             basset_max_ltv: new_basset_max_ltv,
             buffer_part: new_buffer_part,
+            price_timeframe: new_price_timeframe,
         },
     };
 
@@ -79,6 +82,7 @@ fn success_to_change_config_if_sender_governance() {
         borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         basset_max_ltv: Decimal256::from_str("0.5").unwrap(),
         buffer_part: Decimal256::from_str("0.018").unwrap(),
+        price_timeframe: 60,
     };
 
     {
@@ -100,6 +104,7 @@ fn success_to_change_config_if_sender_governance() {
     let new_borrow_ltv_aim = Decimal256::from_str("0.5").unwrap();
     let new_basset_max_ltv = Decimal256::from_str("0.7").unwrap();
     let new_buffer_part = Decimal256::from_str("0.99").unwrap();
+    let new_price_timeframe = 100;
 
     let change_config_msg = ExecuteMsg::GovernanceMsg {
         governance_msg: GovernanceMsg::UpdateConfig {
@@ -112,6 +117,7 @@ fn success_to_change_config_if_sender_governance() {
             borrow_ltv_aim: Some(new_borrow_ltv_aim.clone()),
             basset_max_ltv: Some(new_basset_max_ltv.clone()),
             buffer_part: Some(new_buffer_part.clone()),
+            price_timeframe: Some(new_price_timeframe),
         },
     };
 
@@ -129,4 +135,5 @@ fn success_to_change_config_if_sender_governance() {
     assert_eq!(new_borrow_ltv_aim, config.get_borrow_ltv_aim());
     assert_eq!(new_basset_max_ltv, config.get_basset_max_ltv());
     assert_eq!(new_buffer_part, config.get_buffer_part());
+    assert_eq!(new_price_timeframe, config.price_timeframe);
 }

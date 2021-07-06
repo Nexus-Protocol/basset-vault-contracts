@@ -30,6 +30,7 @@ pub fn instantiate(
         msg.borrow_ltv_aim,
         msg.basset_max_ltv,
         msg.buffer_part,
+        msg.price_timeframe,
     )?;
 
     save_config(deps.storage, &config)?;
@@ -62,6 +63,7 @@ pub fn execute(
                     borrow_ltv_aim,
                     basset_max_ltv,
                     buffer_part,
+                    price_timeframe,
                 } => commands::update_config(
                     deps,
                     config,
@@ -74,6 +76,7 @@ pub fn execute(
                     borrow_ltv_aim,
                     basset_max_ltv,
                     buffer_part,
+                    price_timeframe,
                 ),
             }
         }
@@ -81,7 +84,7 @@ pub fn execute(
 }
 
 #[entry_point]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config => to_binary(&queries::query_config(deps)?),
         QueryMsg::BorrowerAction {
@@ -89,6 +92,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             locked_basset_amount,
         } => to_binary(&queries::borrower_action(
             deps,
+            env,
             borrowed_amount,
             locked_basset_amount,
         )?),

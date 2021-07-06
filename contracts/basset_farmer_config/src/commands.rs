@@ -19,6 +19,7 @@ pub fn update_config(
     borrow_ltv_aim: Option<Decimal256>,
     basset_max_ltv: Option<Decimal256>,
     buffer_part: Option<Decimal256>,
+    price_timeframe: Option<u64>,
 ) -> ContractResult<Response> {
     if let Some(ref governance_addr) = governance_addr {
         current_config.governance_contract = deps.api.addr_validate(governance_addr)?;
@@ -48,6 +49,10 @@ pub fn update_config(
 
     if let Some(buffer_part) = buffer_part {
         current_config.set_buffer_part(buffer_part)?;
+    }
+
+    if let Some(price_timeframe) = price_timeframe {
+        current_config.price_timeframe = price_timeframe;
     }
 
     save_config(deps.storage, &current_config)?;

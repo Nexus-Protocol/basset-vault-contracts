@@ -15,6 +15,7 @@ pub struct InstantiateMsg {
     pub borrow_ltv_aim: Decimal256,
     pub basset_max_ltv: Decimal256,
     pub buffer_part: Decimal256,
+    pub price_timeframe: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -36,6 +37,7 @@ pub enum GovernanceMsg {
         borrow_ltv_aim: Option<Decimal256>,
         basset_max_ltv: Option<Decimal256>,
         buffer_part: Option<Decimal256>,
+        price_timeframe: Option<u64>,
     },
 }
 
@@ -64,6 +66,7 @@ pub struct ConfigResponse {
     pub borrow_ltv_aim: Decimal256,
     pub basset_max_ltv: Decimal256,
     pub buffer_part: Decimal256,
+    pub price_timeframe: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
