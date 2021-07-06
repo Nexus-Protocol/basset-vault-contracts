@@ -14,7 +14,4 @@ pub enum ContractError {
 
     #[error("Inappropriate value")]
     InappropriateValue,
-
-    #[error("Price is too old")]
-    PriceIsTooOld,
 }
