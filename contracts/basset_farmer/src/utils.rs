@@ -29,7 +29,6 @@ pub enum RepayLoanAction {
     Nothing,
 }
 
-//TODO: add tests for 'to_response' method
 impl RepayLoanAction {
     pub fn repaying_loan_amount(&self) -> Uint256 {
         match self {

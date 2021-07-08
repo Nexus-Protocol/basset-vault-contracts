@@ -1,6 +1,9 @@
+mod action_with_profit;
+mod after_borrow_action;
 mod deposit_basset;
 mod instantiate;
 mod repay_loan;
+mod repay_loan_action;
 mod sdk;
 mod withdraw_basset;
 

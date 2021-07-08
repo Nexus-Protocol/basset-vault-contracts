@@ -255,7 +255,6 @@ pub fn withdraw_basset(
         .messages
         .push(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.nasset_token.to_string(),
-            //TODO: change to BurnFrom.
             msg: to_binary(&Cw20ExecuteMsg::Burn {
                 amount: nasset_to_withdraw_amount.into(),
             })?,
@@ -298,8 +297,8 @@ pub fn rebalance(
 
     match borrower_action {
         BorrowerActionResponse::Nothing {} => {
-            //TODO: return error here.
-            //nope, you cant, cause it is used in Withdraw
+            //maybe it is better to return error here, but
+            //we cant, cause it is used in 'withdraw'
             return Ok(Response {
                 messages: vec![],
                 submessages: vec![],
