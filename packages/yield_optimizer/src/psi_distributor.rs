@@ -7,7 +7,9 @@ use cosmwasm_bignumber::Decimal256;
 pub struct InstantiateMsg {
     pub psi_token_addr: String,
     pub nasset_token_rewards_contract_addr: String,
+    pub nasset_token_rewards_share: u64,
     pub governance_contract_addr: String,
+    pub governance_contract_share: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

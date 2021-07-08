@@ -69,6 +69,8 @@ pub fn instantiate(
         nasset_token_rewards_code_id: msg.nasset_token_rewards_code_id,
         psi_distributor_code_id: msg.psi_distributor_code_id,
         collateral_token_symbol: msg.collateral_token_symbol,
+        nasset_token_holders_psi_rewards_share: msg.nasset_token_holders_psi_rewards_share,
+        governance_contract_psi_rewards_share: msg.governance_contract_psi_rewards_share,
     };
     store_child_contracts_info(deps.storage, &child_contracts_info)?;
 
@@ -218,7 +220,11 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
                         msg: to_binary(&PsiDistributorInstantiateMsg {
                             psi_token_addr: config.psi_token.to_string(),
                             nasset_token_rewards_contract_addr: nasset_token_rewards.to_string(),
+                            nasset_token_rewards_share: child_contracts_info
+                                .nasset_token_holders_psi_rewards_share,
                             governance_contract_addr: config.governance_contract.to_string(),
+                            governance_contract_share: child_contracts_info
+                                .governance_contract_psi_rewards_share,
                         })?,
                         send: vec![],
                         label: "".to_string(),

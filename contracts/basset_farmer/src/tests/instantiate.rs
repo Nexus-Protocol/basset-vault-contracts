@@ -4,8 +4,9 @@ use crate::{
         ANCHOR_CUSTODY_BASSET_CONTRACT, ANCHOR_MARKET_CONTRACT, ANCHOR_OVERSEER_CONTRACT,
         ANCHOR_TOKEN, ANC_STABLE_SWAP_CONTRACT, ATERRA_TOKEN, BASSET_FARMER_CONFIG_CONTRACT,
         BASSET_TOKEN_ADDR, CLAIMING_REWARDS_DELAY, COLLATERAL_TOKEN_SYMBOL, GOVERNANCE_CONTRACT,
-        NASSET_CONTRACT_ADDR, NASSET_TOKEN_CODE_ID, NASSET_TOKEN_CONFIG_HOLDER_CODE_ID,
-        NASSET_TOKEN_CONFIG_HOLDER_CONTRACT, NASSET_TOKEN_REWARDS_CODE_ID,
+        GOVERNANCE_STAKER_REWARDS_SHARE, NASSET_TOKEN_ADDR, NASSET_TOKEN_CODE_ID,
+        NASSET_TOKEN_CONFIG_HOLDER_CODE_ID, NASSET_TOKEN_CONFIG_HOLDER_CONTRACT,
+        NASSET_TOKEN_HOLDERS_REWARDS_SHARE, NASSET_TOKEN_REWARDS_CODE_ID,
         NASSET_TOKEN_REWARDS_CONTRACT, OVER_LOAN_BALANCE_VALUE, PSI_DISTRIBUTOR_CODE_ID,
         PSI_DISTRIBUTOR_CONTRACT, PSI_STABLE_SWAP_CONTRACT, PSI_TOKEN, STABLE_DENOM,
     },
@@ -25,7 +26,7 @@ fn proper_initialization() {
     assert_eq!(
         config,
         Config {
-            nasset_token: Addr::unchecked(NASSET_CONTRACT_ADDR),
+            nasset_token: Addr::unchecked(NASSET_TOKEN_ADDR),
             basset_token: Addr::unchecked(BASSET_TOKEN_ADDR),
             anchor_custody_basset_contract: Addr::unchecked(ANCHOR_CUSTODY_BASSET_CONTRACT),
             governance_contract: Addr::unchecked(GOVERNANCE_CONTRACT),
@@ -52,6 +53,8 @@ fn proper_initialization() {
             nasset_token_rewards_code_id: NASSET_TOKEN_REWARDS_CODE_ID,
             psi_distributor_code_id: PSI_DISTRIBUTOR_CODE_ID,
             collateral_token_symbol: COLLATERAL_TOKEN_SYMBOL.to_string(),
+            nasset_token_holders_psi_rewards_share: NASSET_TOKEN_HOLDERS_REWARDS_SHARE,
+            governance_contract_psi_rewards_share: GOVERNANCE_STAKER_REWARDS_SHARE,
         }
     );
 }

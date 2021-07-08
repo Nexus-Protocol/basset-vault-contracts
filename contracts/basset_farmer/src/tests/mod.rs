@@ -2,6 +2,7 @@ mod deposit_basset;
 mod instantiate;
 mod repay_loan;
 mod sdk;
+mod withdraw_basset;
 
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
@@ -352,5 +353,9 @@ impl WasmMockQuerier {
 
     pub fn update_base_balance(&mut self, addr: &str, balance: Vec<Coin>) -> Option<Vec<Coin>> {
         self.base.update_balance(addr, balance)
+    }
+
+    pub fn with_locked_basset(&mut self, borrowers: &[(&String, &[(&String, &BorrowerResponse)])]) {
+        self.borrowers = array_to_hashmap(borrowers);
     }
 }

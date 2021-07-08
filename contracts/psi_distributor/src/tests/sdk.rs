@@ -1,3 +1,4 @@
+use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::testing::{mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{OwnedDeps, Response, Uint128};
 use yield_optimizer::psi_distributor::{AnyoneMsg, ExecuteMsg};
@@ -9,8 +10,8 @@ use super::{mock_dependencies, WasmMockQuerier};
 pub const PSI_TOKEN_ADDR: &str = "addr0001";
 pub const NASSET_TOKEN_REWARDS_CONTRACT_ADDR: &str = "addr0002";
 pub const GOVERNANCE_CONTRACT_ADDR: &str = "addr0003";
-
-pub type SdkDeps = OwnedDeps<MockStorage, MockApi, WasmMockQuerier>;
+pub const NASSET_TOKEN_HOLDERS_REWARDS_SHARE: u64 = 70;
+pub const GOVERNANCE_STAKER_REWARDS_SHARE: u64 = 30;
 
 pub struct Sdk {
     pub deps: OwnedDeps<MockStorage, MockApi, WasmMockQuerier>,
@@ -21,7 +22,9 @@ impl Sdk {
         let msg = yield_optimizer::psi_distributor::InstantiateMsg {
             psi_token_addr: PSI_TOKEN_ADDR.to_string(),
             nasset_token_rewards_contract_addr: NASSET_TOKEN_REWARDS_CONTRACT_ADDR.to_string(),
+            nasset_token_rewards_share: NASSET_TOKEN_HOLDERS_REWARDS_SHARE,
             governance_contract_addr: GOVERNANCE_CONTRACT_ADDR.to_string(),
+            governance_contract_share: GOVERNANCE_STAKER_REWARDS_SHARE,
         };
 
         let mut deps = mock_dependencies(&[]);

@@ -14,9 +14,6 @@ use yield_optimizer::psi_distributor::{
     AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg,
 };
 
-const NASSET_TOKEN_HOLDERS_REWARDS_SHARE: u64 = 70;
-const GOVERNANCE_STAKER_REWARDS_SHARE: u64 = 30;
-
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
@@ -32,11 +29,11 @@ pub fn instantiate(
     let rewards_distribution = vec![
         RewardShare {
             recipient: nasset_token_rewards_addr,
-            share: Decimal256::percent(NASSET_TOKEN_HOLDERS_REWARDS_SHARE),
+            share: Decimal256::percent(msg.nasset_token_rewards_share),
         },
         RewardShare {
             recipient: governance_contract.clone(),
-            share: Decimal256::percent(GOVERNANCE_STAKER_REWARDS_SHARE),
+            share: Decimal256::percent(msg.governance_contract_share),
         },
     ];
 

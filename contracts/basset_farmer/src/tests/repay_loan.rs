@@ -1,4 +1,5 @@
 use crate::{
+    commands::LOAN_REPAYMENT_MAX_RECURSION_DEEP,
     state::{load_repaying_loan_state, store_config, RepayingLoanState},
     SubmsgIds, TOO_HIGH_BORROW_DEMAND_ERR_MSG,
 };
@@ -10,7 +11,7 @@ use crate::{
         ANCHOR_CUSTODY_BASSET_CONTRACT, ANCHOR_MARKET_CONTRACT, ANCHOR_OVERSEER_CONTRACT,
         ANCHOR_TOKEN, ANC_STABLE_SWAP_CONTRACT, ATERRA_TOKEN, BASSET_FARMER_CONFIG_CONTRACT,
         BASSET_TOKEN_ADDR, CLAIMING_REWARDS_DELAY, COLLATERAL_TOKEN_SYMBOL, GOVERNANCE_CONTRACT,
-        NASSET_CONTRACT_ADDR, NASSET_TOKEN_CODE_ID, NASSET_TOKEN_CONFIG_HOLDER_CODE_ID,
+        NASSET_TOKEN_ADDR, NASSET_TOKEN_CODE_ID, NASSET_TOKEN_CONFIG_HOLDER_CODE_ID,
         NASSET_TOKEN_CONFIG_HOLDER_CONTRACT, NASSET_TOKEN_REWARDS_CODE_ID,
         NASSET_TOKEN_REWARDS_CONTRACT, OVER_LOAN_BALANCE_VALUE, PSI_DISTRIBUTOR_CODE_ID,
         PSI_DISTRIBUTOR_CONTRACT, PSI_STABLE_SWAP_CONTRACT, PSI_TOKEN, STABLE_DENOM,
@@ -38,15 +39,13 @@ fn repay_loan_without_problems() {
 
     let stable_coin_balance = Uint128::from(200u64);
     let loan_to_repay = Uint256::from(10_000u64);
-    let locked_basset_amount = Uint128::from(10_000u64);
-    let basset_farmer_loan_amount = Uint256::from(10_000u64);
+    // let basset_farmer_loan_amount = Uint256::from(10_000u64);
     let advised_buffer_size = Uint256::from(50u64);
     let aterra_balance = Uint256::from(200u64);
     let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
 
-    sdk.set_collateral_balance(locked_basset_amount);
     sdk.set_aterra_balance(aterra_balance);
-    sdk.set_loan(basset_farmer_loan_amount);
+    // sdk.set_loan(basset_farmer_loan_amount);
     sdk.set_borrower_action(BorrowerActionResponse::Repay {
         amount: loan_to_repay,
         advised_buffer_size,
@@ -281,7 +280,144 @@ fn repay_loan_fail_to_redeem_aterra() {
     }
 }
 
-// #[test]
-// fn limited_recursion_depth() {
-//     todo!()
-// }
+#[test]
+fn limited_recursion_depth_all_errors() {
+    let mut sdk = Sdk::init();
+
+    let stable_coin_initial_balance = Uint128(5_000);
+    sdk.set_stable_balance(stable_coin_initial_balance);
+    sdk.set_aterra_exchange_rate(Decimal256::from_str("1.25").unwrap());
+    let aterra_balance = Uint256::from(7_000u64);
+    sdk.set_aterra_balance(aterra_balance);
+
+    //no tax
+    sdk.set_tax(0, 99999999999u128);
+
+    let to_repay_amount = Uint256::from(10_000u64);
+    let aim_buffer_size = Uint256::from(5_000u64);
+    sdk.set_borrower_action(BorrowerActionResponse::Repay {
+        amount: to_repay_amount,
+        advised_buffer_size: aim_buffer_size,
+    });
+
+    // -= REPAY =-
+    sdk.rebalance().unwrap();
+
+    // -= ANCHOR REDEEM FAILED =-
+    let start_from = 1;
+    for _ in start_from..LOAN_REPAYMENT_MAX_RECURSION_DEEP {
+        let response = sdk.aterra_redeed_failed().unwrap();
+        //now contract should repay loan with buffer and try to redeem aterra for that amount
+        assert_eq!(
+            response.submessages,
+            vec![
+                SubMsg {
+                    msg: WasmMsg::Execute {
+                        contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
+                        msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
+                        send: vec![Coin {
+                            denom: STABLE_DENOM.to_string(),
+                            amount: stable_coin_initial_balance,
+                        }],
+                    }
+                    .into(),
+                    gas_limit: None,
+                    id: SubmsgIds::RepayLoan.id(),
+                    reply_on: ReplyOn::Success,
+                },
+                SubMsg {
+                    msg: WasmMsg::Execute {
+                        contract_addr: ATERRA_TOKEN.to_string(),
+                        msg: to_binary(&Cw20ExecuteMsg::Send {
+                            contract: ANCHOR_MARKET_CONTRACT.to_string(),
+                            //sell aterra for same value as repaying long (4000*1.25 = 5k)
+                            amount: Uint128::from(4_000u64),
+                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                        })
+                        .unwrap(),
+                        send: vec![],
+                    }
+                    .into(),
+                    gas_limit: None,
+                    id: SubmsgIds::RedeemStableOnRepayLoan.id(),
+                    reply_on: ReplyOn::Success,
+                }
+            ]
+        );
+    }
+
+    let response = sdk.aterra_redeed_failed();
+    assert!(response.is_err());
+}
+
+#[test]
+fn limited_recursion_depth_repayed_something() {
+    let mut sdk = Sdk::init();
+
+    let stable_coin_initial_balance = Uint128(5_000);
+    sdk.set_stable_balance(stable_coin_initial_balance);
+    sdk.set_aterra_exchange_rate(Decimal256::from_str("1.25").unwrap());
+    let aterra_balance = Uint256::from(7_000u64);
+    sdk.set_aterra_balance(aterra_balance);
+
+    //no tax
+    sdk.set_tax(0, 99999999999u128);
+
+    let to_repay_amount = Uint256::from(10_000u64);
+    let aim_buffer_size = Uint256::from(5_000u64);
+    sdk.set_borrower_action(BorrowerActionResponse::Repay {
+        amount: to_repay_amount,
+        advised_buffer_size: aim_buffer_size,
+    });
+
+    // -= REPAY =-
+    sdk.rebalance().unwrap();
+
+    // -= ANCHOR REDEEM FAILED =-
+    let start_from = 2;
+    for _ in start_from..LOAN_REPAYMENT_MAX_RECURSION_DEEP {
+        let response = sdk.aterra_redeed_failed().unwrap();
+        //now contract should repay loan with buffer and try to redeem aterra for that amount
+        assert_eq!(
+            response.submessages,
+            vec![
+                SubMsg {
+                    msg: WasmMsg::Execute {
+                        contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
+                        msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
+                        send: vec![Coin {
+                            denom: STABLE_DENOM.to_string(),
+                            amount: stable_coin_initial_balance,
+                        }],
+                    }
+                    .into(),
+                    gas_limit: None,
+                    id: SubmsgIds::RepayLoan.id(),
+                    reply_on: ReplyOn::Success,
+                },
+                SubMsg {
+                    msg: WasmMsg::Execute {
+                        contract_addr: ATERRA_TOKEN.to_string(),
+                        msg: to_binary(&Cw20ExecuteMsg::Send {
+                            contract: ANCHOR_MARKET_CONTRACT.to_string(),
+                            //sell aterra for same value as repaying long (4000*1.25 = 5k)
+                            amount: Uint128::from(4_000u64),
+                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                        })
+                        .unwrap(),
+                        send: vec![],
+                    }
+                    .into(),
+                    gas_limit: None,
+                    id: SubmsgIds::RedeemStableOnRepayLoan.id(),
+                    reply_on: ReplyOn::Success,
+                }
+            ]
+        );
+    }
+    //one repaying is OK!
+    sdk.continue_repay_loan().unwrap();
+
+    let response = sdk.aterra_redeed_failed();
+    assert!(response.is_ok());
+}

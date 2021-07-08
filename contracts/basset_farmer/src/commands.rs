@@ -170,6 +170,8 @@ pub fn withdraw_basset(
     farmer: Addr,
     nasset_to_withdraw_amount: Uint256,
 ) -> ContractResult<Response> {
+    //nasset_to_withdraw_amount is not zero here, cw20 contract check it
+
     //basset_in_contract_address is always zero (except Deposit stage)
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
@@ -178,6 +180,37 @@ pub fn withdraw_basset(
     )?;
 
     let nasset_token_supply = query_supply(&deps.querier, &config.nasset_token)?;
+
+    if basset_in_custody.is_zero() {
+        //interesting case - user owns some nAsset, but bAsset balance is zero
+        //what we can do here:
+        //1. Burn his nAsset, cause they do not have value in that context
+        //2. return error. In that case if someone will deposit bAsset those nAsset owners will
+        //   own share of his tokens.
+        //3. Burn all nAsset supply (not possible with cw20 messages)
+        //
+        //Last choice is best one in my opinion.
+        //But we cant chose it, so go for first.
+        return Ok(Response {
+            submessages: vec![],
+            messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: config.nasset_token.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Burn {
+                    amount: nasset_to_withdraw_amount.into(),
+                })?,
+                send: vec![],
+            })],
+            attributes: vec![
+                attr("action", "withdraw"),
+                attr(
+                    "bad_scenario",
+                    "basset balance is zero, we burn your tokens",
+                ),
+                attr("amount", nasset_to_withdraw_amount),
+            ],
+            data: None,
+        });
+    }
 
     let share_to_withdraw: Decimal256 = Decimal256::from_ratio(
         nasset_to_withdraw_amount.0,
@@ -222,6 +255,7 @@ pub fn withdraw_basset(
         .messages
         .push(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.nasset_token.to_string(),
+            //TODO: change to BurnFrom.
             msg: to_binary(&Cw20ExecuteMsg::Burn {
                 amount: nasset_to_withdraw_amount.into(),
             })?,
@@ -265,6 +299,7 @@ pub fn rebalance(
     match borrower_action {
         BorrowerActionResponse::Nothing {} => {
             //TODO: return error here.
+            //nope, you cant, cause it is used in Withdraw
             return Ok(Response {
                 messages: vec![],
                 submessages: vec![],
@@ -374,13 +409,17 @@ pub(crate) fn repay_logic(
     repay_action.to_response(&config)
 }
 
-const LOAN_REPAYMENT_MAX_RECURSION_DEEP: u8 = 6;
+pub(crate) const LOAN_REPAYMENT_MAX_RECURSION_DEEP: u8 = 6;
 
 pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> ContractResult<Response> {
     let mut repaying_loan_state = load_repaying_loan_state(deps.storage)?;
     repaying_loan_state.iteration_index += 1;
     if repaying_loan_state.iteration_index >= LOAN_REPAYMENT_MAX_RECURSION_DEEP {
-        return Ok(Response::default());
+        if repaying_loan_state.repayed_something {
+            return Ok(Response::default());
+        } else {
+            return Err(StdError::generic_err("fail to repay loan").into());
+        }
     }
     let config = load_config(deps.storage)?;
     repay_logic(deps, env, &config, repaying_loan_state)

@@ -31,6 +31,7 @@ pub struct Config {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
 pub struct RepayingLoanState {
     pub iteration_index: u8,
+    pub repayed_something: bool,
     pub to_repay_amount: Uint256,
     pub repaying_amount: Uint256,
     pub aim_buffer_size: Uint256,
@@ -42,6 +43,8 @@ pub struct ChildContractsInfo {
     pub nasset_token_rewards_code_id: u64,
     pub psi_distributor_code_id: u64,
     pub collateral_token_symbol: String,
+    pub nasset_token_holders_psi_rewards_share: u64,
+    pub governance_contract_psi_rewards_share: u64,
 }
 
 const CONFIG: Item<Config> = Item::new("config");
@@ -104,6 +107,7 @@ pub fn update_loan_state_part_of_loan_repaid(
 ) -> StdResult<RepayingLoanState> {
     REPAYING_LOAN.update(storage, |mut rep_loan| -> StdResult<_> {
         rep_loan.to_repay_amount = rep_loan.to_repay_amount - rep_loan.repaying_amount;
+        rep_loan.repayed_something = true;
         Ok(rep_loan)
     })
 }

@@ -26,6 +26,8 @@ pub struct InstantiateMsg {
     pub stable_denom: String,
     pub claiming_rewards_delay: u64,
     pub over_loan_balance_value: String,
+    pub nasset_token_holders_psi_rewards_share: u64,
+    pub governance_contract_psi_rewards_share: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

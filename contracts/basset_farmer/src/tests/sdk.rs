@@ -24,7 +24,9 @@ use std::str::FromStr;
 use yield_optimizer::basset_farmer::Cw20HookMsg;
 use yield_optimizer::basset_farmer_config::BorrowerActionResponse;
 use yield_optimizer::psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg;
-use yield_optimizer::querier::{AnchorMarketEpochStateResponse, BorrowerInfoResponse};
+use yield_optimizer::querier::{
+    AnchorMarketEpochStateResponse, BorrowerInfoResponse, BorrowerResponse,
+};
 use yield_optimizer::{
     basset_farmer::{AnyoneMsg, ExecuteMsg},
     nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
@@ -38,7 +40,7 @@ use yield_optimizer::{
 
 use super::WasmMockQuerier;
 
-pub const NASSET_CONTRACT_ADDR: &str = "addr0001";
+pub const NASSET_TOKEN_ADDR: &str = "addr0001";
 pub const ATERRA_TOKEN: &str = "addr0010";
 pub const STABLE_DENOM: &str = "uust";
 pub const ANCHOR_MARKET_CONTRACT: &str = "addr0007";
@@ -61,6 +63,8 @@ pub const NASSET_TOKEN_CODE_ID: u64 = 10u64;
 pub const NASSET_TOKEN_CONFIG_HOLDER_CODE_ID: u64 = 11u64;
 pub const NASSET_TOKEN_REWARDS_CODE_ID: u64 = 12u64;
 pub const PSI_DISTRIBUTOR_CODE_ID: u64 = 13u64;
+pub const NASSET_TOKEN_HOLDERS_REWARDS_SHARE: u64 = 70;
+pub const GOVERNANCE_STAKER_REWARDS_SHARE: u64 = 30;
 
 pub type SdkDeps = OwnedDeps<MockStorage, MockApi, WasmMockQuerier>;
 
@@ -96,6 +100,8 @@ impl Sdk {
             basset_farmer_config_contract: BASSET_FARMER_CONFIG_CONTRACT.to_string(),
             stable_denom: STABLE_DENOM.to_string(),
             over_loan_balance_value: OVER_LOAN_BALANCE_VALUE.to_string(),
+            nasset_token_holders_psi_rewards_share: NASSET_TOKEN_HOLDERS_REWARDS_SHARE,
+            governance_contract_psi_rewards_share: GOVERNANCE_STAKER_REWARDS_SHARE,
         };
 
         let mut deps = mock_dependencies(&[]);
@@ -104,7 +110,7 @@ impl Sdk {
             msg.clone(),
             &PSI_TOKEN,
             &NASSET_TOKEN_CONFIG_HOLDER_CONTRACT,
-            &NASSET_CONTRACT_ADDR,
+            &NASSET_TOKEN_ADDR,
             &NASSET_TOKEN_REWARDS_CONTRACT,
             &PSI_DISTRIBUTOR_CONTRACT,
         );
@@ -322,7 +328,9 @@ impl Sdk {
                             psi_token_addr: psi_token.to_string(),
                             nasset_token_rewards_contract_addr: nasset_token_rewards_contract
                                 .to_string(),
+                            nasset_token_rewards_share: NASSET_TOKEN_HOLDERS_REWARDS_SHARE,
                             governance_contract_addr: init_msg.governance_contract.clone(),
+                            governance_contract_share: GOVERNANCE_STAKER_REWARDS_SHARE,
                         })
                         .unwrap(),
                         send: vec![],
@@ -428,9 +436,18 @@ impl Sdk {
         ]);
     }
 
-    pub fn set_collateral_balance(&mut self, value: Uint128) {
-        self.basset_collateral_amount = value;
-        self.set_token_balances();
+    pub fn set_collateral_balance(&mut self, balance: Uint256, spendable: Uint256) {
+        self.deps.querier.with_locked_basset(&[(
+            &ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+            &[(
+                &MOCK_CONTRACT_ADDR.to_string(),
+                &BorrowerResponse {
+                    borrower: MOCK_CONTRACT_ADDR.to_string(),
+                    balance,
+                    spendable,
+                },
+            )],
+        )]);
     }
 
     pub fn set_aterra_balance(&mut self, value: Uint256) {
@@ -449,22 +466,13 @@ impl Sdk {
     }
 
     fn set_token_supplies(&mut self) {
-        let supplies = vec![(NASSET_CONTRACT_ADDR.to_string(), self.nasset_supply)];
+        let supplies = vec![(NASSET_TOKEN_ADDR.to_string(), self.nasset_supply)];
         let supplies = HashMap::from_iter(supplies.into_iter());
         self.deps.querier.with_token_supplies(supplies)
     }
 
     fn set_token_balances(&mut self) {
         self.deps.querier.with_token_balances(&[
-            //TODO: looks like this value does not use by anyone
-            //TODO: change it to return 'BorrowerResponse'
-            // (
-            //     &ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
-            //     &[(
-            //         &MOCK_CONTRACT_ADDR.to_string(),
-            //         &self.basset_collateral_amount,
-            //     )],
-            // ),
             (
                 &ATERRA_TOKEN.to_string(),
                 &[(&MOCK_CONTRACT_ADDR.to_string(), &self.aterra_balance)],
@@ -548,6 +556,26 @@ impl Sdk {
         };
 
         let info = mock_info(BASSET_TOKEN_ADDR, &vec![]);
+        crate::contract::execute(
+            self.deps.as_mut(),
+            mock_env(),
+            info,
+            ExecuteMsg::Receive(cw20_deposit_msg),
+        )
+    }
+
+    pub fn user_withdraw(
+        &mut self,
+        address: &str,
+        amount: Uint128,
+    ) -> ContractResult<Response<Empty>> {
+        let cw20_deposit_msg = Cw20ReceiveMsg {
+            sender: address.to_string(),
+            amount,
+            msg: to_binary(&Cw20HookMsg::Withdraw).unwrap(),
+        };
+
+        let info = mock_info(NASSET_TOKEN_ADDR, &vec![]);
         crate::contract::execute(
             self.deps.as_mut(),
             mock_env(),
