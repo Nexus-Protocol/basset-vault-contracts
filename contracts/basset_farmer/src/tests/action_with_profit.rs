@@ -20,15 +20,14 @@ use crate::{
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
     attr,
-    testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR},
     CosmosMsg,
 };
 use cosmwasm_std::{
     to_binary, Addr, Coin, ContractResult, Decimal, Reply, ReplyOn, Response, SubMsg,
     SubcallResponse, Uint128, WasmMsg,
 };
-use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
-use std::str::FromStr;
+
+
 use yield_optimizer::{
     basset_farmer::{AnyoneMsg, ExecuteMsg},
     basset_farmer_config::BorrowerActionResponse,

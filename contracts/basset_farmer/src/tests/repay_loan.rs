@@ -18,7 +18,7 @@ use crate::{
     },
 };
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
+
 use cosmwasm_std::{
     to_binary, Addr, Coin, ContractResult, Decimal, Reply, ReplyOn, Response, SubMsg,
     SubcallResponse, Uint128, WasmMsg,

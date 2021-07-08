@@ -1,19 +1,16 @@
 use crate::tests::mock_dependencies;
 use crate::ContractResult;
-use crate::{
-    error::ContractError,
-    state::{load_holder, load_state, Holder, State},
-};
-use cosmwasm_bignumber::{Decimal256, Uint256};
+
+
 use cosmwasm_std::{
     testing::{mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
     Addr, Api, CosmosMsg, Decimal, OwnedDeps, Querier, StdError, Storage, WasmMsg,
 };
-use cosmwasm_std::{to_binary, Empty, Response, Uint128};
-use cw20::Cw20ReceiveMsg;
-use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
-use std::str::FromStr;
-use yield_optimizer::nasset_token_rewards::{AnyoneMsg, ExecuteMsg};
+use cosmwasm_std::{Empty, Response, Uint128};
+
+
+
+use yield_optimizer::nasset_token_rewards::{ExecuteMsg};
 
 use super::WasmMockQuerier;
 

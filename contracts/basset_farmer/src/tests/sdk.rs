@@ -1,9 +1,8 @@
-use crate::error::ContractError;
+
 use crate::tests::mock_dependencies;
 use crate::TOO_HIGH_BORROW_DEMAND_ERR_MSG;
 use crate::{
     response::MsgInstantiateContractResponse,
-    state::{load_config, Config},
     ContractResult, SubmsgIds,
 };
 use cosmwasm_bignumber::{Decimal256, Uint256};
@@ -16,11 +15,11 @@ use cosmwasm_std::{
 use cosmwasm_std::{to_binary, Coin, Empty, Response, Uint128};
 use cw20::Cw20ReceiveMsg;
 use cw20::MinterResponse;
-use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
+
 use protobuf::Message;
 use std::collections::HashMap;
 use std::iter::FromIterator;
-use std::str::FromStr;
+
 use yield_optimizer::basset_farmer::Cw20HookMsg;
 use yield_optimizer::basset_farmer_config::BorrowerActionResponse;
 use yield_optimizer::psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg;
@@ -28,7 +27,7 @@ use yield_optimizer::querier::{
     AnchorMarketEpochStateResponse, BorrowerInfoResponse, BorrowerResponse,
 };
 use yield_optimizer::{
-    basset_farmer::{AnyoneMsg, ExecuteMsg},
+    basset_farmer::{ExecuteMsg},
     nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
     nasset_token_config_holder::{
         AnyoneMsg as NAssetTokenConfigHolderAnyoneMsg,

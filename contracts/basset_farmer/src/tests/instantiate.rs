@@ -15,7 +15,7 @@ use crate::{
 
 use super::sdk::Sdk;
 use cosmwasm_bignumber::Decimal256;
-use cosmwasm_std::{Addr, Api, CosmosMsg, OwnedDeps, Querier, Storage};
+use cosmwasm_std::{Addr};
 use std::str::FromStr;
 
 #[test]

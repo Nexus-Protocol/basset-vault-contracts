@@ -9,7 +9,7 @@ use cosmwasm_std::Addr;
 
 #[test]
 fn proper_initialization() {
-    let mut sdk = Sdk::init();
+    let sdk = Sdk::init();
 
     let config: Config = load_config(&sdk.deps.storage).unwrap();
     assert_eq!(PSI_TOKEN_ADDR, config.psi_token);
