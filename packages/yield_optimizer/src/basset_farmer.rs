@@ -63,10 +63,6 @@ pub enum Cw20HookMsg {
     Withdraw,
 }
 
-/// We currently take no arguments for migrations
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct MigrateMsg {}
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
@@ -114,6 +110,8 @@ pub struct ChildContractsInfoResponse {
     pub nasset_token_rewards_code_id: u64,
     pub psi_distributor_code_id: u64,
     pub collateral_token_symbol: String,
+    pub nasset_token_holders_psi_rewards_share: u64,
+    pub governance_contract_psi_rewards_share: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

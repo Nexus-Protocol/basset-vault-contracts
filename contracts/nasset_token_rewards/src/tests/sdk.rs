@@ -1,24 +1,19 @@
 use crate::tests::mock_dependencies;
 use crate::ContractResult;
 
-
 use cosmwasm_std::{
     testing::{mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-    Addr, Api, CosmosMsg, Decimal, OwnedDeps, Querier, StdError, Storage, WasmMsg,
+    Addr, OwnedDeps,
 };
 use cosmwasm_std::{Empty, Response, Uint128};
 
-
-
-use yield_optimizer::nasset_token_rewards::{ExecuteMsg};
+use yield_optimizer::nasset_token_rewards::ExecuteMsg;
 
 use super::WasmMockQuerier;
 
 pub const PSI_TOKEN_ADDR: &str = "addr0001";
 pub const NASSET_TOKEN_ADDR: &str = "addr0002";
 pub const GOVERNANCE_CONTRACT_ADDR: &str = "addr0003";
-
-pub type SdkDeps = OwnedDeps<MockStorage, MockApi, WasmMockQuerier>;
 
 pub struct Sdk {
     pub deps: OwnedDeps<MockStorage, MockApi, WasmMockQuerier>,

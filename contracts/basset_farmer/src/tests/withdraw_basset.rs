@@ -1,35 +1,11 @@
-
-
 use super::sdk::Sdk;
-use crate::{
-    state::{load_child_contracts_info, load_config, ChildContractsInfo, Config},
-    tests::sdk::{
-        ANCHOR_CUSTODY_BASSET_CONTRACT, ANCHOR_MARKET_CONTRACT, ANCHOR_OVERSEER_CONTRACT,
-        ANCHOR_TOKEN, ANC_STABLE_SWAP_CONTRACT, ATERRA_TOKEN, BASSET_FARMER_CONFIG_CONTRACT,
-        BASSET_TOKEN_ADDR, CLAIMING_REWARDS_DELAY, COLLATERAL_TOKEN_SYMBOL, GOVERNANCE_CONTRACT,
-        NASSET_TOKEN_ADDR, NASSET_TOKEN_CODE_ID, NASSET_TOKEN_CONFIG_HOLDER_CODE_ID,
-        NASSET_TOKEN_CONFIG_HOLDER_CONTRACT, NASSET_TOKEN_REWARDS_CODE_ID,
-        NASSET_TOKEN_REWARDS_CONTRACT, OVER_LOAN_BALANCE_VALUE, PSI_DISTRIBUTOR_CODE_ID,
-        PSI_DISTRIBUTOR_CONTRACT, PSI_STABLE_SWAP_CONTRACT, PSI_TOKEN, STABLE_DENOM,
-    },
-};
+use crate::tests::sdk::{ANCHOR_OVERSEER_CONTRACT, BASSET_TOKEN_ADDR, NASSET_TOKEN_ADDR};
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{
-    CosmosMsg,
-};
-use cosmwasm_std::{
-    to_binary, WasmMsg,
-};
+use cosmwasm_std::CosmosMsg;
+use cosmwasm_std::{to_binary, WasmMsg};
 use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
 use std::str::FromStr;
-use yield_optimizer::{
-    basset_farmer::{AnyoneMsg, ExecuteMsg},
-    basset_farmer_config::BorrowerActionResponse,
-    querier::{
-        AnchorMarketCw20Msg, AnchorMarketEpochStateResponse, AnchorMarketMsg, AnchorOverseerMsg,
-        BorrowerInfoResponse,
-    },
-};
+use yield_optimizer::{basset_farmer_config::BorrowerActionResponse, querier::AnchorOverseerMsg};
 
 #[test]
 fn withdraw_good_case() {

@@ -130,6 +130,10 @@ pub fn child_contracts_code_id(deps: Deps) -> StdResult<ChildContractsInfoRespon
         nasset_token_rewards_code_id: child_contracts_info.nasset_token_rewards_code_id,
         psi_distributor_code_id: child_contracts_info.psi_distributor_code_id,
         collateral_token_symbol: child_contracts_info.collateral_token_symbol,
+        nasset_token_holders_psi_rewards_share: child_contracts_info
+            .nasset_token_holders_psi_rewards_share,
+        governance_contract_psi_rewards_share: child_contracts_info
+            .governance_contract_psi_rewards_share,
     })
 }
 

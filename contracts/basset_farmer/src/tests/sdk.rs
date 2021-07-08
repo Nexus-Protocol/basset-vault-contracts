@@ -1,16 +1,12 @@
-
 use crate::tests::mock_dependencies;
 use crate::TOO_HIGH_BORROW_DEMAND_ERR_MSG;
-use crate::{
-    response::MsgInstantiateContractResponse,
-    ContractResult, SubmsgIds,
-};
+use crate::{response::MsgInstantiateContractResponse, ContractResult, SubmsgIds};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
     attr,
     testing::{mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-    Addr, Api, CosmosMsg, Decimal, OwnedDeps, Querier, Reply, ReplyOn, StdError, Storage, SubMsg,
-    SubcallResponse, WasmMsg,
+    Api, CosmosMsg, Decimal, OwnedDeps, Querier, Reply, ReplyOn, Storage, SubMsg, SubcallResponse,
+    WasmMsg,
 };
 use cosmwasm_std::{to_binary, Coin, Empty, Response, Uint128};
 use cw20::Cw20ReceiveMsg;
@@ -27,7 +23,7 @@ use yield_optimizer::querier::{
     AnchorMarketEpochStateResponse, BorrowerInfoResponse, BorrowerResponse,
 };
 use yield_optimizer::{
-    basset_farmer::{ExecuteMsg},
+    basset_farmer::ExecuteMsg,
     nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
     nasset_token_config_holder::{
         AnyoneMsg as NAssetTokenConfigHolderAnyoneMsg,
@@ -65,11 +61,8 @@ pub const PSI_DISTRIBUTOR_CODE_ID: u64 = 13u64;
 pub const NASSET_TOKEN_HOLDERS_REWARDS_SHARE: u64 = 70;
 pub const GOVERNANCE_STAKER_REWARDS_SHARE: u64 = 30;
 
-pub type SdkDeps = OwnedDeps<MockStorage, MockApi, WasmMockQuerier>;
-
 pub struct Sdk {
     pub deps: OwnedDeps<MockStorage, MockApi, WasmMockQuerier>,
-    basset_collateral_amount: Uint128,
     aterra_balance: Uint128,
     basset_balance: Uint128,
     nasset_supply: Uint128,
@@ -116,7 +109,6 @@ impl Sdk {
 
         Sdk {
             deps,
-            basset_collateral_amount: Uint128::zero(),
             aterra_balance: Uint128::zero(),
             basset_balance: Uint128::zero(),
             nasset_supply: Uint128::zero(),
@@ -385,6 +377,7 @@ impl Sdk {
         }
     }
 
+    #[allow(dead_code)]
     pub fn set_loan(&mut self, value: Uint256) {
         self.deps.querier.with_loan(&[(
             &ANCHOR_MARKET_CONTRACT.to_string(),

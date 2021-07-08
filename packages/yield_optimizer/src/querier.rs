@@ -1,7 +1,7 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
     to_binary, Addr, AllBalanceResponse, BalanceResponse, BankQuery, Binary, CanonicalAddr, Coin,
-    Deps, QuerierWrapper, QueryRequest, StdError, StdResult, Timestamp, Uint128, WasmQuery,
+    Deps, QuerierWrapper, QueryRequest, StdResult, Uint128, WasmQuery,
 };
 use cosmwasm_storage::to_length_prefixed;
 use cw20::TokenInfoResponse;

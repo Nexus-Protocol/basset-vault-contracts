@@ -2,6 +2,10 @@ use std::env::current_dir;
 use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
+use yield_optimizer::nasset_token_rewards::{
+    AccruedRewardsResponse, AnyoneMsg, ConfigResponse, ExecuteMsg, GovernanceMsg, HolderResponse,
+    HoldersResponse, InstantiateMsg, QueryMsg, StateResponse, TokenMsg,
+};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
@@ -9,9 +13,15 @@ fn main() {
     create_dir_all(&out_dir).unwrap();
     remove_schemas(&out_dir).unwrap();
 
-    //     export_schema(&schema_for!(InstantiateMsg), &out_dir);
-    //     export_schema(&schema_for!(ExecuteMsg), &out_dir);
-    //     export_schema(&schema_for!(QueryMsg), &out_dir);
-    //     export_schema(&schema_for!(State), &out_dir);
-    //     export_schema(&schema_for!(CountResponse), &out_dir);
+    export_schema(&schema_for!(InstantiateMsg), &out_dir);
+    export_schema(&schema_for!(ExecuteMsg), &out_dir);
+    export_schema(&schema_for!(AnyoneMsg), &out_dir);
+    export_schema(&schema_for!(GovernanceMsg), &out_dir);
+    export_schema(&schema_for!(TokenMsg), &out_dir);
+    export_schema(&schema_for!(QueryMsg), &out_dir);
+    export_schema(&schema_for!(ConfigResponse), &out_dir);
+    export_schema(&schema_for!(StateResponse), &out_dir);
+    export_schema(&schema_for!(AccruedRewardsResponse), &out_dir);
+    export_schema(&schema_for!(HolderResponse), &out_dir);
+    export_schema(&schema_for!(HoldersResponse), &out_dir);
 }

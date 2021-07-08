@@ -21,7 +21,7 @@ use protobuf::Message;
 use std::convert::TryFrom;
 use std::str::FromStr;
 use yield_optimizer::{
-    basset_farmer::{AnyoneMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, YourselfMsg},
+    basset_farmer::{AnyoneMsg, ExecuteMsg, InstantiateMsg, QueryMsg, YourselfMsg},
     nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
     nasset_token_config_holder::{
         AnyoneMsg as NAssetTokenConfigHolderAnyoneMsg,
@@ -348,9 +348,4 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ChildContractsCodeId => to_binary(&queries::child_contracts_code_id(deps)?),
         QueryMsg::IsRewardsClaimable => to_binary(&queries::is_rewards_claimable(deps, env)?),
     }
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> ContractResult<Response> {
-    Ok(Response::default())
 }

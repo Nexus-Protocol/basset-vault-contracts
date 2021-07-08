@@ -9,9 +9,7 @@ use crate::{
     state::{load_config, save_config},
 };
 use crate::{state::Config, ContractResult};
-use yield_optimizer::basset_farmer_config::{
-    ExecuteMsg, GovernanceMsg, InstantiateMsg, MigrateMsg, QueryMsg,
-};
+use yield_optimizer::basset_farmer_config::{ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg};
 
 #[entry_point]
 pub fn instantiate(
@@ -97,9 +95,4 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             locked_basset_amount,
         )?),
     }
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> ContractResult<Response> {
-    Ok(Response::default())
 }

@@ -32,6 +32,7 @@ pub enum GovernanceMsg {
     },
 }
 
+//nasset_token use this
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub nasset_token_rewards_contract: Addr,
