@@ -21,7 +21,7 @@ use protobuf::Message;
 use std::convert::TryFrom;
 use std::str::FromStr;
 use yield_optimizer::{
-    basset_farmer::{AnyoneMsg, ExecuteMsg, InstantiateMsg, QueryMsg, YourselfMsg},
+    basset_farmer::{AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg, YourselfMsg},
     nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
     nasset_token_config_holder::{
         AnyoneMsg as NAssetTokenConfigHolderAnyoneMsg,
@@ -59,7 +59,7 @@ pub fn instantiate(
             .addr_validate(&msg.basset_farmer_config_contract)?,
         stable_denom: msg.stable_denom,
         claiming_rewards_delay: msg.claiming_rewards_delay,
-        psi_distributor_addr: Addr::unchecked(""),
+        psi_distributor: Addr::unchecked(""),
         over_loan_balance_value: Decimal256::from_str(&msg.over_loan_balance_value)?,
     };
     store_config(deps.storage, &config)?;
@@ -329,12 +329,59 @@ pub fn execute(
 
         ExecuteMsg::Yourself { yourself_msg } => {
             if info.sender != env.contract.address {
-                return Err(ContractError::Unauthorized {});
+                return Err(ContractError::Unauthorized);
             }
 
             match yourself_msg {
                 YourselfMsg::SwapAnc => commands::swap_anc(deps, env),
                 YourselfMsg::DisributeRewards => commands::distribute_rewards(deps, env),
+            }
+        }
+
+        ExecuteMsg::Governance { governance_msg } => {
+            let config: Config = load_config(deps.storage)?;
+            if info.sender != config.governance_contract {
+                return Err(ContractError::Unauthorized);
+            }
+
+            match governance_msg {
+                GovernanceMsg::UpdateConfig {
+                    governance_contract_addr,
+                    psi_distributor_addr,
+                    anchor_token_addr,
+                    anchor_overseer_contract_addr,
+                    anchor_market_contract_addr,
+                    anchor_custody_basset_contract_addr,
+                    anc_stable_swap_contract_addr,
+                    psi_stable_swap_contract_addr,
+                    nasset_token_addr,
+                    basset_token_addr,
+                    aterra_token_addr,
+                    psi_token_addr,
+                    basset_farmer_config_contract_addr,
+                    stable_denom,
+                    claiming_rewards_delay,
+                    over_loan_balance_value,
+                } => commands::update_config(
+                    deps,
+                    config,
+                    governance_contract_addr,
+                    psi_distributor_addr,
+                    anchor_token_addr,
+                    anchor_overseer_contract_addr,
+                    anchor_market_contract_addr,
+                    anchor_custody_basset_contract_addr,
+                    anc_stable_swap_contract_addr,
+                    psi_stable_swap_contract_addr,
+                    nasset_token_addr,
+                    basset_token_addr,
+                    aterra_token_addr,
+                    psi_token_addr,
+                    basset_farmer_config_contract_addr,
+                    stable_denom,
+                    claiming_rewards_delay,
+                    over_loan_balance_value,
+                ),
             }
         }
     }

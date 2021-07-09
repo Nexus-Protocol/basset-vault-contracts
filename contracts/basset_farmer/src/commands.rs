@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use cosmwasm_std::{
     attr, from_binary, to_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, ReplyOn,
     Response, StdError, SubMsg, Uint128, WasmMsg,
@@ -7,7 +9,7 @@ use crate::{
     commands,
     state::{
         load_aim_buffer_size, load_config, load_repaying_loan_state,
-        load_stable_balance_before_selling_anc, store_aim_buffer_size,
+        load_stable_balance_before_selling_anc, store_aim_buffer_size, store_config,
         store_last_rewards_claiming_height, store_repaying_loan_state,
         store_stable_balance_before_selling_anc, RepayingLoanState,
     },
@@ -34,6 +36,101 @@ use yield_optimizer::{
     terraswap::{Asset, AssetInfo},
     terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
 };
+
+pub fn update_config(
+    deps: DepsMut,
+    mut current_config: Config,
+    governance_contract_addr: Option<String>,
+    psi_distributor_addr: Option<String>,
+    anchor_token_addr: Option<String>,
+    anchor_overseer_contract_addr: Option<String>,
+    anchor_market_contract_addr: Option<String>,
+    anchor_custody_basset_contract_addr: Option<String>,
+    anc_stable_swap_contract_addr: Option<String>,
+    psi_stable_swap_contract_addr: Option<String>,
+    nasset_token_addr: Option<String>,
+    basset_token_addr: Option<String>,
+    aterra_token_addr: Option<String>,
+    psi_token_addr: Option<String>,
+    basset_farmer_config_contract_addr: Option<String>,
+    stable_denom: Option<String>,
+    claiming_rewards_delay: Option<u64>,
+    over_loan_balance_value: Option<String>,
+) -> ContractResult<Response> {
+    if let Some(ref governance_contract_addr) = governance_contract_addr {
+        current_config.governance_contract = deps.api.addr_validate(governance_contract_addr)?;
+    }
+
+    if let Some(ref psi_distributor_addr) = psi_distributor_addr {
+        current_config.psi_distributor = deps.api.addr_validate(psi_distributor_addr)?;
+    }
+
+    if let Some(ref anchor_token_addr) = anchor_token_addr {
+        current_config.anchor_token = deps.api.addr_validate(anchor_token_addr)?;
+    }
+
+    if let Some(ref anchor_overseer_contract_addr) = anchor_overseer_contract_addr {
+        current_config.anchor_overseer_contract =
+            deps.api.addr_validate(anchor_overseer_contract_addr)?;
+    }
+
+    if let Some(ref anchor_market_contract_addr) = anchor_market_contract_addr {
+        current_config.anchor_market_contract =
+            deps.api.addr_validate(anchor_market_contract_addr)?;
+    }
+
+    if let Some(ref anchor_custody_basset_contract_addr) = anchor_custody_basset_contract_addr {
+        current_config.anchor_custody_basset_contract = deps
+            .api
+            .addr_validate(anchor_custody_basset_contract_addr)?;
+    }
+
+    if let Some(ref anc_stable_swap_contract_addr) = anc_stable_swap_contract_addr {
+        current_config.anc_stable_swap_contract =
+            deps.api.addr_validate(anc_stable_swap_contract_addr)?;
+    }
+
+    if let Some(ref psi_stable_swap_contract_addr) = psi_stable_swap_contract_addr {
+        current_config.psi_stable_swap_contract =
+            deps.api.addr_validate(psi_stable_swap_contract_addr)?;
+    }
+
+    if let Some(ref nasset_token_addr) = nasset_token_addr {
+        current_config.nasset_token = deps.api.addr_validate(nasset_token_addr)?;
+    }
+
+    if let Some(ref basset_token_addr) = basset_token_addr {
+        current_config.basset_token = deps.api.addr_validate(basset_token_addr)?;
+    }
+
+    if let Some(ref aterra_token_addr) = aterra_token_addr {
+        current_config.aterra_token = deps.api.addr_validate(aterra_token_addr)?;
+    }
+
+    if let Some(ref psi_token_addr) = psi_token_addr {
+        current_config.psi_token = deps.api.addr_validate(psi_token_addr)?;
+    }
+
+    if let Some(ref basset_farmer_config_contract_addr) = basset_farmer_config_contract_addr {
+        current_config.basset_farmer_config_contract =
+            deps.api.addr_validate(basset_farmer_config_contract_addr)?;
+    }
+
+    if let Some(ref stable_denom) = stable_denom {
+        current_config.stable_denom = stable_denom.clone();
+    }
+
+    if let Some(ref claiming_rewards_delay) = claiming_rewards_delay {
+        current_config.claiming_rewards_delay = claiming_rewards_delay.clone();
+    }
+
+    if let Some(ref over_loan_balance_value) = over_loan_balance_value {
+        current_config.over_loan_balance_value = Decimal256::from_str(over_loan_balance_value)?;
+    }
+
+    store_config(deps.storage, &current_config)?;
+    Ok(Response::default())
+}
 
 pub fn receive_cw20(
     deps: DepsMut,
@@ -86,9 +183,6 @@ pub fn deposit_basset(
     let basset_in_contract_address =
         query_token_balance(deps.as_ref(), &config.basset_token, &env.contract.address)?;
 
-    // nAsset tokens to mint:
-    // user_share = (deposited_basset / total_basset)
-    // nAsset_to_mint = nAsset_supply * user_share / (1 - user_share)
     let basset_balance: Uint256 = basset_in_custody + basset_in_contract_address.into();
     if basset_balance == Uint256::zero() {
         //impossible because 'farmer' already sent some basset
@@ -99,6 +193,9 @@ pub fn deposit_basset(
     let farmer_basset_share: Decimal256 =
         Decimal256::from_ratio(deposit_amount.0, basset_balance.0);
 
+    // nAsset tokens to mint:
+    // user_share = (deposited_basset / total_basset)
+    // nAsset_to_mint = nAsset_supply * user_share / (1 - user_share)
     let nasset_to_mint = if farmer_basset_share == Decimal256::one() {
         deposit_amount
     } else {
@@ -191,6 +288,9 @@ pub fn withdraw_basset(
         //
         //Last choice is best one in my opinion.
         //But we cant chose it, so go for first.
+        //
+        //OR MAYBE add flag in contract state, something like "CORRUPTED". And if it is true, then
+        //freeze everything. Set to true here!
         return Ok(Response {
             submessages: vec![],
             messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {

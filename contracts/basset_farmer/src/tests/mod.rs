@@ -1,5 +1,6 @@
 mod action_with_profit;
 mod after_borrow_action;
+mod change_config;
 mod deposit_basset;
 mod instantiate;
 mod repay_loan;

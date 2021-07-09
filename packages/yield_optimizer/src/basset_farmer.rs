@@ -36,6 +36,7 @@ pub enum ExecuteMsg {
     Anyone { anyone_msg: AnyoneMsg },
     Receive(Cw20ReceiveMsg),
     Yourself { yourself_msg: YourselfMsg },
+    Governance { governance_msg: GovernanceMsg },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -54,6 +55,29 @@ pub enum AnyoneMsg {
     // then when last user will withdraw bAsset some UST remains in contract.
     // This command utilise it.
     ClaimRemainder,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum GovernanceMsg {
+    UpdateConfig {
+        governance_contract_addr: Option<String>,
+        psi_distributor_addr: Option<String>,
+        anchor_token_addr: Option<String>,
+        anchor_overseer_contract_addr: Option<String>,
+        anchor_market_contract_addr: Option<String>,
+        anchor_custody_basset_contract_addr: Option<String>,
+        anc_stable_swap_contract_addr: Option<String>,
+        psi_stable_swap_contract_addr: Option<String>,
+        nasset_token_addr: Option<String>,
+        basset_token_addr: Option<String>,
+        aterra_token_addr: Option<String>,
+        psi_token_addr: Option<String>,
+        basset_farmer_config_contract_addr: Option<String>,
+        stable_denom: Option<String>,
+        claiming_rewards_delay: Option<u64>,
+        over_loan_balance_value: Option<String>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

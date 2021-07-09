@@ -367,7 +367,7 @@ impl ActionWithProfit {
                                 offer_asset: swap_asset,
                                 max_spread: None,
                                 belief_price: None,
-                                to: Some(config.psi_distributor_addr.to_string()),
+                                to: Some(config.psi_distributor.to_string()),
                             })?,
                             send: vec![Coin {
                                 denom: config.stable_denom.clone(),
@@ -375,7 +375,7 @@ impl ActionWithProfit {
                             }],
                         }),
                         CosmosMsg::Wasm(WasmMsg::Execute {
-                            contract_addr: config.psi_distributor_addr.to_string(),
+                            contract_addr: config.psi_distributor.to_string(),
                             msg: to_binary(&PsiDistributorExecuteMsg::Anyone {
                                 anyone_msg: PsiDistributorAnyoneMsg::DistributeRewards,
                             })?,
@@ -420,7 +420,7 @@ impl ActionWithProfit {
                                 offer_asset: swap_asset,
                                 max_spread: None,
                                 belief_price: None,
-                                to: Some(config.psi_distributor_addr.to_string()),
+                                to: Some(config.psi_distributor.to_string()),
                             })?,
                             send: vec![Coin {
                                 denom: config.stable_denom.clone(),
@@ -428,7 +428,7 @@ impl ActionWithProfit {
                             }],
                         }),
                         CosmosMsg::Wasm(WasmMsg::Execute {
-                            contract_addr: config.psi_distributor_addr.to_string(),
+                            contract_addr: config.psi_distributor.to_string(),
                             msg: to_binary(&PsiDistributorExecuteMsg::Anyone {
                                 anyone_msg: PsiDistributorAnyoneMsg::DistributeRewards,
                             })?,

@@ -8,7 +8,7 @@ use cw_storage_plus::Item;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub governance_contract: Addr,
-    pub psi_distributor_addr: Addr,
+    pub psi_distributor: Addr,
     pub anchor_token: Addr,
     pub anchor_overseer_contract: Addr,
     pub anchor_market_contract: Addr,
@@ -84,7 +84,7 @@ pub fn config_set_psi_distributor(
     psi_distributor: Addr,
 ) -> StdResult<Config> {
     CONFIG.update(storage, |mut config| -> StdResult<_> {
-        config.psi_distributor_addr = psi_distributor;
+        config.psi_distributor = psi_distributor;
         Ok(config)
     })
 }

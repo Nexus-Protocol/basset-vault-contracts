@@ -38,7 +38,7 @@ fn proper_initialization() {
             basset_farmer_config_contract: Addr::unchecked(BASSET_FARMER_CONFIG_CONTRACT),
             stable_denom: STABLE_DENOM.to_string(),
             claiming_rewards_delay: CLAIMING_REWARDS_DELAY,
-            psi_distributor_addr: Addr::unchecked(PSI_DISTRIBUTOR_CONTRACT),
+            psi_distributor: Addr::unchecked(PSI_DISTRIBUTOR_CONTRACT),
             over_loan_balance_value: Decimal256::from_str(&OVER_LOAN_BALANCE_VALUE).unwrap(),
         }
     );
