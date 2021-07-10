@@ -590,7 +590,7 @@ pub fn swap_anc(deps: DepsMut, env: Env) -> ContractResult<Response> {
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: env.contract.address.to_string(),
                 msg: to_binary(&ExecuteMsg::Yourself {
-                    yourself_msg: YourselfMsg::DisributeRewards {},
+                    yourself_msg: YourselfMsg::DisributeRewards,
                 })?,
                 send: vec![],
             }),

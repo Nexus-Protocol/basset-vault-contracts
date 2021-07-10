@@ -15,6 +15,7 @@ use cw20::MinterResponse;
 use protobuf::Message;
 use std::collections::HashMap;
 use std::iter::FromIterator;
+use yield_optimizer::basset_farmer::YourselfMsg;
 
 use yield_optimizer::basset_farmer::Cw20HookMsg;
 use yield_optimizer::basset_farmer_config::BorrowerActionResponse;
@@ -64,6 +65,7 @@ pub const GOVERNANCE_STAKER_REWARDS_SHARE: u64 = 30;
 pub struct Sdk {
     pub deps: OwnedDeps<MockStorage, MockApi, WasmMockQuerier>,
     aterra_balance: Uint128,
+    anc_balance: Uint128,
     basset_balance: Uint128,
     nasset_supply: Uint128,
     aterra_exchange_rate: Decimal256,
@@ -110,6 +112,7 @@ impl Sdk {
         Sdk {
             deps,
             aterra_balance: Uint128::zero(),
+            anc_balance: Uint128::zero(),
             basset_balance: Uint128::zero(),
             nasset_supply: Uint128::zero(),
             aterra_exchange_rate: Decimal256::zero(),
@@ -447,6 +450,11 @@ impl Sdk {
         self.set_token_balances();
     }
 
+    pub fn set_anc_balance(&mut self, value: Uint256) {
+        self.anc_balance = value.into();
+        self.set_token_balances();
+    }
+
     pub fn set_nasset_supply(&mut self, value: Uint256) {
         self.nasset_supply = value.into();
         self.set_token_supplies();
@@ -472,6 +480,10 @@ impl Sdk {
             (
                 &BASSET_TOKEN_ADDR.to_string(),
                 &[(&MOCK_CONTRACT_ADDR.to_string(), &self.basset_balance)],
+            ),
+            (
+                &ANCHOR_TOKEN.to_string(),
+                &[(&MOCK_CONTRACT_ADDR.to_string(), &self.anc_balance)],
             ),
         ]);
     }
@@ -573,6 +585,45 @@ impl Sdk {
             mock_env(),
             info,
             ExecuteMsg::Receive(cw20_deposit_msg),
+        )
+    }
+
+    pub fn user_send_honest_work(&mut self, block_height: u64) -> ContractResult<Response<Empty>> {
+        let honest_work_msg = yield_optimizer::basset_farmer::AnyoneMsg::HonestWork;
+        let mut env = mock_env();
+        env.block.height = block_height;
+        let info = mock_info(&"addr9999".to_string(), &vec![]);
+        crate::contract::execute(
+            self.deps.as_mut(),
+            env,
+            info,
+            ExecuteMsg::Anyone {
+                anyone_msg: honest_work_msg,
+            },
+        )
+    }
+
+    pub fn send_swap_anc(&mut self) -> ContractResult<Response<Empty>> {
+        let info = mock_info(MOCK_CONTRACT_ADDR, &vec![]);
+        crate::contract::execute(
+            self.deps.as_mut(),
+            mock_env(),
+            info,
+            ExecuteMsg::Yourself {
+                yourself_msg: YourselfMsg::SwapAnc,
+            },
+        )
+    }
+
+    pub fn send_distribute_rewards(&mut self) -> ContractResult<Response<Empty>> {
+        let info = mock_info(MOCK_CONTRACT_ADDR, &vec![]);
+        crate::contract::execute(
+            self.deps.as_mut(),
+            mock_env(),
+            info,
+            ExecuteMsg::Yourself {
+                yourself_msg: YourselfMsg::DisributeRewards,
+            },
         )
     }
 }
