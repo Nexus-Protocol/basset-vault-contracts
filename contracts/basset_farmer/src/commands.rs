@@ -179,6 +179,14 @@ pub fn deposit_basset(
         &env.contract.address,
     )?;
 
+    if basset_in_custody.is_zero() && !nasset_supply.is_zero() {
+        //read comments in 'withdraw_basset' function for a reason to return error here
+        return Err(StdError::generic_err(
+            "bAsset balance is zero, but nLuna supply is not! Freeze contract.",
+        )
+        .into());
+    }
+
     // basset balance in cw20 contract
     let basset_in_contract_address =
         query_token_balance(deps.as_ref(), &config.basset_token, &env.contract.address)?;
@@ -283,33 +291,16 @@ pub fn withdraw_basset(
         //what we can do here:
         //1. Burn his nAsset, cause they do not have value in that context
         //2. return error. In that case if someone will deposit bAsset those nAsset owners will
-        //   own share of his tokens.
+        //   own share of his tokens. But I prevent deposists in that case, so contract is kinds "frozen" -
+        //   no withdraw and deposits available when bLuna balance is zero. Looks like the best
+        //   solution.
         //3. Burn all nAsset supply (not possible with cw20 messages)
         //
-        //Last choice is best one in my opinion.
-        //But we cant chose it, so go for first.
-        //
-        //OR MAYBE add flag in contract state, something like "CORRUPTED". And if it is true, then
-        //freeze everything. Set to true here!
-        return Ok(Response {
-            submessages: vec![],
-            messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: config.nasset_token.to_string(),
-                msg: to_binary(&Cw20ExecuteMsg::Burn {
-                    amount: nasset_to_withdraw_amount.into(),
-                })?,
-                send: vec![],
-            })],
-            attributes: vec![
-                attr("action", "withdraw"),
-                attr(
-                    "bad_scenario",
-                    "basset balance is zero, we burn your tokens",
-                ),
-                attr("amount", nasset_to_withdraw_amount),
-            ],
-            data: None,
-        });
+        //Second choice is best one in my opinion.
+        return Err(StdError::generic_err(
+            "bAsset balance is zero, but nLuna supply is not! Freeze contract.",
+        )
+        .into());
     }
 
     let share_to_withdraw: Decimal256 = Decimal256::from_ratio(

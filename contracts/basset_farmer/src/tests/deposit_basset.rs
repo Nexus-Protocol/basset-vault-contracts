@@ -101,3 +101,20 @@ fn deposit_basset() {
         );
     }
 }
+
+#[test]
+fn do_not_accept_deposit_if_nluna_supply_is_not_zero_but_bluna_in_custody_is_zero() {
+    let mut sdk = Sdk::init();
+
+    sdk.set_nasset_supply(Uint256::one());
+    sdk.set_collateral_balance(Uint256::zero(), Uint256::zero());
+
+    //farmer comes
+    let user_address = "addr9999".to_string();
+    let deposit_amount: Uint256 = 2_000_000_000u128.into();
+    // -= USER SEND bAsset tokens to basset_farmer =-
+    sdk.set_basset_balance(deposit_amount);
+
+    let response = sdk.user_deposit(&user_address, deposit_amount.into());
+    assert!(response.is_err());
+}

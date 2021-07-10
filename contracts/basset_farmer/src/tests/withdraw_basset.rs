@@ -23,7 +23,8 @@ fn withdraw_good_case() {
     let user_2_address = "addr6666".to_string();
     let deposit_2_amount: Uint256 = 6_000_000_000u128.into();
     sdk.set_nasset_supply(deposit_1_amount);
-    sdk.set_basset_balance(deposit_2_amount + deposit_1_amount);
+    sdk.set_collateral_balance(deposit_1_amount, Uint256::zero());
+    sdk.set_basset_balance(deposit_2_amount);
     sdk.user_deposit(&user_2_address, deposit_2_amount.into())
         .unwrap();
 
@@ -127,7 +128,8 @@ fn withdraw_bad_case() {
     let user_2_address = "addr6666".to_string();
     let deposit_2_amount: Uint256 = 6_000_000_000u128.into();
     sdk.set_nasset_supply(deposit_1_amount);
-    sdk.set_basset_balance(deposit_2_amount + deposit_1_amount);
+    sdk.set_collateral_balance(deposit_1_amount, Uint256::zero());
+    sdk.set_basset_balance(deposit_2_amount);
     sdk.user_deposit(&user_2_address, deposit_2_amount.into())
         .unwrap();
 
@@ -241,19 +243,7 @@ fn withdraw_nasset_but_basset_balance_is_zero() {
     sdk.set_borrower_action(BorrowerActionResponse::Nothing);
 
     //user withdraw
-    let user_withdraw_response = sdk
-        .user_withdraw(&user_address, deposit_amount.into())
-        .unwrap();
+    let user_withdraw_response = sdk.user_withdraw(&user_address, deposit_amount.into());
 
-    assert_eq!(
-        user_withdraw_response.messages,
-        vec![CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: NASSET_TOKEN_ADDR.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Burn {
-                amount: deposit_amount.into(),
-            })
-            .unwrap(),
-            send: vec![],
-        })]
-    );
+    assert!(user_withdraw_response.is_err());
 }
