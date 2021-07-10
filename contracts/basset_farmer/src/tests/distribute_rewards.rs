@@ -2,9 +2,8 @@ use super::sdk::Sdk;
 use crate::error::ContractError;
 use crate::state::load_last_rewards_claiming_height;
 use crate::tests::sdk::{
-    ANCHOR_MARKET_CONTRACT, ANCHOR_OVERSEER_CONTRACT, ANCHOR_TOKEN, ANC_STABLE_SWAP_CONTRACT,
-    BASSET_TOKEN_ADDR, CLAIMING_REWARDS_DELAY, NASSET_TOKEN_ADDR, OVER_LOAN_BALANCE_VALUE,
-    PSI_DISTRIBUTOR_CONTRACT, PSI_STABLE_SWAP_CONTRACT, STABLE_DENOM,
+    ANCHOR_MARKET_CONTRACT, ANCHOR_TOKEN, ANC_STABLE_SWAP_CONTRACT, CLAIMING_REWARDS_DELAY,
+    OVER_LOAN_BALANCE_VALUE, PSI_DISTRIBUTOR_CONTRACT, PSI_STABLE_SWAP_CONTRACT, STABLE_DENOM,
 };
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::testing::MOCK_CONTRACT_ADDR;
@@ -17,7 +16,6 @@ use yield_optimizer::basset_farmer::{
 };
 use yield_optimizer::terraswap::{Asset, AssetInfo};
 use yield_optimizer::{
-    basset_farmer_config::BorrowerActionResponse,
     psi_distributor::{
         AnyoneMsg as PsiDistributorAnyoneMsg, ExecuteMsg as PsiDistributorExecuteMsg,
     },
