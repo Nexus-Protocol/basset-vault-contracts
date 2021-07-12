@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConfigResponse",
+  "type": "object",
+  "required": [
+    "anc_stable_swap_contract",
+    "anchor_market_contract",
+    "anchor_overseer_contract",
+    "anchor_token",
+    "aterra_token",
+    "basset_farmer_config_contract",
+    "basset_token",
+    "claiming_rewards_delay",
+    "custody_basset_contract",
+    "governance_contract",
+    "nasset_token",
+    "psi_stable_swap_contract",
+    "psi_token",
+    "stable_denom"
+  ],
+  "properties": {
+    "anc_stable_swap_contract": {
+      "type": "string"
+    },
+    "anchor_market_contract": {
+      "type": "string"
+    },
+    "anchor_overseer_contract": {
+      "type": "string"
+    },
+    "anchor_token": {
+      "type": "string"
+    },
+    "aterra_token": {
+      "type": "string"
+    },
+    "basset_farmer_config_contract": {
+      "type": "string"
+    },
+    "basset_token": {
+      "type": "string"
+    },
+    "claiming_rewards_delay": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "custody_basset_contract": {
+      "type": "string"
+    },
+    "governance_contract": {
+      "type": "string"
+    },
+    "nasset_token": {
+      "type": "string"
+    },
+    "psi_stable_swap_contract": {
+      "type": "string"
+    },
+    "psi_token": {
+      "type": "string"
+    },
+    "stable_denom": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ExecuteMsg",
+  "anyOf": [
+    {
+      "type": "object",
+      "required": [
+        "anyone"
+      ],
+      "properties": {
+        "anyone": {
+          "type": "object",
+          "required": [
+            "anyone_msg"
+          ],
+          "properties": {
+            "anyone_msg": {
+              "$ref": "#/definitions/AnyoneMsg"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "governance_msg"
+      ],
+      "properties": {
+        "governance_msg": {
+          "type": "object",
+          "required": [
+            "governance_msg"
+          ],
+          "properties": {
+            "governance_msg": {
+              "$ref": "#/definitions/GovernanceMsg"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "AnyoneMsg": {
+      "type": "string",
+      "enum": [
+        "distribute_rewards"
+      ]
+    },
+    "GovernanceMsg": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "update_config"
+          ],
+          "properties": {
+            "update_config": {
+              "type": "object",
+              "properties": {
+                "governance_contract_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "psi_token_contract_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "update_rewards_distribution"
+          ],
+          "properties": {
+            "update_rewards_distribution": {
+              "type": "object",
+              "required": [
+                "distribution"
+              ],
+              "properties": {
+                "distribution": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "items": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "integer",
+                        "format": "uint64",
+                        "minimum": 0.0
+                      }
+                    ],
+                    "maxItems": 2,
+                    "minItems": 2
+                  }
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

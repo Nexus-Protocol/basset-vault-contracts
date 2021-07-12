@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "required": [
+    "anc_stable_swap_contract",
+    "anchor_custody_basset_contract",
+    "anchor_market_contract",
+    "anchor_overseer_contract",
+    "anchor_token",
+    "aterra_token",
+    "basset_farmer_config_contract",
+    "basset_token_addr",
+    "claiming_rewards_delay",
+    "collateral_token_symbol",
+    "governance_contract",
+    "governance_contract_psi_rewards_share",
+    "nasset_token_code_id",
+    "nasset_token_config_holder_code_id",
+    "nasset_token_holders_psi_rewards_share",
+    "nasset_token_rewards_code_id",
+    "over_loan_balance_value",
+    "psi_distributor_code_id",
+    "psi_stable_swap_contract",
+    "psi_token",
+    "stable_denom"
+  ],
+  "properties": {
+    "anc_stable_swap_contract": {
+      "type": "string"
+    },
+    "anchor_custody_basset_contract": {
+      "type": "string"
+    },
+    "anchor_market_contract": {
+      "type": "string"
+    },
+    "anchor_overseer_contract": {
+      "type": "string"
+    },
+    "anchor_token": {
+      "type": "string"
+    },
+    "aterra_token": {
+      "type": "string"
+    },
+    "basset_farmer_config_contract": {
+      "type": "string"
+    },
+    "basset_token_addr": {
+      "type": "string"
+    },
+    "claiming_rewards_delay": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "collateral_token_symbol": {
+      "type": "string"
+    },
+    "governance_contract": {
+      "type": "string"
+    },
+    "governance_contract_psi_rewards_share": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "nasset_token_code_id": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "nasset_token_config_holder_code_id": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "nasset_token_holders_psi_rewards_share": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "nasset_token_rewards_code_id": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "over_loan_balance_value": {
+      "type": "string"
+    },
+    "psi_distributor_code_id": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "psi_stable_swap_contract": {
+      "type": "string"
+    },
+    "psi_token": {
+      "type": "string"
+    },
+    "stable_denom": {
+      "type": "string"
+    }
+  }
+}

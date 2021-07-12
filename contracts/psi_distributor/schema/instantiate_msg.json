@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "required": [
+    "governance_contract_addr",
+    "governance_contract_share",
+    "nasset_token_rewards_contract_addr",
+    "nasset_token_rewards_share",
+    "psi_token_addr"
+  ],
+  "properties": {
+    "governance_contract_addr": {
+      "type": "string"
+    },
+    "governance_contract_share": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "nasset_token_rewards_contract_addr": {
+      "type": "string"
+    },
+    "nasset_token_rewards_share": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "psi_token_addr": {
+      "type": "string"
+    }
+  }
+}

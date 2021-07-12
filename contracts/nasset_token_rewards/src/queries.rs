@@ -56,6 +56,7 @@ pub fn query_holder(deps: Deps, address: String) -> StdResult<HolderResponse> {
     })
 }
 
+//TODO: add `OrderBy` to query params
 pub fn query_holders(
     deps: Deps,
     start_after: Option<String>,

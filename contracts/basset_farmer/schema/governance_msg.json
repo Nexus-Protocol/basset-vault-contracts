@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GovernanceMsg",
+  "anyOf": [
+    {
+      "type": "object",
+      "required": [
+        "update_config"
+      ],
+      "properties": {
+        "update_config": {
+          "type": "object",
+          "properties": {
+            "anc_stable_swap_contract_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "anchor_custody_basset_contract_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "anchor_market_contract_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "anchor_overseer_contract_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "anchor_token_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "aterra_token_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "basset_farmer_config_contract_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "basset_token_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "claiming_rewards_delay": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "governance_contract_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "nasset_token_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "over_loan_balance_value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "psi_distributor_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "psi_stable_swap_contract_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "psi_token_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "stable_denom": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}
