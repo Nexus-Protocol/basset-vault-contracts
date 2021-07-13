@@ -1,5 +1,6 @@
 [workspace]
-members = ["packages/*", "contracts/*"]
+members = ["packages/*", "contracts/psi_distributor"]
+# members = ["packages/*", "contracts/*"]
 
 [profile.release.package.yield_optimizer]
 opt-level = 3

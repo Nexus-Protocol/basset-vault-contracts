@@ -8,6 +8,7 @@ pub mod error;
 mod queries;
 mod response;
 pub mod state;
+mod tax_querier;
 mod utils;
 
 #[cfg(test)]
