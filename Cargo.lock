@@ -104,9 +104,9 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-schema"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6a9a6a4ca3b4d7b56f943312a65857cdfc84424f9c2773889f4cd17f36fba61"
+checksum = "d66ae8ed0319a9ae48a18cb00eda7f6b4b5c2d2e1c05b194f9a4eefbb07b3a43"
 dependencies = [
  "schemars",
  "serde_json",
@@ -602,6 +602,22 @@ name = "wyz"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
+
+[[package]]
+name = "yield-optimizer-nasset-rewards"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-bignumber",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw20",
+ "protobuf",
+ "schemars",
+ "serde",
+ "thiserror",
+ "yield_optimizer",
+]
 
 [[package]]
 name = "yield-optimizer-psi-distributor"

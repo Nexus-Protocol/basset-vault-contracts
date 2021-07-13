@@ -1,12 +1,15 @@
 use crate::{
     math::decimal_summation_in_256,
-    state::{Holder, HOLDERS},
+    state::{Holder, PREFIX_HOLDERS},
     utils::calculate_decimal_rewards,
 };
-use cosmwasm_std::{Addr, Deps, Order, StdError, StdResult, Storage, Uint128};
-use cw_storage_plus::Bound;
-use yield_optimizer::nasset_token_rewards::{
-    AccruedRewardsResponse, ConfigResponse, HolderResponse, HoldersResponse, StateResponse,
+use cosmwasm_std::{Addr, Deps, StdResult, Storage, Uint128};
+use cosmwasm_storage::ReadonlyBucket;
+use yield_optimizer::{
+    common::OrderBy,
+    nasset_token_rewards::{
+        AccruedRewardsResponse, ConfigResponse, HolderResponse, HoldersResponse, StateResponse,
+    },
 };
 
 use crate::state::{load_config, load_holder, load_state, Config};
@@ -40,7 +43,7 @@ pub fn query_accrued_rewards(deps: Deps, address: String) -> StdResult<AccruedRe
     let all_reward_with_decimals =
         decimal_summation_in_256(reward_with_decimals, holder.pending_rewards);
 
-    let rewards = all_reward_with_decimals * Uint128(1);
+    let rewards = all_reward_with_decimals * Uint128::new(1);
 
     Ok(AccruedRewardsResponse { rewards })
 }
@@ -56,11 +59,11 @@ pub fn query_holder(deps: Deps, address: String) -> StdResult<HolderResponse> {
     })
 }
 
-//TODO: add `OrderBy` to query params
 pub fn query_holders(
     deps: Deps,
     start_after: Option<String>,
     limit: Option<u32>,
+    order_by: Option<OrderBy>,
 ) -> StdResult<HoldersResponse> {
     let start_after = if let Some(start_after) = start_after {
         Some(deps.api.addr_validate(&start_after)?)
@@ -68,7 +71,7 @@ pub fn query_holders(
         None
     };
 
-    let holders = load_holders(deps.storage, start_after, limit)?;
+    let holders = load_holders(deps.storage, start_after, limit, order_by)?;
     Ok(HoldersResponse { holders })
 }
 
@@ -79,28 +82,33 @@ pub fn load_holders(
     storage: &dyn Storage,
     start_after: Option<Addr>,
     limit: Option<u32>,
+    order_by: Option<OrderBy>,
 ) -> StdResult<Vec<HolderResponse>> {
     let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
-    let start = calc_range_start(start_after).map(Bound::exclusive);
+    let (start, end, order_by) = match order_by {
+        Some(OrderBy::Asc) => (calc_range_start(start_after), None, OrderBy::Asc),
+        _ => (None, calc_range_end(start_after), OrderBy::Desc),
+    };
 
-    let holders: Result<Vec<_>, StdError> = HOLDERS
-        .range(storage, start, None, Order::Ascending)
+    let holders: ReadonlyBucket<Holder> = ReadonlyBucket::new(storage, PREFIX_HOLDERS);
+    holders
+        .range(start.as_deref(), end.as_deref(), order_by.into())
         .map(holder_to_response)
         .take(limit)
-        .collect();
-
-    Ok(holders?)
+        .collect()
 }
 
-//idea copypasted from: https://github.com/CosmWasm/cosmwasm-plus/blob/3678c0c965431d4a8ebded636a02bb1a1f64b87c/packages/cw0/src/pagination.rs#L14
-//TODO: there was a bug in that function, I fix it: https://github.com/CosmWasm/cosmwasm-plus/pull/316
-//so we can use that function from library, when they merge
 pub fn calc_range_start(start_after: Option<Addr>) -> Option<Vec<u8>> {
     start_after.map(|addr| {
-        let mut v: Vec<u8> = addr.as_ref().into();
+        let mut v: Vec<u8> = addr.as_bytes().to_vec();
         v.push(0);
         v
     })
+}
+
+// this will set the first key after the provided key, by appending a 1 byte
+fn calc_range_end(start_after: Option<Addr>) -> Option<Vec<u8>> {
+    start_after.map(|addr| addr.as_bytes().to_vec())
 }
 
 pub fn holder_to_response(

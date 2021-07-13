@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     attr, to_binary, Addr, CosmosMsg, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdError,
-    Uint128, WasmMsg,
+    SubMsg, Uint128, WasmMsg,
 };
 use yield_optimizer::querier::query_token_balance;
 
@@ -13,7 +13,7 @@ use crate::{
     state::save_holder,
     utils::{calculate_decimal_rewards, get_decimals},
 };
-use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
+use cw20::Cw20ExecuteMsg;
 
 pub fn update_config(
     deps: DepsMut,
@@ -57,7 +57,7 @@ pub fn update_global_index(deps: DepsMut, env: Env) -> ContractResult<Response> 
 
     Ok(Response {
         messages: vec![],
-        submessages: vec![],
+        events: vec![],
         attributes: vec![
             attr("action", "update_global_index"),
             attr("claimed_rewards", claimed_rewards),
@@ -138,7 +138,7 @@ fn claim_rewards_logic(
         decimal_summation_in_256(reward_with_decimals, holder.pending_rewards);
     let decimals: Decimal = get_decimals(all_reward_with_decimals)?;
 
-    let rewards: Uint128 = all_reward_with_decimals * Uint128(1);
+    let rewards: Uint128 = all_reward_with_decimals * Uint128::new(1);
 
     if rewards.is_zero() {
         return Err(StdError::generic_err("No rewards have accrued yet").into());
@@ -153,16 +153,15 @@ fn claim_rewards_logic(
     save_holder(deps.storage, holder_addr, &holder)?;
 
     Ok(Response {
-        submessages: vec![],
-        messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+        messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.psi_token.to_string(),
-            send: vec![],
+            funds: vec![],
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: recipient.to_string(),
                 amount: rewards,
             })
             .unwrap(),
-        })],
+        }))],
         attributes: vec![
             attr("action", "claim_reward"),
             attr("holder_address", holder_addr),
@@ -170,6 +169,7 @@ fn claim_rewards_logic(
             attr("rewards", rewards),
         ],
         data: None,
+        events: vec![],
     })
 }
 
@@ -198,7 +198,7 @@ pub fn increase_balance(
     save_state(deps.storage, &state)?;
 
     Ok(Response {
-        submessages: vec![],
+        events: vec![],
         messages: vec![],
         attributes: vec![
             attr("action", "increase_balance"),
@@ -243,7 +243,7 @@ pub fn decrease_balance(
     save_state(deps.storage, &state)?;
 
     Ok(Response {
-        submessages: vec![],
+        events: vec![],
         messages: vec![],
         attributes: vec![
             attr("action", "decrease_balance"),

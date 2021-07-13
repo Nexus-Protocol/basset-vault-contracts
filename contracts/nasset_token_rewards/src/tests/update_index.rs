@@ -32,7 +32,7 @@ fn update_index_error_on_zero_rewards() {
     sdk.set_psi_balance(Uint128::zero());
 
     //deposit some nAsset
-    sdk.increase_user_balance(&Addr::unchecked("addr1000"), Uint128(200));
+    sdk.increase_user_balance(&Addr::unchecked("addr1000"), Uint128::new(200));
 
     //===============================================================================
     let response = sdk.update_index();
@@ -51,10 +51,10 @@ fn update_index_successfully_update() {
     let mut sdk = Sdk::init();
 
     //deposit some nAsset
-    sdk.increase_user_balance(&Addr::unchecked("addr1000"), Uint128(200));
+    sdk.increase_user_balance(&Addr::unchecked("addr1000"), Uint128::new(200));
 
     //rewards balance is not zero
-    sdk.set_psi_balance(Uint128(200));
+    sdk.set_psi_balance(Uint128::new(200));
 
     //===============================================================================
     let response = sdk.update_index();
@@ -67,10 +67,10 @@ fn update_index_error_cause_increase_balance_already_update_it() {
     let mut sdk = Sdk::init();
 
     //rewards balance is not zero
-    sdk.set_psi_balance(Uint128(200));
+    sdk.set_psi_balance(Uint128::new(200));
 
     //deposit some nAsset
-    sdk.increase_user_balance(&Addr::unchecked("addr1000"), Uint128(200));
+    sdk.increase_user_balance(&Addr::unchecked("addr1000"), Uint128::new(200));
 
     //===============================================================================
     let response = sdk.update_index();
@@ -140,7 +140,7 @@ fn decrease_balance_should_update_index() {
     let withdraw_amount: Uint128 = 50u128.into();
     sdk.decrease_user_balance(&user_address, withdraw_amount);
     let holder_state = load_holder(&sdk.deps.storage, &user_address).unwrap();
-    assert_eq!(Uint128(50), holder_state.balance);
+    assert_eq!(Uint128::new(50), holder_state.balance);
     assert_eq!(Decimal::from_str("10").unwrap(), holder_state.index);
     assert_eq!(
         Decimal::from_str("1000").unwrap(),
@@ -149,7 +149,7 @@ fn decrease_balance_should_update_index() {
 
     let state = load_state(&sdk.deps.storage).unwrap();
     assert_eq!(Decimal::from_str("10").unwrap(), state.global_index);
-    assert_eq!(Uint128(50), state.total_balance);
+    assert_eq!(Uint128::new(50), state.total_balance);
     assert_eq!(rewards, state.prev_reward_balance);
     //===============================================================================
 }

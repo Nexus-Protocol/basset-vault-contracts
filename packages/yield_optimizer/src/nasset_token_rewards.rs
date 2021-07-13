@@ -2,6 +2,8 @@ use cosmwasm_std::{Decimal, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::common::OrderBy;
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub psi_token_addr: String,
@@ -63,6 +65,7 @@ pub enum QueryMsg {
     Holders {
         start_after: Option<String>,
         limit: Option<u32>,
+        order_by: Option<OrderBy>,
     },
 }
 

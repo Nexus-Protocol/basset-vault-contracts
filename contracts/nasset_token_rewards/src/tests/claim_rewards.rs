@@ -4,9 +4,9 @@ use crate::{
     error::ContractError,
     state::{load_holder, load_state},
 };
-use cosmwasm_std::{to_binary, Uint128};
+use cosmwasm_std::{to_binary, SubMsg, Uint128};
 use cosmwasm_std::{Addr, CosmosMsg, Decimal, StdError, WasmMsg};
-use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
+use cw20::Cw20ExecuteMsg;
 use std::str::FromStr;
 
 #[test]
@@ -46,17 +46,16 @@ fn increase_balance_and_claim_rewards() {
 
         assert_eq!(
             response.messages,
-            vec![CosmosMsg::Wasm(WasmMsg::Execute {
+            vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: PSI_TOKEN_ADDR.to_string(),
-                send: vec![],
+                funds: vec![],
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_1_address.to_string(),
                     amount: rewards_before_receive_nasset + rewards_after_receive_nasset,
                 })
                 .unwrap(),
-            })]
+            }))]
         );
-        assert!(response.submessages.is_empty());
 
         let holder = load_holder(&sdk.deps.storage, &user_1_address).unwrap();
         assert_eq!(deposit_1_amount, holder.balance);
@@ -164,23 +163,22 @@ fn second_user_comes_after_rewards_already_there() {
 
     //===============================================================================
     //first user claim rewards
-    let rewards_1_amount = Uint128(2250);
+    let rewards_1_amount = Uint128::new(2250);
     {
         let response = sdk.claim_rewards(&user_1_address).unwrap();
 
         assert_eq!(
             response.messages,
-            vec![CosmosMsg::Wasm(WasmMsg::Execute {
+            vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: PSI_TOKEN_ADDR.to_string(),
-                send: vec![],
+                funds: vec![],
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_1_address.to_string(),
                     amount: rewards_1_amount, // total_rewards = 1000 + 5k * share (1/4)
                 })
                 .unwrap(),
-            })]
+            }))]
         );
-        assert!(response.submessages.is_empty());
 
         //22.5 comes from: (first_user_reward / first_balance) + new_rewards / total_balance
         //so, 1000 / 100 + 5000 / 400
@@ -192,7 +190,7 @@ fn second_user_comes_after_rewards_already_there() {
         let state = load_state(&sdk.deps.storage).unwrap();
         assert_eq!(Decimal::from_str("22.5").unwrap(), state.global_index);
         assert_eq!(deposit_1_amount + deposit_2_amount, state.total_balance);
-        assert_eq!(Uint128(3750), state.prev_reward_balance);
+        assert_eq!(Uint128::new(3750), state.prev_reward_balance);
     }
 
     //===============================================================================
@@ -212,17 +210,16 @@ fn second_user_comes_after_rewards_already_there() {
 
         assert_eq!(
             response.messages,
-            vec![CosmosMsg::Wasm(WasmMsg::Execute {
+            vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: PSI_TOKEN_ADDR.to_string(),
-                send: vec![],
+                funds: vec![],
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_2_address.to_string(),
-                    amount: Uint128(3750), // total_rewards = 5k * share (3/4)
+                    amount: Uint128::new(3750), // total_rewards = 5k * share (3/4)
                 })
                 .unwrap(),
-            })]
+            }))]
         );
-        assert!(response.submessages.is_empty());
 
         let holder = load_holder(&sdk.deps.storage, &user_2_address).unwrap();
         assert_eq!(deposit_2_amount, holder.balance);
@@ -310,17 +307,16 @@ fn two_users_hold_partially_unhold_and_hold_again() {
 
         assert_eq!(
             response.messages,
-            vec![CosmosMsg::Wasm(WasmMsg::Execute {
+            vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: PSI_TOKEN_ADDR.to_string(),
-                send: vec![],
+                funds: vec![],
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_1_address.to_string(),
                     amount: rewards_1_amount,
                 })
                 .unwrap(),
-            })]
+            }))]
         );
-        assert!(response.submessages.is_empty());
 
         let holder = load_holder(&sdk.deps.storage, &user_1_address).unwrap();
         assert_eq!(Decimal::zero(), holder.pending_rewards);
@@ -380,17 +376,16 @@ fn two_users_hold_partially_unhold_and_hold_again() {
 
         assert_eq!(
             response.messages,
-            vec![CosmosMsg::Wasm(WasmMsg::Execute {
+            vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: PSI_TOKEN_ADDR.to_string(),
-                send: vec![],
+                funds: vec![],
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_2_address.to_string(),
                     amount: rewards_2_amount,
                 })
                 .unwrap(),
-            })]
+            }))]
         );
-        assert!(response.submessages.is_empty());
 
         let holder = load_holder(&sdk.deps.storage, &user_2_address).unwrap();
         assert_eq!(Decimal::zero(), holder.pending_rewards);
@@ -498,7 +493,7 @@ fn decrease_balance_should_update_index() {
     let withdraw_amount: Uint128 = 50u128.into();
     sdk.decrease_user_balance(&user_address, withdraw_amount);
     let holder_state = load_holder(&sdk.deps.storage, &user_address).unwrap();
-    assert_eq!(Uint128(50), holder_state.balance);
+    assert_eq!(Uint128::new(50), holder_state.balance);
     assert_eq!(Decimal::from_str("10").unwrap(), holder_state.index);
     assert_eq!(
         Decimal::from_str("1000").unwrap(),
@@ -507,7 +502,7 @@ fn decrease_balance_should_update_index() {
 
     let state = load_state(&sdk.deps.storage).unwrap();
     assert_eq!(Decimal::from_str("10").unwrap(), state.global_index);
-    assert_eq!(Uint128(50), state.total_balance);
+    assert_eq!(Uint128::new(50), state.total_balance);
     assert_eq!(rewards, state.prev_reward_balance);
     //===============================================================================
 }
