@@ -640,6 +640,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
 
 [[package]]
+name = "yield-optimizer-basset-farmer-config"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-bignumber",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw20",
+ "protobuf",
+ "schemars",
+ "serde",
+ "thiserror",
+ "yield_optimizer",
+]
+
+[[package]]
 name = "yield-optimizer-nasset-config-holder"
 version = "0.1.0"
 dependencies = [
