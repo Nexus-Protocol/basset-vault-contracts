@@ -5,8 +5,8 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
     attr,
     testing::{mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-    Api, CosmosMsg, Decimal, OwnedDeps, Querier, Reply, ReplyOn, Storage, SubMsg, SubcallResponse,
-    WasmMsg,
+    Api, CosmosMsg, Decimal, OwnedDeps, Querier, Reply, ReplyOn, Storage, SubMsg,
+    SubMsgExecutionResponse, WasmMsg,
 };
 use cosmwasm_std::{to_binary, Coin, Empty, Response, Uint128};
 use cw20::Cw20ReceiveMsg;
@@ -139,7 +139,7 @@ impl Sdk {
                 crate::contract::instantiate(deps.as_mut(), mock_env(), info, init_msg.clone())
                     .unwrap();
             assert_eq!(
-                res.submessages,
+                res.messages,
                 vec![SubMsg {
                     msg: WasmMsg::Instantiate {
                         code_id: init_msg.nasset_token_config_holder_code_id,
@@ -147,7 +147,7 @@ impl Sdk {
                             governance_contract_addr: init_msg.governance_contract.clone()
                         })
                         .unwrap(),
-                        send: vec![],
+                        funds: vec![],
                         label: "".to_string(),
                         admin: None,
                     }
@@ -171,7 +171,7 @@ impl Sdk {
 
             let reply_msg = Reply {
                 id: SubmsgIds::InitNAssetConfigHolder.id(),
-                result: cosmwasm_std::ContractResult::Ok(SubcallResponse {
+                result: cosmwasm_std::ContractResult::Ok(SubMsgExecutionResponse {
                     events: vec![],
                     data: Some(
                         nasset_token_config_holder_initiate_response
@@ -184,7 +184,7 @@ impl Sdk {
 
             let res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg.clone()).unwrap();
             assert_eq!(
-                res.submessages,
+                res.messages,
                 vec![SubMsg {
                     msg: WasmMsg::Instantiate {
                         code_id: init_msg.nasset_token_code_id,
@@ -200,7 +200,7 @@ impl Sdk {
                             config_holder_contract: nasset_token_config_holder_contract.to_string()
                         })
                         .unwrap(),
-                        send: vec![],
+                        funds: vec![],
                         label: "".to_string(),
                         admin: None,
                     }
@@ -232,7 +232,7 @@ impl Sdk {
 
             let reply_msg = Reply {
                 id: SubmsgIds::InitNAsset.id(),
-                result: cosmwasm_std::ContractResult::Ok(SubcallResponse {
+                result: cosmwasm_std::ContractResult::Ok(SubMsgExecutionResponse {
                     events: vec![],
                     data: Some(
                         nasset_token_initiate_response
@@ -245,7 +245,7 @@ impl Sdk {
 
             let res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg.clone()).unwrap();
             assert_eq!(
-                res.submessages,
+                res.messages,
                 vec![SubMsg {
                     msg: WasmMsg::Instantiate {
                         code_id: init_msg.nasset_token_rewards_code_id,
@@ -255,7 +255,7 @@ impl Sdk {
                             governance_contract_addr: init_msg.governance_contract.clone()
                         })
                         .unwrap(),
-                        send: vec![],
+                        funds: vec![],
                         label: "".to_string(),
                         admin: None,
                     }
@@ -285,7 +285,7 @@ impl Sdk {
 
             let reply_msg = Reply {
                 id: SubmsgIds::InitNAssetRewards.id(),
-                result: cosmwasm_std::ContractResult::Ok(SubcallResponse {
+                result: cosmwasm_std::ContractResult::Ok(SubMsgExecutionResponse {
                     events: vec![],
                     data: Some(
                         nasset_token_rewards_initiate_response
@@ -300,42 +300,40 @@ impl Sdk {
 
             assert_eq!(
                 res.messages,
-                vec![CosmosMsg::Wasm(WasmMsg::Execute {
-                    contract_addr: nasset_token_config_holder_contract.to_string(),
-                    send: vec![],
-                    msg: to_binary(&NAssetTokenConfigHolderExecuteMsg::Anyone {
-                        anyone_msg: NAssetTokenConfigHolderAnyoneMsg::SetTokenRewardsContract {
-                            nasset_token_rewards_contract_addr: nasset_token_rewards_contract
-                                .to_string(),
-                        },
-                    })
-                    .unwrap(),
-                })]
-            );
-
-            assert_eq!(
-                res.submessages,
-                vec![SubMsg {
-                    msg: WasmMsg::Instantiate {
-                        code_id: init_msg.psi_distributor_code_id,
-                        msg: to_binary(&PsiDistributorInstantiateMsg {
-                            psi_token_addr: psi_token.to_string(),
-                            nasset_token_rewards_contract_addr: nasset_token_rewards_contract
-                                .to_string(),
-                            nasset_token_rewards_share: NASSET_TOKEN_HOLDERS_REWARDS_SHARE,
-                            governance_contract_addr: init_msg.governance_contract.clone(),
-                            governance_contract_share: GOVERNANCE_STAKER_REWARDS_SHARE,
+                vec![
+                    SubMsg {
+                        msg: WasmMsg::Instantiate {
+                            code_id: init_msg.psi_distributor_code_id,
+                            msg: to_binary(&PsiDistributorInstantiateMsg {
+                                psi_token_addr: psi_token.to_string(),
+                                nasset_token_rewards_contract_addr: nasset_token_rewards_contract
+                                    .to_string(),
+                                nasset_token_rewards_share: NASSET_TOKEN_HOLDERS_REWARDS_SHARE,
+                                governance_contract_addr: init_msg.governance_contract.clone(),
+                                governance_contract_share: GOVERNANCE_STAKER_REWARDS_SHARE,
+                            })
+                            .unwrap(),
+                            funds: vec![],
+                            label: "".to_string(),
+                            admin: None,
+                        }
+                        .into(),
+                        gas_limit: None,
+                        id: SubmsgIds::InitPsiDistributor.id(),
+                        reply_on: ReplyOn::Success,
+                    },
+                    SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: nasset_token_config_holder_contract.to_string(),
+                        funds: vec![],
+                        msg: to_binary(&NAssetTokenConfigHolderExecuteMsg::Anyone {
+                            anyone_msg: NAssetTokenConfigHolderAnyoneMsg::SetTokenRewardsContract {
+                                nasset_token_rewards_contract_addr: nasset_token_rewards_contract
+                                    .to_string(),
+                            },
                         })
                         .unwrap(),
-                        send: vec![],
-                        label: "".to_string(),
-                        admin: None,
-                    }
-                    .into(),
-                    gas_limit: None,
-                    id: SubmsgIds::InitPsiDistributor.id(),
-                    reply_on: ReplyOn::Success,
-                }]
+                    }))
+                ]
             );
             assert_eq!(
                 res.attributes,
@@ -356,7 +354,7 @@ impl Sdk {
 
             let reply_msg = Reply {
                 id: SubmsgIds::InitPsiDistributor.id(),
-                result: cosmwasm_std::ContractResult::Ok(SubcallResponse {
+                result: cosmwasm_std::ContractResult::Ok(SubMsgExecutionResponse {
                     events: vec![],
                     data: Some(
                         psi_distributor_initiate_response
@@ -368,7 +366,6 @@ impl Sdk {
             };
 
             let res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg.clone()).unwrap();
-            assert!(res.submessages.is_empty());
             assert!(res.messages.is_empty());
             assert_eq!(
                 res.attributes,
@@ -400,7 +397,7 @@ impl Sdk {
     pub fn set_tax(&mut self, tax_percent: u64, cap: u128) {
         self.deps.querier.with_tax(
             Decimal::percent(tax_percent),
-            &[(&STABLE_DENOM.to_string(), &Uint128(cap))],
+            &[(&STABLE_DENOM.to_string(), &Uint128::new(cap))],
         );
     }
 
@@ -514,7 +511,7 @@ impl Sdk {
     pub fn aterra_redeem_success(&mut self) -> ContractResult<Response<Empty>> {
         let reply_msg = Reply {
             id: SubmsgIds::RedeemStableOnRepayLoan.id(),
-            result: cosmwasm_std::ContractResult::Ok(SubcallResponse {
+            result: cosmwasm_std::ContractResult::Ok(SubMsgExecutionResponse {
                 events: vec![],
                 //we don't use it
                 data: None,
@@ -539,7 +536,7 @@ impl Sdk {
     pub fn continue_repay_loan(&mut self) -> ContractResult<Response<Empty>> {
         let reply_msg = Reply {
             id: SubmsgIds::RepayLoan.id(),
-            result: cosmwasm_std::ContractResult::Ok(SubcallResponse {
+            result: cosmwasm_std::ContractResult::Ok(SubMsgExecutionResponse {
                 events: vec![],
                 data: None,
             }),

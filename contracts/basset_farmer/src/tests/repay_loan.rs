@@ -7,7 +7,7 @@ use crate::tests::sdk::{ANCHOR_MARKET_CONTRACT, ATERRA_TOKEN, STABLE_DENOM};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 
 use cosmwasm_std::{to_binary, Coin, ReplyOn, Response, SubMsg, Uint128, WasmMsg};
-use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
+use cw20::Cw20ExecuteMsg;
 use std::str::FromStr;
 use yield_optimizer::{
     basset_farmer_config::BorrowerActionResponse,
@@ -38,7 +38,7 @@ fn repay_loan_without_problems() {
     {
         let response = sdk.rebalance().unwrap();
         assert_eq!(
-            response.submessages,
+            response.messages,
             vec![SubMsg {
                 msg: WasmMsg::Execute {
                     contract_addr: ATERRA_TOKEN.to_string(),
@@ -48,7 +48,7 @@ fn repay_loan_without_problems() {
                         msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
                     })
                     .unwrap(),
-                    send: vec![],
+                    funds: vec![],
                 }
                 .into(),
                 gas_limit: None,
@@ -87,12 +87,12 @@ fn repay_loan_without_problems() {
             .into(),
         };
         assert_eq!(
-            response.submessages,
+            response.messages,
             vec![SubMsg {
                 msg: WasmMsg::Execute {
                     contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
                     msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
-                    send: vec![repay_stable_coin.clone()],
+                    funds: vec![repay_stable_coin.clone()],
                 }
                 .into(),
                 gas_limit: None,
@@ -116,7 +116,7 @@ fn repay_loan_without_problems() {
 fn repay_loan_fail_to_redeem_aterra() {
     let mut sdk = Sdk::init();
 
-    let stable_coin_initial_balance = Uint128(5_000);
+    let stable_coin_initial_balance = Uint128::new(5_000);
     sdk.set_stable_balance(stable_coin_initial_balance);
     sdk.set_aterra_exchange_rate(Decimal256::from_str("1.25").unwrap());
     let aterra_balance = Uint256::from(7_000u64);
@@ -136,7 +136,7 @@ fn repay_loan_fail_to_redeem_aterra() {
         let response = sdk.rebalance().unwrap();
 
         assert_eq!(
-            response.submessages,
+            response.messages,
             vec![SubMsg {
                 msg: WasmMsg::Execute {
                     contract_addr: ATERRA_TOKEN.to_string(),
@@ -146,7 +146,7 @@ fn repay_loan_fail_to_redeem_aterra() {
                         msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
                     })
                     .unwrap(),
-                    send: vec![],
+                    funds: vec![],
                 }
                 .into(),
                 gas_limit: None,
@@ -161,13 +161,13 @@ fn repay_loan_fail_to_redeem_aterra() {
         let response = sdk.aterra_redeed_failed().unwrap();
         //now contract should repay loan with buffer and try to redeem aterra for that amount
         assert_eq!(
-            response.submessages,
+            response.messages,
             vec![
                 SubMsg {
                     msg: WasmMsg::Execute {
                         contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
                         msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
-                        send: vec![Coin {
+                        funds: vec![Coin {
                             denom: STABLE_DENOM.to_string(),
                             amount: stable_coin_initial_balance,
                         }],
@@ -187,7 +187,7 @@ fn repay_loan_fail_to_redeem_aterra() {
                             msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
                         })
                         .unwrap(),
-                        send: vec![],
+                        funds: vec![],
                     }
                     .into(),
                     gas_limit: None,
@@ -212,13 +212,13 @@ fn repay_loan_fail_to_redeem_aterra() {
 
         let response = sdk.aterra_redeem_success().unwrap();
         assert_eq!(
-            response.submessages,
+            response.messages,
             vec![
                 SubMsg {
                     msg: WasmMsg::Execute {
                         contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
                         msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
-                        send: vec![Coin {
+                        funds: vec![Coin {
                             denom: STABLE_DENOM.to_string(),
                             amount: Uint128::from(5_000u64),
                         }],
@@ -238,7 +238,7 @@ fn repay_loan_fail_to_redeem_aterra() {
                             msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
                         })
                         .unwrap(),
-                        send: vec![],
+                        funds: vec![],
                     }
                     .into(),
                     gas_limit: None,
@@ -265,7 +265,7 @@ fn repay_loan_fail_to_redeem_aterra() {
 fn limited_recursion_depth_all_errors() {
     let mut sdk = Sdk::init();
 
-    let stable_coin_initial_balance = Uint128(5_000);
+    let stable_coin_initial_balance = Uint128::new(5_000);
     sdk.set_stable_balance(stable_coin_initial_balance);
     sdk.set_aterra_exchange_rate(Decimal256::from_str("1.25").unwrap());
     let aterra_balance = Uint256::from(7_000u64);
@@ -290,13 +290,13 @@ fn limited_recursion_depth_all_errors() {
         let response = sdk.aterra_redeed_failed().unwrap();
         //now contract should repay loan with buffer and try to redeem aterra for that amount
         assert_eq!(
-            response.submessages,
+            response.messages,
             vec![
                 SubMsg {
                     msg: WasmMsg::Execute {
                         contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
                         msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
-                        send: vec![Coin {
+                        funds: vec![Coin {
                             denom: STABLE_DENOM.to_string(),
                             amount: stable_coin_initial_balance,
                         }],
@@ -316,7 +316,7 @@ fn limited_recursion_depth_all_errors() {
                             msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
                         })
                         .unwrap(),
-                        send: vec![],
+                        funds: vec![],
                     }
                     .into(),
                     gas_limit: None,
@@ -335,7 +335,7 @@ fn limited_recursion_depth_all_errors() {
 fn limited_recursion_depth_repayed_something() {
     let mut sdk = Sdk::init();
 
-    let stable_coin_initial_balance = Uint128(5_000);
+    let stable_coin_initial_balance = Uint128::new(5_000);
     sdk.set_stable_balance(stable_coin_initial_balance);
     sdk.set_aterra_exchange_rate(Decimal256::from_str("1.25").unwrap());
     let aterra_balance = Uint256::from(7_000u64);
@@ -360,13 +360,13 @@ fn limited_recursion_depth_repayed_something() {
         let response = sdk.aterra_redeed_failed().unwrap();
         //now contract should repay loan with buffer and try to redeem aterra for that amount
         assert_eq!(
-            response.submessages,
+            response.messages,
             vec![
                 SubMsg {
                     msg: WasmMsg::Execute {
                         contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
                         msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
-                        send: vec![Coin {
+                        funds: vec![Coin {
                             denom: STABLE_DENOM.to_string(),
                             amount: stable_coin_initial_balance,
                         }],
@@ -386,7 +386,7 @@ fn limited_recursion_depth_repayed_something() {
                             msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
                         })
                         .unwrap(),
-                        send: vec![],
+                        funds: vec![],
                     }
                     .into(),
                     gas_limit: None,

@@ -1,9 +1,9 @@
+use cosmwasm_storage::{singleton, singleton_read};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Addr, StdResult, Storage, Uint128};
-use cw_storage_plus::Item;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
@@ -47,33 +47,34 @@ pub struct ChildContractsInfo {
     pub governance_contract_psi_rewards_share: u64,
 }
 
-const CONFIG: Item<Config> = Item::new("config");
-const REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
-const AIM_BUFFER_SIZE: Item<Uint256> = Item::new("aim_buf_size");
-const STABLE_BALANCE_BEFORE_SELL_ANC: Item<Uint128> = Item::new("balance_before_sell_anc");
-const LAST_REWARDS_CLAIMING_HEIGHT: Item<u64> = Item::new("last_rewards_claiming_height");
+static KEY_CONFIG: &[u8] = b"config";
+static KEY_REPAYING_LOAN: &[u8] = b"repaying";
+static KEY_AIM_BUFFER_SIZE: &[u8] = b"aim_buf_size";
+
+static KEY_STABLE_BALANCE_BEFORE_SELL_ANC: &[u8] = b"balance_before_sell_anc";
+static KEY_LAST_REWARDS_CLAIMING_HEIGHT: &[u8] = b"last_rewards_claiming_height";
 //need that only for instantiating
-const CHILD_CONTRACTS_INFO: Item<ChildContractsInfo> = Item::new("child_contracts_code_id");
-const NASSET_TOKEN_CONFIG_HOLDER: Item<Addr> = Item::new("nasset_token_config_holder");
+static KEY_CHILD_CONTRACTS_INFO: &[u8] = b"child_contracts_code_id";
+static KEY_NASSET_TOKEN_CONFIG_HOLDER: &[u8] = b"nasset_token_config_holder";
 
 pub fn load_nasset_token_config_holder(storage: &dyn Storage) -> StdResult<Addr> {
-    NASSET_TOKEN_CONFIG_HOLDER.load(storage)
+    singleton_read(storage, KEY_NASSET_TOKEN_CONFIG_HOLDER).load()
 }
 
 pub fn store_nasset_token_config_holder(storage: &mut dyn Storage, addr: &Addr) -> StdResult<()> {
-    NASSET_TOKEN_CONFIG_HOLDER.save(storage, addr)
+    singleton(storage, KEY_NASSET_TOKEN_CONFIG_HOLDER).save(addr)
 }
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
-    CONFIG.load(storage)
+    singleton_read(storage, KEY_CONFIG).load()
 }
 
 pub fn store_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()> {
-    CONFIG.save(storage, config)
+    singleton(storage, KEY_CONFIG).save(config)
 }
 
 pub fn config_set_nasset_token(storage: &mut dyn Storage, nasset_token: Addr) -> StdResult<Config> {
-    CONFIG.update(storage, |mut config| -> StdResult<_> {
+    singleton(storage, KEY_CONFIG).update(|mut config: Config| -> StdResult<_> {
         config.nasset_token = nasset_token;
         Ok(config)
     })
@@ -83,15 +84,15 @@ pub fn config_set_psi_distributor(
     storage: &mut dyn Storage,
     psi_distributor: Addr,
 ) -> StdResult<Config> {
-    CONFIG.update(storage, |mut config| -> StdResult<_> {
+    singleton(storage, KEY_CONFIG).update(|mut config: Config| -> StdResult<_> {
         config.psi_distributor = psi_distributor;
         Ok(config)
     })
 }
 
 pub fn load_repaying_loan_state(storage: &dyn Storage) -> StdResult<RepayingLoanState> {
-    REPAYING_LOAN
-        .may_load(storage)
+    singleton_read(storage, KEY_REPAYING_LOAN)
+        .may_load()
         .map(|res| res.unwrap_or_default())
 }
 
@@ -99,52 +100,54 @@ pub fn store_repaying_loan_state(
     storage: &mut dyn Storage,
     repaying_loan_state: &RepayingLoanState,
 ) -> StdResult<()> {
-    REPAYING_LOAN.save(storage, repaying_loan_state)
+    singleton(storage, KEY_REPAYING_LOAN).save(repaying_loan_state)
 }
 
 pub fn update_loan_state_part_of_loan_repaid(
     storage: &mut dyn Storage,
 ) -> StdResult<RepayingLoanState> {
-    REPAYING_LOAN.update(storage, |mut rep_loan| -> StdResult<_> {
-        rep_loan.to_repay_amount = rep_loan.to_repay_amount - rep_loan.repaying_amount;
-        rep_loan.repayed_something = true;
-        Ok(rep_loan)
-    })
+    singleton(storage, KEY_REPAYING_LOAN).update(
+        |mut rep_loan: RepayingLoanState| -> StdResult<_> {
+            rep_loan.to_repay_amount = rep_loan.to_repay_amount - rep_loan.repaying_amount;
+            rep_loan.repayed_something = true;
+            Ok(rep_loan)
+        },
+    )
 }
 
 pub fn load_aim_buffer_size(storage: &dyn Storage) -> StdResult<Uint256> {
-    AIM_BUFFER_SIZE.load(storage)
+    singleton_read(storage, KEY_AIM_BUFFER_SIZE).load()
 }
 
 pub fn store_aim_buffer_size(storage: &mut dyn Storage, aim_buf_size: &Uint256) -> StdResult<()> {
-    AIM_BUFFER_SIZE.save(storage, aim_buf_size)
+    singleton(storage, KEY_AIM_BUFFER_SIZE).save(aim_buf_size)
 }
 
 pub fn load_stable_balance_before_selling_anc(storage: &dyn Storage) -> StdResult<Uint128> {
-    STABLE_BALANCE_BEFORE_SELL_ANC.load(storage)
+    singleton_read(storage, KEY_STABLE_BALANCE_BEFORE_SELL_ANC).load()
 }
 
 pub fn store_stable_balance_before_selling_anc(
     storage: &mut dyn Storage,
     balance: &Uint128,
 ) -> StdResult<()> {
-    STABLE_BALANCE_BEFORE_SELL_ANC.save(storage, balance)
+    singleton(storage, KEY_STABLE_BALANCE_BEFORE_SELL_ANC).save(balance)
 }
 
 pub fn load_child_contracts_info(storage: &dyn Storage) -> StdResult<ChildContractsInfo> {
-    CHILD_CONTRACTS_INFO.load(storage)
+    singleton_read(storage, KEY_CHILD_CONTRACTS_INFO).load()
 }
 
 pub fn store_child_contracts_info(
     storage: &mut dyn Storage,
     child_contracts_info: &ChildContractsInfo,
 ) -> StdResult<()> {
-    CHILD_CONTRACTS_INFO.save(storage, child_contracts_info)
+    singleton(storage, KEY_CHILD_CONTRACTS_INFO).save(child_contracts_info)
 }
 
 pub fn load_last_rewards_claiming_height(storage: &dyn Storage) -> StdResult<u64> {
-    LAST_REWARDS_CLAIMING_HEIGHT
-        .may_load(storage)
+    singleton_read(storage, KEY_LAST_REWARDS_CLAIMING_HEIGHT)
+        .may_load()
         .map(|may_value| may_value.unwrap_or_default())
 }
 
@@ -152,5 +155,5 @@ pub fn store_last_rewards_claiming_height(
     storage: &mut dyn Storage,
     height: &u64,
 ) -> StdResult<()> {
-    LAST_REWARDS_CLAIMING_HEIGHT.save(storage, height)
+    singleton(storage, KEY_LAST_REWARDS_CLAIMING_HEIGHT).save(height)
 }

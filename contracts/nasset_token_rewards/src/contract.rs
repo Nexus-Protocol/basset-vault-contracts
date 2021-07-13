@@ -109,8 +109,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&queries::query_accrued_rewards(deps, address)?)
         }
         QueryMsg::Holder { address } => to_binary(&queries::query_holder(deps, address)?),
-        QueryMsg::Holders { start_after, limit } => {
-            to_binary(&queries::query_holders(deps, start_after, limit)?)
-        }
+        QueryMsg::Holders {
+            start_after,
+            limit,
+            order_by,
+        } => to_binary(&queries::query_holders(deps, start_after, limit, order_by)?),
     }
 }

@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Binary, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128, WasmMsg,
+    to_binary, Binary, CosmosMsg, DepsMut, Env, MessageInfo, Response, SubMsg, Uint128, WasmMsg,
 };
 
 use crate::{querier::query_rewards_contract, ContractResult};
@@ -28,9 +28,9 @@ pub fn transfer(
     let res: Response = cw20_transfer(deps, env, info, recipient.clone(), amount)?;
 
     Ok(Response {
-        submessages: vec![],
+        events: vec![],
         messages: vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: rewards_contract.to_string(),
                 msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                     token_msg: NassetRewardsTokenMsg::DecreaseBalance {
@@ -39,9 +39,9 @@ pub fn transfer(
                     },
                 })
                 .unwrap(),
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: rewards_contract.to_string(),
                 msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                     token_msg: NassetRewardsTokenMsg::IncreaseBalance {
@@ -50,8 +50,8 @@ pub fn transfer(
                     },
                 })
                 .unwrap(),
-                send: vec![],
-            }),
+                funds: vec![],
+            })),
         ],
         attributes: res.attributes,
         data: None,
@@ -69,8 +69,8 @@ pub fn burn(
 
     let res: Response = cw20_burn(deps, env, info, amount)?;
     Ok(Response {
-        submessages: vec![],
-        messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+        events: vec![],
+        messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: rewards_contract.to_string(),
             msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                 token_msg: NassetRewardsTokenMsg::DecreaseBalance {
@@ -79,8 +79,8 @@ pub fn burn(
                 },
             })
             .unwrap(),
-            send: vec![],
-        })],
+            funds: vec![],
+        }))],
         attributes: res.attributes,
         data: None,
     })
@@ -97,8 +97,8 @@ pub fn mint(
 
     let res: Response = cw20_mint(deps, env, info, recipient.clone(), amount)?;
     Ok(Response {
-        submessages: vec![],
-        messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+        events: vec![],
+        messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: rewards_contract.to_string(),
             msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                 token_msg: NassetRewardsTokenMsg::IncreaseBalance {
@@ -107,8 +107,8 @@ pub fn mint(
                 },
             })
             .unwrap(),
-            send: vec![],
-        })],
+            funds: vec![],
+        }))],
         attributes: res.attributes,
         data: None,
     })
@@ -127,10 +127,10 @@ pub fn send(
 
     let res: Response = cw20_send(deps, env, info, contract.clone(), amount, msg)?;
     Ok(Response {
-        submessages: vec![],
+        events: vec![],
         messages: vec![
             vec![
-                CosmosMsg::Wasm(WasmMsg::Execute {
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: rewards_contract.to_string(),
                     msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                         token_msg: NassetRewardsTokenMsg::DecreaseBalance {
@@ -139,9 +139,9 @@ pub fn send(
                         },
                     })
                     .unwrap(),
-                    send: vec![],
-                }),
-                CosmosMsg::Wasm(WasmMsg::Execute {
+                    funds: vec![],
+                })),
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: rewards_contract.to_string(),
                     msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                         token_msg: NassetRewardsTokenMsg::IncreaseBalance {
@@ -150,8 +150,8 @@ pub fn send(
                         },
                     })
                     .unwrap(),
-                    send: vec![],
-                }),
+                    funds: vec![],
+                })),
             ],
             res.messages,
         ]
@@ -174,9 +174,9 @@ pub fn transfer_from(
     let res: Response =
         cw20_transfer_from(deps, env, info, owner.clone(), recipient.clone(), amount)?;
     Ok(Response {
-        submessages: vec![],
+        events: vec![],
         messages: vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: rewards_contract.to_string(),
                 msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                     token_msg: NassetRewardsTokenMsg::DecreaseBalance {
@@ -185,9 +185,9 @@ pub fn transfer_from(
                     },
                 })
                 .unwrap(),
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: rewards_contract.to_string(),
                 msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                     token_msg: NassetRewardsTokenMsg::IncreaseBalance {
@@ -196,8 +196,8 @@ pub fn transfer_from(
                     },
                 })
                 .unwrap(),
-                send: vec![],
-            }),
+                funds: vec![],
+            })),
         ],
         attributes: res.attributes,
         data: None,
@@ -215,8 +215,8 @@ pub fn burn_from(
 
     let res: Response = cw20_burn_from(deps, env, info, owner.clone(), amount)?;
     Ok(Response {
-        submessages: vec![],
-        messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+        events: vec![],
+        messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: rewards_contract.to_string(),
             msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                 token_msg: NassetRewardsTokenMsg::DecreaseBalance {
@@ -225,8 +225,8 @@ pub fn burn_from(
                 },
             })
             .unwrap(),
-            send: vec![],
-        })],
+            funds: vec![],
+        }))],
         attributes: res.attributes,
         data: None,
     })
@@ -254,10 +254,10 @@ pub fn send_from(
     )?;
 
     Ok(Response {
-        submessages: vec![],
+        events: vec![],
         messages: vec![
             vec![
-                CosmosMsg::Wasm(WasmMsg::Execute {
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: rewards_contract.to_string(),
                     msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                         token_msg: NassetRewardsTokenMsg::DecreaseBalance {
@@ -266,9 +266,9 @@ pub fn send_from(
                         },
                     })
                     .unwrap(),
-                    send: vec![],
-                }),
-                CosmosMsg::Wasm(WasmMsg::Execute {
+                    funds: vec![],
+                })),
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: rewards_contract.to_string(),
                     msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                         token_msg: NassetRewardsTokenMsg::IncreaseBalance {
@@ -277,8 +277,8 @@ pub fn send_from(
                         },
                     })
                     .unwrap(),
-                    send: vec![],
-                }),
+                    funds: vec![],
+                })),
             ],
             res.messages,
         ]

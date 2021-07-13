@@ -1,5 +1,5 @@
-use crate::contract::CONFIG;
 use crate::error::ContractError;
+use crate::state::load_config;
 
 use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
@@ -71,7 +71,7 @@ fn success_to_change_config_if_sender_governance() {
     let info = mock_info(&governance_contract_addr, &[]);
     crate::contract::execute(deps.as_mut(), env, info, change_config_msg).unwrap();
 
-    let config = CONFIG.load(&deps.storage).unwrap();
+    let config = load_config(&deps.storage).unwrap();
     assert_eq!(new_governance_contract_addr, config.governance_contract);
     assert_eq!(
         new_nasset_token_rewards_contract_addr,

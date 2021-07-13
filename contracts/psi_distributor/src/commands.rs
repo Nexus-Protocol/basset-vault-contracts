@@ -1,11 +1,11 @@
 use cosmwasm_std::{
-    attr, to_binary, CosmosMsg, DepsMut, Env, Response, StdError, StdResult, WasmMsg,
+    attr, to_binary, CosmosMsg, DepsMut, Env, Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 
 use crate::state::{load_config, store_config, RewardShare, RewardsDistribution};
 use crate::{state::Config, ContractResult};
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
+use cw20::Cw20ExecuteMsg;
 use yield_optimizer::querier::query_token_balance;
 
 pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
@@ -24,14 +24,14 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
 
     for reward_share in config.rewards_distribution.distribution().iter() {
         let reward = psi_balance * reward_share.share;
-        messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
+        messages.push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.psi_token.to_string(),
-            send: vec![],
+            funds: vec![],
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: reward_share.recipient.to_string(),
                 amount: reward.into(),
             })?,
-        }));
+        })));
 
         attributes.push(attr("recepient", reward_share.recipient.to_string()));
         attributes.push(attr("reward_amount", reward));
@@ -39,9 +39,9 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
 
     Ok(Response {
         messages,
-        submessages: vec![],
         attributes,
         data: None,
+        events: vec![],
     })
 }
 

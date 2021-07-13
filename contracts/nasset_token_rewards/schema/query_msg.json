@@ -66,6 +66,16 @@
               "format": "uint32",
               "minimum": 0.0
             },
+            "order_by": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/OrderBy"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "start_after": {
               "type": [
                 "string",
@@ -77,5 +87,14 @@
       },
       "additionalProperties": false
     }
-  ]
+  ],
+  "definitions": {
+    "OrderBy": {
+      "type": "string",
+      "enum": [
+        "asc",
+        "desc"
+      ]
+    }
+  }
 }

@@ -1,9 +1,9 @@
+use cosmwasm_storage::{singleton, singleton_read};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::{Addr, StdError, StdResult, Storage};
-use cw_storage_plus::Item;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
@@ -46,14 +46,14 @@ impl RewardsDistribution {
     }
 }
 
-const CONFIG: Item<Config> = Item::new("config");
+static KEY_CONFIG: &[u8] = b"config";
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
-    CONFIG.load(storage)
+    singleton_read(storage, KEY_CONFIG).load()
 }
 
 pub fn store_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()> {
-    CONFIG.save(storage, config)
+    singleton(storage, KEY_CONFIG).save(config)
 }
 
 #[cfg(test)]

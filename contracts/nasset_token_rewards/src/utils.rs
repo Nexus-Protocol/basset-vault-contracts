@@ -8,7 +8,7 @@ pub fn calculate_decimal_rewards(
     user_index: Decimal,
     user_balance: Uint128,
 ) -> StdResult<Decimal> {
-    let decimal_balance = Decimal::from_ratio(user_balance, Uint128(1));
+    let decimal_balance = Decimal::from_ratio(user_balance, Uint128::new(1));
     Ok(decimal_multiplication_in_256(
         decimal_subtraction_in_256(global_index, user_index),
         decimal_balance,
@@ -35,18 +35,18 @@ mod tests {
 
     #[test]
     pub fn proper_calculate_rewards() {
-        let global_index = Decimal::from_ratio(Uint128(9), Uint128(100));
+        let global_index = Decimal::from_ratio(Uint128::new(9), Uint128::new(100));
         let user_index = Decimal::zero();
-        let user_balance = Uint128(1000);
+        let user_balance = Uint128::new(1000);
         let reward = calculate_decimal_rewards(global_index, user_index, user_balance).unwrap();
         assert_eq!(reward.to_string(), "90");
     }
 
     #[test]
     pub fn proper_get_decimals() {
-        let global_index = Decimal::from_ratio(Uint128(9999999), Uint128(100000000));
+        let global_index = Decimal::from_ratio(Uint128::new(9999999), Uint128::new(100000000));
         let user_index = Decimal::zero();
-        let user_balance = Uint128(10);
+        let user_balance = Uint128::new(10);
         let reward = get_decimals(
             calculate_decimal_rewards(global_index, user_index, user_balance).unwrap(),
         )

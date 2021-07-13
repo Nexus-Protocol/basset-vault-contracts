@@ -8,7 +8,7 @@ use crate::{
 use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::attr;
 use cosmwasm_std::{to_binary, Coin, ReplyOn, Response, SubMsg, WasmMsg};
-use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
+use cw20::Cw20ExecuteMsg;
 
 use yield_optimizer::querier::{AnchorMarketCw20Msg, AnchorMarketMsg};
 
@@ -38,12 +38,12 @@ fn repay_loan_action_to_response_repay_loan() {
         amount: repay_amount.into(),
     };
     let expected_response = Response {
-        messages: vec![],
-        submessages: vec![SubMsg {
+        events: vec![],
+        messages: vec![SubMsg {
             msg: WasmMsg::Execute {
                 contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
                 msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
-                send: vec![repay_stable_coin],
+                funds: vec![repay_stable_coin],
             }
             .into(),
             gas_limit: None,
@@ -68,8 +68,8 @@ fn repay_loan_action_to_response_sell_aterra() {
     let response = repay_loan_action.to_response(&config).unwrap();
 
     let expected_response = Response {
-        messages: vec![],
-        submessages: vec![SubMsg {
+        events: vec![],
+        messages: vec![SubMsg {
             msg: WasmMsg::Execute {
                 contract_addr: ATERRA_TOKEN.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Send {
@@ -78,7 +78,7 @@ fn repay_loan_action_to_response_sell_aterra() {
                     msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
                 })
                 .unwrap(),
-                send: vec![],
+                funds: vec![],
             }
             .into(),
             gas_limit: None,
@@ -109,13 +109,13 @@ fn repay_loan_action_to_response_repay_loan_and_sell_aterra() {
         amount: repay_loan_amount.into(),
     };
     let expected_response = Response {
-        messages: vec![],
-        submessages: vec![
+        events: vec![],
+        messages: vec![
             SubMsg {
                 msg: WasmMsg::Execute {
                     contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
                     msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
-                    send: vec![repay_stable_coin],
+                    funds: vec![repay_stable_coin],
                 }
                 .into(),
                 gas_limit: None,
@@ -131,7 +131,7 @@ fn repay_loan_action_to_response_repay_loan_and_sell_aterra() {
                         msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
                     })
                     .unwrap(),
-                    send: vec![],
+                    funds: vec![],
                 }
                 .into(),
                 gas_limit: None,
