@@ -155,7 +155,7 @@ pub fn receive_cw20_deposit(
     // only bAsset contract can execute this message
     let config: Config = load_config(deps.storage)?;
     if basset_addr != config.basset_token {
-        return Err(ContractError::Unauthorized {});
+        return Err(ContractError::Unauthorized);
     }
 
     //we trust cw20 contract
@@ -387,7 +387,7 @@ pub fn rebalance(
     )?;
 
     match borrower_action {
-        BorrowerActionResponse::Nothing {} => {
+        BorrowerActionResponse::Nothing => {
             //maybe it is better to return error here, but
             //we cant, cause it is used in 'withdraw'
             return Ok(Response {
