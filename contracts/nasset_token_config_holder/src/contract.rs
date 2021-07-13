@@ -1,15 +1,13 @@
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
-use cw_storage_plus::Item;
 
 use crate::error::ContractError;
+use crate::state::{load_config, save_config, set_nasset_token_rewards_contract};
 use crate::ContractResult;
 use yield_optimizer::nasset_token_config_holder::{
     AnyoneMsg, Config, ConfigResponse, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg,
 };
-
-pub(crate) const CONFIG: Item<Config> = Item::new("config");
 
 #[entry_point]
 pub fn instantiate(
@@ -23,7 +21,7 @@ pub fn instantiate(
         governance_contract: deps.api.addr_validate(&msg.governance_contract_addr)?,
     };
 
-    CONFIG.save(deps.storage, &config)?;
+    save_config(deps.storage, &config)?;
 
     Ok(Response::default())
 }
@@ -40,16 +38,13 @@ pub fn execute(
             AnyoneMsg::SetTokenRewardsContract {
                 nasset_token_rewards_contract_addr,
             } => {
-                let config = CONFIG.load(deps.storage)?;
+                let config = load_config(deps.storage)?;
                 if config.nasset_token_rewards_contract.to_string().is_empty() {
                     let addr = deps
                         .api
                         .addr_validate(&nasset_token_rewards_contract_addr)?;
 
-                    CONFIG.update(deps.storage, |mut cfg| -> StdResult<_> {
-                        cfg.nasset_token_rewards_contract = addr;
-                        Ok(cfg)
-                    })?;
+                    set_nasset_token_rewards_contract(deps.storage, addr)?;
 
                     Ok(Response::default())
                 } else {
@@ -59,7 +54,7 @@ pub fn execute(
         },
 
         ExecuteMsg::Governance { governance_msg } => {
-            let config = CONFIG.load(deps.storage)?;
+            let config = load_config(deps.storage)?;
             if info.sender != config.governance_contract {
                 return Err(ContractError::Unauthorized {});
             }
@@ -94,7 +89,7 @@ fn update_config(
         current_config.governance_contract = deps.api.addr_validate(governance_addr)?;
     }
 
-    CONFIG.save(deps.storage, &current_config)?;
+    save_config(deps.storage, &current_config)?;
     Ok(Response::default())
 }
 
@@ -106,7 +101,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
-    let config: Config = CONFIG.load(deps.storage)?;
+    let config: Config = load_config(deps.storage)?;
     Ok(ConfigResponse {
         nasset_token_rewards_addr: config.nasset_token_rewards_contract.to_string(),
         governance_contract_addr: config.governance_contract.to_string(),

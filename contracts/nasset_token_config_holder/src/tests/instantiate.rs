@@ -2,7 +2,7 @@ use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
 use yield_optimizer::nasset_token_config_holder::Config;
 
-use crate::contract::CONFIG;
+use crate::state::load_config;
 
 #[test]
 fn proper_initialization() {
@@ -17,7 +17,7 @@ fn proper_initialization() {
     let info = mock_info("addr0010", &[]);
     crate::contract::instantiate(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
 
-    let config: Config = CONFIG.load(&deps.storage).unwrap();
+    let config: Config = load_config(&deps.storage).unwrap();
     assert_eq!(msg.governance_contract_addr, config.governance_contract);
     assert_eq!("", config.nasset_token_rewards_contract);
 
@@ -36,7 +36,7 @@ fn proper_initialization() {
             set_rewards_token_addr_msg.clone(),
         )
         .unwrap();
-        let config: Config = CONFIG.load(&deps.storage).unwrap();
+        let config: Config = load_config(&deps.storage).unwrap();
         assert_eq!(msg.governance_contract_addr, config.governance_contract);
         assert_eq!(
             nasset_token_rewards_contract_addr,
@@ -59,7 +59,7 @@ fn proper_initialization() {
             set_rewards_token_addr_msg.clone(),
         );
         assert!(execute_res.is_err());
-        let config: Config = CONFIG.load(&deps.storage).unwrap();
+        let config: Config = load_config(&deps.storage).unwrap();
         assert_eq!(msg.governance_contract_addr, config.governance_contract);
         assert_eq!(
             nasset_token_rewards_contract_addr,
