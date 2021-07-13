@@ -7,9 +7,9 @@ use crate::tests::sdk::{
 };
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::testing::MOCK_CONTRACT_ADDR;
-use cosmwasm_std::{to_binary, Coin, StdError, WasmMsg};
+use cosmwasm_std::{to_binary, Coin, StdError, SubMsg, WasmMsg};
 use cosmwasm_std::{CosmosMsg, Uint128};
-use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
+use cw20::Cw20ExecuteMsg;
 use std::str::FromStr;
 use yield_optimizer::basset_farmer::{
     ExecuteMsg as BassetFarmerExecuteMsg, YourselfMsg as BassetFarmerYourselfMsg,
@@ -38,19 +38,19 @@ fn honest_work() {
         assert_eq!(
             honest_work_response.messages,
             vec![
-                CosmosMsg::Wasm(WasmMsg::Execute {
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
                     msg: to_binary(&AnchorMarketMsg::ClaimRewards { to: None }).unwrap(),
-                    send: vec![],
-                }),
-                CosmosMsg::Wasm(WasmMsg::Execute {
+                    funds: vec![],
+                })),
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: MOCK_CONTRACT_ADDR.to_string(),
                     msg: to_binary(&BassetFarmerExecuteMsg::Yourself {
                         yourself_msg: BassetFarmerYourselfMsg::SwapAnc
                     })
                     .unwrap(),
-                    send: vec![],
-                })
+                    funds: vec![],
+                }))
             ]
         );
 
@@ -58,7 +58,7 @@ fn honest_work() {
         assert_eq!(claiming_height, CLAIMING_REWARDS_DELAY);
     }
 
-    let stable_coin_balance = Uint128(5_000_000);
+    let stable_coin_balance = Uint128::new(5_000_000);
     let anc_balance = Uint256::from(3_000u64);
     //send SwapAnc message
     {
@@ -68,7 +68,7 @@ fn honest_work() {
         assert_eq!(
             swap_anc_response.messages,
             vec![
-                CosmosMsg::Wasm(WasmMsg::Execute {
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: ANCHOR_TOKEN.to_string(),
                     msg: to_binary(&Cw20ExecuteMsg::Send {
                         amount: anc_balance.into(),
@@ -81,21 +81,21 @@ fn honest_work() {
                         .unwrap(),
                     })
                     .unwrap(),
-                    send: vec![],
-                }),
-                CosmosMsg::Wasm(WasmMsg::Execute {
+                    funds: vec![],
+                })),
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: MOCK_CONTRACT_ADDR.to_string(),
                     msg: to_binary(&BassetFarmerExecuteMsg::Yourself {
                         yourself_msg: BassetFarmerYourselfMsg::DisributeRewards,
                     })
                     .unwrap(),
-                    send: vec![],
-                }),
+                    funds: vec![],
+                })),
             ]
         );
     }
 
-    let stable_coin_balance_from_selling_anc = Uint128(1_000_000);
+    let stable_coin_balance_from_selling_anc = Uint128::new(1_000_000);
     //send DisributeRewards message
     {
         sdk.set_stable_balance(stable_coin_balance + stable_coin_balance_from_selling_anc);
@@ -114,7 +114,7 @@ fn honest_work() {
         assert_eq!(
             distribute_rewards_response.messages,
             vec![
-                CosmosMsg::Wasm(WasmMsg::Execute {
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: PSI_STABLE_SWAP_CONTRACT.to_string(),
                     msg: to_binary(&TerraswapExecuteMsg::Swap {
                         offer_asset: swap_asset,
@@ -123,19 +123,19 @@ fn honest_work() {
                         to: Some(PSI_DISTRIBUTOR_CONTRACT.to_string()),
                     })
                     .unwrap(),
-                    send: vec![Coin {
+                    funds: vec![Coin {
                         denom: STABLE_DENOM.to_string(),
                         amount: stable_coin_balance_from_selling_anc,
                     }],
-                }),
-                CosmosMsg::Wasm(WasmMsg::Execute {
+                })),
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: PSI_DISTRIBUTOR_CONTRACT.to_string(),
                     msg: to_binary(&PsiDistributorExecuteMsg::Anyone {
                         anyone_msg: PsiDistributorAnyoneMsg::DistributeRewards,
                     })
                     .unwrap(),
-                    send: vec![],
-                }),
+                    funds: vec![],
+                })),
             ]
         );
     }
@@ -161,19 +161,19 @@ fn honest_work() {
         assert_eq!(
             honest_work_response.messages,
             vec![
-                CosmosMsg::Wasm(WasmMsg::Execute {
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
                     msg: to_binary(&AnchorMarketMsg::ClaimRewards { to: None }).unwrap(),
-                    send: vec![],
-                }),
-                CosmosMsg::Wasm(WasmMsg::Execute {
+                    funds: vec![],
+                })),
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: MOCK_CONTRACT_ADDR.to_string(),
                     msg: to_binary(&BassetFarmerExecuteMsg::Yourself {
                         yourself_msg: BassetFarmerYourselfMsg::SwapAnc
                     })
                     .unwrap(),
-                    send: vec![],
-                })
+                    funds: vec![],
+                }))
             ]
         );
 

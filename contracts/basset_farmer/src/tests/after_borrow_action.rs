@@ -6,7 +6,7 @@ use crate::{
     tests::sdk::{ANCHOR_MARKET_CONTRACT, STABLE_DENOM},
 };
 use cosmwasm_bignumber::Uint256;
-use cosmwasm_std::{attr, CosmosMsg};
+use cosmwasm_std::{attr, CosmosMsg, SubMsg};
 use cosmwasm_std::{to_binary, Coin, Response, WasmMsg};
 
 use yield_optimizer::querier::AnchorMarketMsg;
@@ -33,15 +33,15 @@ fn after_borrow_action_to_response_deposit() {
     let response = after_borrow_action.to_response(&config).unwrap();
 
     let expected_response = Response {
-        messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+        messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
             msg: to_binary(&AnchorMarketMsg::DepositStable {}).unwrap(),
-            send: vec![Coin {
+            funds: vec![Coin {
                 denom: STABLE_DENOM.to_string(),
                 amount: deposit_amount.into(),
             }],
-        })],
-        submessages: vec![],
+        }))],
+        events: vec![],
         attributes: vec![attr("action", "deposit"), attr("amount", deposit_amount)],
         data: None,
     };

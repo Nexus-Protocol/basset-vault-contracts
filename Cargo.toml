@@ -1,6 +1,5 @@
 [workspace]
-members = ["packages/*", "contracts/psi_distributor", "contracts/nasset_token_rewards", "contracts/nasset_token_config_holder", "contracts/nasset_token", "contracts/basset_farmer_config"]
-# members = ["packages/*", "contracts/*"]
+members = ["packages/*", "contracts/*"]
 
 [profile.release.package.yield_optimizer]
 opt-level = 3

@@ -1,14 +1,6 @@
+use cosmwasm_bignumber::{Decimal256, Uint256};
+use cosmwasm_std::{Deps, StdResult};
 use terra_cosmwasm::TerraQuerier;
-
-pub fn deduct_tax(deps: Deps, coin: Coin) -> StdResult<Coin> {
-    let tax_info = get_tax_info(deps, &coin.denom)?;
-    let coin_amount = Uint256::from(coin.amount);
-    let result_amount = tax_info.subtract_tax(coin_amount);
-    Ok(Coin {
-        denom: coin.denom,
-        amount: result_amount.into(),
-    })
-}
 
 pub struct TaxInfo {
     pub rate: Decimal256,

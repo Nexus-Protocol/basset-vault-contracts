@@ -13,6 +13,7 @@ use crate::{
         store_last_rewards_claiming_height, store_repaying_loan_state,
         store_stable_balance_before_selling_anc, RepayingLoanState,
     },
+    tax_querier::get_tax_info,
     utils::{
         calc_after_borrow_action, get_repay_loan_action, is_anc_rewards_claimable,
         split_profit_to_handle_interest,
@@ -22,12 +23,10 @@ use crate::{
 use crate::{error::ContractError, state::load_last_rewards_claiming_height};
 use crate::{state::Config, ContractResult};
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cw20::Cw20ReceiveMsg;
-use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
+use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 use yield_optimizer::{
     basset_farmer::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, YourselfMsg},
     basset_farmer_config::{query_borrower_action, BorrowerActionResponse},
-    get_tax_info,
     querier::{
         get_basset_in_custody, query_aterra_state, query_balance, query_borrower_info,
         query_supply, query_token_balance, AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg,
@@ -216,30 +215,30 @@ pub fn deposit_basset(
     //3. rebalance
     Ok(Response {
         messages: vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.anchor_overseer_contract.to_string(),
                 msg: to_binary(&AnchorOverseerMsg::LockCollateral {
                     collaterals: vec![(config.basset_token.to_string(), deposit_amount)],
                 })?,
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.nasset_token.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Mint {
                     recipient: farmer.to_string(),
                     amount: nasset_to_mint.into(),
                 })?,
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: env.contract.address.to_string(),
                 msg: to_binary(&ExecuteMsg::Anyone {
                     anyone_msg: AnyoneMsg::Rebalance,
                 })?,
-                send: vec![],
-            }),
+                funds: vec![],
+            })),
         ],
-        submessages: vec![],
+        events: vec![],
         attributes: vec![
             attr("action", "deposit_basset"),
             attr("farmer", farmer),
@@ -323,34 +322,34 @@ pub fn withdraw_basset(
 
     rebalance_response
         .messages
-        .push(CosmosMsg::Wasm(WasmMsg::Execute {
+        .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.anchor_overseer_contract.to_string(),
             msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
                 collaterals: vec![(config.basset_token.to_string(), basset_to_withdraw)],
             })?,
-            send: vec![],
-        }));
+            funds: vec![],
+        })));
 
     rebalance_response
         .messages
-        .push(CosmosMsg::Wasm(WasmMsg::Execute {
+        .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.basset_token.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: farmer.to_string(),
                 amount: basset_to_withdraw.into(),
             })?,
-            send: vec![],
-        }));
+            funds: vec![],
+        })));
 
     rebalance_response
         .messages
-        .push(CosmosMsg::Wasm(WasmMsg::Execute {
+        .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.nasset_token.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Burn {
                 amount: nasset_to_withdraw_amount.into(),
             })?,
-            send: vec![],
-        }));
+            funds: vec![],
+        })));
 
     rebalance_response
         .attributes
@@ -392,7 +391,7 @@ pub fn rebalance(
             //we cant, cause it is used in 'withdraw'
             return Ok(Response {
                 messages: vec![],
-                submessages: vec![],
+                events: vec![],
                 attributes: vec![attr("action", "rebalance_not_needed")],
                 data: None,
             });
@@ -425,15 +424,15 @@ fn borrow_logic(
     aim_buffer_size: Uint256,
 ) -> ContractResult<Response> {
     Ok(Response {
-        messages: vec![],
-        submessages: vec![SubMsg {
+        events: vec![],
+        messages: vec![SubMsg {
             msg: WasmMsg::Execute {
                 contract_addr: config.anchor_market_contract.to_string(),
                 msg: to_binary(&AnchorMarketMsg::BorrowStable {
                     borrow_amount,
                     to: None,
                 })?,
-                send: vec![],
+                funds: vec![],
             }
             .into(),
             gas_limit: None,
@@ -536,20 +535,20 @@ pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
 
     Ok(Response {
         messages: vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.anchor_market_contract.to_string(),
                 msg: to_binary(&AnchorMarketMsg::ClaimRewards { to: None })?,
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: env.contract.address.to_string(),
                 msg: to_binary(&ExecuteMsg::Yourself {
                     yourself_msg: YourselfMsg::SwapAnc,
                 })?,
-                send: vec![],
-            }),
+                funds: vec![],
+            })),
         ],
-        submessages: vec![],
+        events: vec![],
         attributes: vec![attr("action", "claim_anc_rewards")],
         data: None,
     })
@@ -574,7 +573,7 @@ pub fn swap_anc(deps: DepsMut, env: Env) -> ContractResult<Response> {
 
     Ok(Response {
         messages: vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.anchor_token.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Send {
                     amount: anc_amount,
@@ -585,17 +584,17 @@ pub fn swap_anc(deps: DepsMut, env: Env) -> ContractResult<Response> {
                         to: None,
                     })?,
                 })?,
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: env.contract.address.to_string(),
                 msg: to_binary(&ExecuteMsg::Yourself {
                     yourself_msg: YourselfMsg::DisributeRewards,
                 })?,
-                send: vec![],
-            }),
+                funds: vec![],
+            })),
         ],
-        submessages: vec![],
+        events: vec![],
         attributes: vec![attr("action", "swap_anc"), attr("anc_swapped", anc_amount)],
         data: None,
     })
@@ -656,8 +655,8 @@ pub fn claim_remainded_stables(deps: Deps, env: Env) -> ContractResult<Response>
             buy_psi_on_remainded_stable_coins(deps, env, config)
         } else {
             Ok(Response {
-                messages: vec![],
-                submessages: vec![SubMsg {
+                events: vec![],
+                messages: vec![SubMsg {
                     msg: WasmMsg::Execute {
                         contract_addr: config.aterra_token.to_string(),
                         msg: to_binary(&Cw20ExecuteMsg::Send {
@@ -665,7 +664,7 @@ pub fn claim_remainded_stables(deps: Deps, env: Env) -> ContractResult<Response>
                             amount: aterra_balance,
                             msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
                         })?,
-                        send: vec![],
+                        funds: vec![],
                     }
                     .into(),
                     gas_limit: None,
@@ -712,7 +711,7 @@ pub fn buy_psi_on_remainded_stable_coins(
         };
 
         Ok(Response {
-            messages: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+            messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.psi_stable_swap_contract.to_string(),
                 msg: to_binary(&TerraswapExecuteMsg::Swap {
                     offer_asset: swap_asset,
@@ -720,12 +719,12 @@ pub fn buy_psi_on_remainded_stable_coins(
                     belief_price: None,
                     to: Some(config.governance_contract.to_string()),
                 })?,
-                send: vec![Coin {
+                funds: vec![Coin {
                     denom: config.stable_denom.clone(),
                     amount: stable_coin_to_buy_psi,
                 }],
-            })],
-            submessages: vec![],
+            }))],
+            events: vec![],
             attributes: vec![
                 attr("action", "distribute_remainded_rewards"),
                 attr("bying_psi", stable_coin_to_buy_psi),

@@ -1,9 +1,9 @@
 use super::sdk::Sdk;
 use crate::tests::sdk::{ANCHOR_OVERSEER_CONTRACT, BASSET_TOKEN_ADDR, NASSET_TOKEN_ADDR};
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::CosmosMsg;
 use cosmwasm_std::{to_binary, WasmMsg};
-use cw20_base::msg::ExecuteMsg as Cw20ExecuteMsg;
+use cosmwasm_std::{CosmosMsg, SubMsg};
+use cw20::Cw20ExecuteMsg;
 use std::str::FromStr;
 use yield_optimizer::{basset_farmer_config::BorrowerActionResponse, querier::AnchorOverseerMsg};
 
@@ -41,31 +41,31 @@ fn withdraw_good_case() {
     assert_eq!(
         user_1_withdraw_response.messages,
         vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
                 msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
                     collaterals: vec![(BASSET_TOKEN_ADDR.to_string(), deposit_1_amount)],
                 })
                 .unwrap(),
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: BASSET_TOKEN_ADDR.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_1_address.clone(),
                     amount: deposit_1_amount.into(),
                 })
                 .unwrap(),
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: NASSET_TOKEN_ADDR.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Burn {
                     amount: deposit_1_amount.into(),
                 })
                 .unwrap(),
-                send: vec![],
-            }),
+                funds: vec![],
+            })),
         ]
     );
 
@@ -81,31 +81,31 @@ fn withdraw_good_case() {
     assert_eq!(
         user_2_withdraw_response.messages,
         vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
                 msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
                     collaterals: vec![(BASSET_TOKEN_ADDR.to_string(), deposit_2_amount)],
                 })
                 .unwrap(),
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: BASSET_TOKEN_ADDR.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_2_address.clone(),
                     amount: deposit_2_amount.into(),
                 })
                 .unwrap(),
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: NASSET_TOKEN_ADDR.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Burn {
                     amount: deposit_2_amount.into(),
                 })
                 .unwrap(),
-                send: vec![],
-            }),
+                funds: vec![],
+            })),
         ]
     );
 }
@@ -150,7 +150,7 @@ fn withdraw_bad_case() {
     assert_eq!(
         user_1_withdraw_response.messages,
         vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
                 msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
                     collaterals: vec![(
@@ -159,25 +159,25 @@ fn withdraw_bad_case() {
                     )],
                 })
                 .unwrap(),
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: BASSET_TOKEN_ADDR.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_1_address.clone(),
                     amount: (deposit_1_amount / decimal_two).into(),
                 })
                 .unwrap(),
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: NASSET_TOKEN_ADDR.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Burn {
                     amount: deposit_1_amount.into(),
                 })
                 .unwrap(),
-                send: vec![],
-            }),
+                funds: vec![],
+            })),
         ]
     );
 
@@ -193,7 +193,7 @@ fn withdraw_bad_case() {
     assert_eq!(
         user_2_withdraw_response.messages,
         vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
                 msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
                     collaterals: vec![(
@@ -202,25 +202,25 @@ fn withdraw_bad_case() {
                     )],
                 })
                 .unwrap(),
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: BASSET_TOKEN_ADDR.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_2_address.clone(),
                     amount: (deposit_2_amount / decimal_two).into(),
                 })
                 .unwrap(),
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: NASSET_TOKEN_ADDR.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Burn {
                     amount: deposit_2_amount.into(),
                 })
                 .unwrap(),
-                send: vec![],
-            }),
+                funds: vec![],
+            })),
         ]
     );
 }

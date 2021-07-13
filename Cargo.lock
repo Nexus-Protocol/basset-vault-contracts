@@ -578,6 +578,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "terra-cosmwasm"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10b671bd693e49c7c47b4e0f441bddf922a89add3c8affa6740657dca5be4ca3"
+dependencies = [
+ "cosmwasm-std",
+ "schemars",
+ "serde",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -638,6 +649,23 @@ name = "wyz"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
+
+[[package]]
+name = "yield-optimizer-basset-farmer"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-bignumber",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw20",
+ "protobuf",
+ "schemars",
+ "serde",
+ "terra-cosmwasm",
+ "thiserror",
+ "yield_optimizer",
+]
 
 [[package]]
 name = "yield-optimizer-basset-farmer-config"
