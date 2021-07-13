@@ -180,6 +180,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw-storage-plus"
+version = "0.7.0"
+source = "git+https://github.com/CosmWasm/cosmwasm-plus?branch=main#551e793016c31ce6799bd909266d0de910b7d86a"
+dependencies = [
+ "cosmwasm-std",
+ "schemars",
+ "serde",
+]
+
+[[package]]
 name = "cw0"
 version = "0.7.0"
 source = "git+https://github.com/CosmWasm/cosmwasm-plus?branch=main#551e793016c31ce6799bd909266d0de910b7d86a"
@@ -191,6 +201,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw2"
+version = "0.7.0"
+source = "git+https://github.com/CosmWasm/cosmwasm-plus?branch=main#551e793016c31ce6799bd909266d0de910b7d86a"
+dependencies = [
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "schemars",
+ "serde",
+]
+
+[[package]]
 name = "cw20"
 version = "0.7.0"
 source = "git+https://github.com/CosmWasm/cosmwasm-plus?branch=main#551e793016c31ce6799bd909266d0de910b7d86a"
@@ -199,6 +220,21 @@ dependencies = [
  "cw0",
  "schemars",
  "serde",
+]
+
+[[package]]
+name = "cw20-base"
+version = "0.7.0"
+source = "git+https://github.com/CosmWasm/cosmwasm-plus?branch=main#551e793016c31ce6799bd909266d0de910b7d86a"
+dependencies = [
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "cw0",
+ "cw2",
+ "cw20",
+ "schemars",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -628,6 +664,23 @@ dependencies = [
  "cosmwasm-std",
  "cosmwasm-storage",
  "cw20",
+ "protobuf",
+ "schemars",
+ "serde",
+ "thiserror",
+ "yield_optimizer",
+]
+
+[[package]]
+name = "yield-optimizer-nasset-token"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-bignumber",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw20",
+ "cw20-base",
  "protobuf",
  "schemars",
  "serde",

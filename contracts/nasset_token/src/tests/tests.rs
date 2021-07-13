@@ -1,4 +1,4 @@
-use cosmwasm_std::{to_binary, Api, CosmosMsg, Querier, Storage, Uint128, WasmMsg};
+use cosmwasm_std::{to_binary, Api, CosmosMsg, Querier, Storage, SubMsg, Uint128, WasmMsg};
 use cosmwasm_std::{DepsMut, OwnedDeps};
 
 use cw20::{Cw20ReceiveMsg, MinterResponse, TokenInfoResponse};
@@ -56,7 +56,7 @@ fn _do_init<A: Storage, B: Api, C: Querier>(
             total_supply: Uint128::zero(),
         }
     );
-    assert_eq!(query_minter(deps.as_ref()).unwrap(), mint,);
+    assert_eq!(query_minter(deps.as_ref()).unwrap(), mint);
     meta
 }
 
@@ -126,35 +126,35 @@ fn transfer() {
     let info = mock_info(&addr1, &[]);
     let msg = ExecuteMsg::Transfer {
         recipient: addr2.clone(),
-        amount: Uint128(1u128),
+        amount: Uint128::new(1u128),
     };
 
     let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
     assert_eq!(
         res.messages,
         vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: MOCK_REWARDS_CONTRACT_ADDR.to_string(),
                 msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                     token_msg: NassetRewardsTokenMsg::DecreaseBalance {
                         address: addr1.clone(),
-                        amount: Uint128(1u128),
+                        amount: Uint128::new(1u128),
                     },
                 })
                 .unwrap(),
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: MOCK_REWARDS_CONTRACT_ADDR.to_string(),
                 msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                     token_msg: NassetRewardsTokenMsg::IncreaseBalance {
                         address: addr2.clone(),
-                        amount: Uint128(1u128),
+                        amount: Uint128::new(1u128),
                     },
                 })
                 .unwrap(),
-                send: vec![],
-            }),
+                funds: vec![],
+            })),
         ]
     );
 }
@@ -173,7 +173,7 @@ fn transfer_from() {
     let info = mock_info(&addr1, &[]);
     let msg = ExecuteMsg::IncreaseAllowance {
         spender: addr3.clone(),
-        amount: Uint128(1u128),
+        amount: Uint128::new(1u128),
         expires: None,
     };
     let _ = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
@@ -182,35 +182,35 @@ fn transfer_from() {
     let msg = ExecuteMsg::TransferFrom {
         owner: addr1.clone(),
         recipient: addr2.clone(),
-        amount: Uint128(1u128),
+        amount: Uint128::new(1u128),
     };
 
     let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
     assert_eq!(
         res.messages,
         vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: MOCK_REWARDS_CONTRACT_ADDR.to_string(),
                 msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                     token_msg: NassetRewardsTokenMsg::DecreaseBalance {
                         address: addr1.clone(),
-                        amount: Uint128(1u128),
+                        amount: Uint128::new(1u128),
                     },
                 })
                 .unwrap(),
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: MOCK_REWARDS_CONTRACT_ADDR.to_string(),
                 msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                     token_msg: NassetRewardsTokenMsg::IncreaseBalance {
                         address: addr2.clone(),
-                        amount: Uint128(1u128),
+                        amount: Uint128::new(1u128),
                     },
                 })
                 .unwrap(),
-                send: vec![],
-            }),
+                funds: vec![],
+            })),
         ]
     );
 }
@@ -225,23 +225,23 @@ fn mint() {
     let info = mock_info(MOCK_OWNER_ADDR, &[]);
     let msg = ExecuteMsg::Mint {
         recipient: addr.clone(),
-        amount: Uint128(1u128),
+        amount: Uint128::new(1u128),
     };
 
     let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
     assert_eq!(
         res.messages,
-        vec![CosmosMsg::Wasm(WasmMsg::Execute {
+        vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: MOCK_REWARDS_CONTRACT_ADDR.to_string(),
             msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                 token_msg: NassetRewardsTokenMsg::IncreaseBalance {
                     address: addr.clone(),
-                    amount: Uint128(1u128),
+                    amount: Uint128::new(1u128),
                 },
             })
             .unwrap(),
-            send: vec![],
-        }),]
+            funds: vec![],
+        }),)]
     );
 }
 
@@ -256,23 +256,23 @@ fn burn() {
 
     let info = mock_info(&addr, &[]);
     let msg = ExecuteMsg::Burn {
-        amount: Uint128(1u128),
+        amount: Uint128::new(1u128),
     };
 
     let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
     assert_eq!(
         res.messages,
-        vec![CosmosMsg::Wasm(WasmMsg::Execute {
+        vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: MOCK_REWARDS_CONTRACT_ADDR.to_string(),
             msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                 token_msg: NassetRewardsTokenMsg::DecreaseBalance {
                     address: addr.clone(),
-                    amount: Uint128(1u128),
+                    amount: Uint128::new(1u128),
                 },
             })
             .unwrap(),
-            send: vec![],
-        }),]
+            funds: vec![],
+        }),)]
     );
 }
 
@@ -289,7 +289,7 @@ fn burn_from() {
     let info = mock_info(&addr, &[]);
     let msg = ExecuteMsg::IncreaseAllowance {
         spender: addr1.clone(),
-        amount: Uint128(1u128),
+        amount: Uint128::new(1u128),
         expires: None,
     };
     let _ = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
@@ -297,23 +297,23 @@ fn burn_from() {
     let info = mock_info(&addr1, &[]);
     let msg = ExecuteMsg::BurnFrom {
         owner: addr.clone(),
-        amount: Uint128(1u128),
+        amount: Uint128::new(1u128),
     };
 
     let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
     assert_eq!(
         res.messages,
-        vec![CosmosMsg::Wasm(WasmMsg::Execute {
+        vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: MOCK_REWARDS_CONTRACT_ADDR.to_string(),
             msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                 token_msg: NassetRewardsTokenMsg::DecreaseBalance {
                     address: addr.clone(),
-                    amount: Uint128(1u128),
+                    amount: Uint128::new(1u128),
                 },
             })
             .unwrap(),
-            send: vec![],
-        }),]
+            funds: vec![],
+        }),)]
     );
 }
 
@@ -329,13 +329,13 @@ fn send() {
 
     let dummy_msg = ExecuteMsg::Transfer {
         recipient: addr1.clone(),
-        amount: Uint128(1u128),
+        amount: Uint128::new(1u128),
     };
 
     let info = mock_info(&addr1, &[]);
     let msg = ExecuteMsg::Send {
         contract: dummny_contract_addr.clone(),
-        amount: Uint128(1u128),
+        amount: Uint128::new(1u128),
         msg: to_binary(&dummy_msg).unwrap(),
     };
 
@@ -344,39 +344,41 @@ fn send() {
     assert_eq!(
         res.messages[0..2].to_vec(),
         vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: MOCK_REWARDS_CONTRACT_ADDR.to_string(),
                 msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                     token_msg: NassetRewardsTokenMsg::DecreaseBalance {
                         address: addr1.clone(),
-                        amount: Uint128(1u128),
+                        amount: Uint128::new(1u128),
                     },
                 })
                 .unwrap(),
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: MOCK_REWARDS_CONTRACT_ADDR.to_string(),
                 msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                     token_msg: NassetRewardsTokenMsg::IncreaseBalance {
                         address: dummny_contract_addr.clone(),
-                        amount: Uint128(1u128),
+                        amount: Uint128::new(1u128),
                     },
                 })
                 .unwrap(),
-                send: vec![],
-            }),
+                funds: vec![],
+            })),
         ]
     );
     assert_eq!(
         res.messages[2],
-        Cw20ReceiveMsg {
-            sender: addr1.clone(),
-            amount: Uint128(1),
-            msg: to_binary(&dummy_msg).unwrap()
-        }
-        .into_cosmos_msg(dummny_contract_addr)
-        .unwrap()
+        SubMsg::new(
+            Cw20ReceiveMsg {
+                sender: addr1.clone(),
+                amount: Uint128::new(1),
+                msg: to_binary(&dummy_msg).unwrap()
+            }
+            .into_cosmos_msg(dummny_contract_addr)
+            .unwrap()
+        )
     );
 }
 
@@ -394,21 +396,21 @@ fn send_from() {
     let info = mock_info(&addr1, &[]);
     let msg = ExecuteMsg::IncreaseAllowance {
         spender: addr2.clone(),
-        amount: Uint128(1u128),
+        amount: Uint128::new(1u128),
         expires: None,
     };
     let _ = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
 
     let dummy_msg = ExecuteMsg::Transfer {
         recipient: addr1.clone(),
-        amount: Uint128(1u128),
+        amount: Uint128::new(1u128),
     };
 
     let info = mock_info(&addr2, &[]);
     let msg = ExecuteMsg::SendFrom {
         owner: addr1.clone(),
         contract: dummny_contract_addr.clone(),
-        amount: Uint128(1u128),
+        amount: Uint128::new(1u128),
         msg: to_binary(&dummy_msg).unwrap(),
     };
 
@@ -417,39 +419,41 @@ fn send_from() {
     assert_eq!(
         res.messages[0..2].to_vec(),
         vec![
-            CosmosMsg::Wasm(WasmMsg::Execute {
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: MOCK_REWARDS_CONTRACT_ADDR.to_string(),
                 msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                     token_msg: NassetRewardsTokenMsg::DecreaseBalance {
                         address: addr1.clone(),
-                        amount: Uint128(1u128),
+                        amount: Uint128::new(1u128),
                     },
                 })
                 .unwrap(),
-                send: vec![],
-            }),
-            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: MOCK_REWARDS_CONTRACT_ADDR.to_string(),
                 msg: to_binary(&NAssetRewardsExecuteMsg::Token {
                     token_msg: NassetRewardsTokenMsg::IncreaseBalance {
                         address: dummny_contract_addr.clone(),
-                        amount: Uint128(1u128),
+                        amount: Uint128::new(1u128),
                     },
                 })
                 .unwrap(),
-                send: vec![],
-            }),
+                funds: vec![],
+            })),
         ]
     );
 
     assert_eq!(
         res.messages[2],
-        Cw20ReceiveMsg {
-            sender: addr2.clone(),
-            amount: Uint128(1),
-            msg: to_binary(&dummy_msg).unwrap(),
-        }
-        .into_cosmos_msg(dummny_contract_addr)
-        .unwrap()
+        SubMsg::new(
+            Cw20ReceiveMsg {
+                sender: addr2.clone(),
+                amount: Uint128::new(1),
+                msg: to_binary(&dummy_msg).unwrap(),
+            }
+            .into_cosmos_msg(dummny_contract_addr)
+            .unwrap()
+        )
     );
 }
