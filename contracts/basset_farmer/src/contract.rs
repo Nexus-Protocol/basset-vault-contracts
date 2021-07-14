@@ -36,11 +36,11 @@ use yield_optimizer::{
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> ContractResult<Response> {
     let config = Config {
-        config_holder: info.sender,
+        config_holder: deps.api.addr_validate(&msg.config_holder_addr)?,
         nasset_token: Addr::unchecked(""),
         psi_distributor: Addr::unchecked(""),
     };
