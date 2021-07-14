@@ -1,9 +1,11 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{attr, to_binary, Coin, CosmosMsg, ReplyOn, Response, SubMsg, Uint128, WasmMsg};
+use cosmwasm_std::{
+    attr, to_binary, Coin, CosmosMsg, ReplyOn, Response, StdResult, SubMsg, Uint128, WasmMsg,
+};
 
 use crate::state::Config;
 use crate::tax_querier::TaxInfo;
-use crate::{ContractResult, SubmsgIds};
+use crate::SubmsgIds;
 use cw20::Cw20ExecuteMsg;
 use yield_optimizer::basset_farmer_config_holder::Config as ExternalConfig;
 use yield_optimizer::{
@@ -42,7 +44,7 @@ impl RepayLoanAction {
         }
     }
 
-    pub fn to_response(&self, config: &ExternalConfig) -> ContractResult<Response> {
+    pub fn to_response(&self, config: &ExternalConfig) -> StdResult<Response> {
         match self {
             RepayLoanAction::Nothing => Ok(Response::default()),
 
@@ -266,7 +268,7 @@ pub enum AfterBorrowAction {
 }
 
 impl AfterBorrowAction {
-    pub fn to_response(&self, config: &ExternalConfig) -> ContractResult<Response> {
+    pub fn to_response(&self, config: &ExternalConfig) -> StdResult<Response> {
         match self {
             AfterBorrowAction::Nothing => Ok(Response::default()),
 
@@ -323,7 +325,7 @@ impl ActionWithProfit {
         config: &Config,
         external_config: &ExternalConfig,
         tax_info: &TaxInfo,
-    ) -> ContractResult<Response> {
+    ) -> StdResult<Response> {
         match self {
             ActionWithProfit::Nothing => Ok(Response {
                 messages: vec![],

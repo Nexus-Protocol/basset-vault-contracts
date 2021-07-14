@@ -3,6 +3,8 @@ use cosmwasm_std::{
     ReplyOn, Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 
+use crate::response::MsgInstantiateContractResponse;
+use crate::state::Config;
 use crate::{
     commands, queries,
     state::{
@@ -14,8 +16,6 @@ use crate::{
     },
     SubmsgIds, TOO_HIGH_BORROW_DEMAND_ERR_MSG,
 };
-use crate::{error::ContractError, response::MsgInstantiateContractResponse};
-use crate::{state::Config, ContractResult};
 use cw20::MinterResponse;
 use protobuf::Message;
 use std::convert::TryFrom;
@@ -38,7 +38,7 @@ pub fn instantiate(
     _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
-) -> ContractResult<Response> {
+) -> StdResult<Response> {
     let config = Config {
         config_holder: deps.api.addr_validate(&msg.config_holder_addr)?,
         nasset_token: Addr::unchecked(""),
@@ -79,7 +79,7 @@ pub fn instantiate(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
+pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
     let submessage_enum = SubmsgIds::try_from(msg.id)?;
     match submessage_enum {
         SubmsgIds::InitNAssetConfigHolder => {
@@ -291,19 +291,13 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> ContractResult<Response> {
 }
 
 #[entry_point]
-pub fn execute(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: ExecuteMsg,
-) -> ContractResult<Response> {
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
     match msg {
         ExecuteMsg::Receive(msg) => commands::receive_cw20(deps, env, info, msg),
 
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
             AnyoneMsg::Rebalance => {
-                let config: Config = load_config(deps.storage)?;
-                let external_config = query_external_config_light(deps.as_ref(), &config)?;
+                let external_config = query_external_config(deps.as_ref())?;
 
                 // basset balance in custody contract
                 let basset_in_custody = get_basset_in_custody(
@@ -312,14 +306,7 @@ pub fn execute(
                     &env.contract.address.clone(),
                 )?;
 
-                commands::rebalance(
-                    deps,
-                    env,
-                    &config,
-                    &external_config,
-                    basset_in_custody,
-                    None,
-                )
+                commands::rebalance(deps, env, &external_config, basset_in_custody, None)
             }
 
             AnyoneMsg::HonestWork => commands::claim_anc_rewards(deps, env),
@@ -329,7 +316,7 @@ pub fn execute(
 
         ExecuteMsg::Yourself { yourself_msg } => {
             if info.sender != env.contract.address {
-                return Err(ContractError::Unauthorized);
+                return Err(StdError::generic_err("unauthhorized"));
             }
 
             match yourself_msg {
@@ -342,7 +329,7 @@ pub fn execute(
             let config: Config = load_config(deps.storage)?;
             let external_config = query_external_config_light(deps.as_ref(), &config)?;
             if info.sender != external_config.governance_contract {
-                return Err(ContractError::Unauthorized);
+                return Err(StdError::generic_err("unauthhorized"));
             }
 
             match governance_msg {

@@ -1,8 +1,11 @@
+use cosmwasm_std::StdResult;
 use cosmwasm_std::{
     attr, from_binary, to_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, ReplyOn,
     Response, StdError, SubMsg, Uint128, WasmMsg,
 };
 
+use crate::state::load_last_rewards_claiming_height;
+use crate::state::Config;
 use crate::{
     commands,
     state::{
@@ -18,8 +21,6 @@ use crate::{
     },
     SubmsgIds,
 };
-use crate::{error::ContractError, state::load_last_rewards_claiming_height};
-use crate::{state::Config, ContractResult};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 use yield_optimizer::basset_farmer_config_holder::Config as ExternalConfig;
@@ -39,7 +40,7 @@ pub fn update_config(
     deps: DepsMut,
     mut current_config: Config,
     psi_distributor_addr: Option<String>,
-) -> ContractResult<Response> {
+) -> StdResult<Response> {
     if let Some(ref psi_distributor_addr) = psi_distributor_addr {
         current_config.psi_distributor = deps.api.addr_validate(psi_distributor_addr)?;
     }
@@ -53,11 +54,10 @@ pub fn receive_cw20(
     env: Env,
     info: MessageInfo,
     cw20_msg: Cw20ReceiveMsg,
-) -> ContractResult<Response> {
-    match from_binary(&cw20_msg.msg) {
-        Ok(Cw20HookMsg::Deposit) => commands::receive_cw20_deposit(deps, env, info, cw20_msg),
-        Ok(Cw20HookMsg::Withdraw) => commands::receive_cw20_withdraw(deps, env, info, cw20_msg),
-        Err(err) => Err(ContractError::Std(err)),
+) -> StdResult<Response> {
+    match from_binary(&cw20_msg.msg)? {
+        Cw20HookMsg::Deposit => commands::receive_cw20_deposit(deps, env, info, cw20_msg),
+        Cw20HookMsg::Withdraw => commands::receive_cw20_withdraw(deps, env, info, cw20_msg),
     }
 }
 
@@ -66,13 +66,13 @@ pub fn receive_cw20_deposit(
     env: Env,
     info: MessageInfo,
     cw20_msg: Cw20ReceiveMsg,
-) -> ContractResult<Response> {
+) -> StdResult<Response> {
     let basset_addr = info.sender;
     // only bAsset contract can execute this message
     let config: Config = load_config(deps.storage)?;
     let external_config: ExternalConfig = query_external_config_light(deps.as_ref(), &config)?;
     if basset_addr != external_config.basset_token {
-        return Err(ContractError::Unauthorized);
+        return Err(StdError::generic_err("unauthhorized"));
     }
 
     //we trust cw20 contract
@@ -95,7 +95,7 @@ pub fn deposit_basset(
     external_config: ExternalConfig,
     farmer: Addr,
     deposit_amount: Uint256,
-) -> ContractResult<Response> {
+) -> StdResult<Response> {
     let nasset_supply: Uint256 = query_supply(&deps.querier, &config.nasset_token.clone())?.into();
 
     let basset_in_custody = get_basset_in_custody(
@@ -108,8 +108,7 @@ pub fn deposit_basset(
         //read comments in 'withdraw_basset' function for a reason to return error here
         return Err(StdError::generic_err(
             "bAsset balance is zero, but nLuna supply is not! Freeze contract.",
-        )
-        .into());
+        ));
     }
 
     // basset balance in cw20 contract
@@ -122,8 +121,8 @@ pub fn deposit_basset(
     let basset_balance: Uint256 = basset_in_custody + basset_in_contract_address.into();
     if basset_balance == Uint256::zero() {
         //impossible because 'farmer' already sent some basset
-        return Err(ContractError::Impossible(
-            "basset balance is zero".to_string(),
+        return Err(StdError::generic_err(
+            "basset balance is zero (impossible case)".to_string(),
         ));
     }
     let farmer_basset_share: Decimal256 =
@@ -182,12 +181,12 @@ pub fn receive_cw20_withdraw(
     env: Env,
     info: MessageInfo,
     cw20_msg: Cw20ReceiveMsg,
-) -> ContractResult<Response> {
+) -> StdResult<Response> {
     let contract_addr = info.sender;
     // only nAsset contract can execute this message
     let config: Config = load_config(deps.storage)?;
     if contract_addr != config.nasset_token {
-        return Err(ContractError::Unauthorized {});
+        return Err(StdError::generic_err("unauthhorized"));
     }
 
     //we trust cw20 contract
@@ -202,7 +201,7 @@ pub fn withdraw_basset(
     config: Config,
     farmer: Addr,
     nasset_to_withdraw_amount: Uint256,
-) -> ContractResult<Response> {
+) -> StdResult<Response> {
     //nasset_to_withdraw_amount is not zero here, cw20 contract check it
 
     let external_config = query_external_config_light(deps.as_ref(), &config)?;
@@ -228,8 +227,7 @@ pub fn withdraw_basset(
         //Second choice is best one in my opinion.
         return Err(StdError::generic_err(
             "bAsset balance is zero, but nLuna supply is not! Freeze contract.",
-        )
-        .into());
+        ));
     }
 
     let share_to_withdraw: Decimal256 = Decimal256::from_ratio(
@@ -245,7 +243,6 @@ pub fn withdraw_basset(
     let mut rebalance_response = rebalance(
         deps,
         env,
-        &config,
         &external_config,
         basset_in_custody,
         Some(basset_to_withdraw),
@@ -296,11 +293,10 @@ pub fn withdraw_basset(
 pub fn rebalance(
     deps: DepsMut,
     env: Env,
-    config: &Config,
     external_config: &ExternalConfig,
     basset_in_custody: Uint256,
     basset_to_withdraw: Option<Uint256>,
-) -> ContractResult<Response> {
+) -> StdResult<Response> {
     let basset_in_custody = basset_in_custody - basset_to_withdraw.unwrap_or_default();
 
     let borrower_info: BorrowerInfoResponse = query_borrower_info(
@@ -354,7 +350,7 @@ fn borrow_logic(
     external_config: &ExternalConfig,
     borrow_amount: Uint256,
     aim_buffer_size: Uint256,
-) -> ContractResult<Response> {
+) -> StdResult<Response> {
     Ok(Response {
         events: vec![],
         messages: vec![SubMsg {
@@ -383,7 +379,7 @@ fn borrow_logic(
     })
 }
 
-pub(crate) fn borrow_logic_on_reply(deps: DepsMut, env: Env) -> ContractResult<Response> {
+pub(crate) fn borrow_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Response> {
     let external_config = query_external_config(deps.as_ref())?;
     let tax_info = get_tax_info(deps.as_ref(), &external_config.stable_denom)?;
     let aim_buf_size = load_aim_buffer_size(deps.as_ref().storage)?;
@@ -402,7 +398,7 @@ pub(crate) fn repay_logic(
     env: Env,
     external_config: &ExternalConfig,
     mut repaying_loan_state: RepayingLoanState,
-) -> ContractResult<Response> {
+) -> StdResult<Response> {
     let aterra_balance = query_token_balance(
         deps.as_ref(),
         &external_config.aterra_token,
@@ -435,7 +431,7 @@ pub(crate) fn repay_logic(
 
 pub(crate) const LOAN_REPAYMENT_MAX_RECURSION_DEEP: u8 = 6;
 
-pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> ContractResult<Response> {
+pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Response> {
     let mut repaying_loan_state = load_repaying_loan_state(deps.storage)?;
     repaying_loan_state.iteration_index += 1;
     if repaying_loan_state.iteration_index >= LOAN_REPAYMENT_MAX_RECURSION_DEEP {
@@ -453,7 +449,7 @@ pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> ContractResult<Re
 /// ANC rewards, swap ANC => UST token, swap
 /// part of UST => PSI token and distribute
 /// result PSI token to gov contract
-pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
+pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
     let external_config: ExternalConfig = query_external_config(deps.as_ref())?;
     let last_rewards_claiming_height = load_last_rewards_claiming_height(deps.as_ref().storage)?;
     let current_height = env.block.height;
@@ -463,7 +459,7 @@ pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
         last_rewards_claiming_height,
         external_config.claiming_rewards_delay,
     ) {
-        return Err(StdError::generic_err("claiming too often").into());
+        return Err(StdError::generic_err("claiming too often"));
     }
 
     store_last_rewards_claiming_height(deps.storage, &current_height)?;
@@ -489,7 +485,7 @@ pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
     })
 }
 
-pub fn swap_anc(deps: DepsMut, env: Env) -> ContractResult<Response> {
+pub fn swap_anc(deps: DepsMut, env: Env) -> StdResult<Response> {
     let external_config: ExternalConfig = query_external_config(deps.as_ref())?;
 
     let stable_coin_balance = query_balance(
@@ -538,7 +534,7 @@ pub fn swap_anc(deps: DepsMut, env: Env) -> ContractResult<Response> {
     })
 }
 
-pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
+pub fn distribute_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
     let config: Config = load_config(deps.storage)?;
     let external_config: ExternalConfig = query_external_config_light(deps.as_ref(), &config)?;
     let stable_coin_balance_before_sell_anc =
@@ -577,7 +573,7 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
     action_with_profit.to_response(&config, &external_config, &tax_info)
 }
 
-pub fn claim_remainded_stables(deps: Deps, env: Env) -> ContractResult<Response> {
+pub fn claim_remainded_stables(deps: Deps, env: Env) -> StdResult<Response> {
     let external_config: ExternalConfig = query_external_config(deps)?;
     let borrower_info: BorrowerInfoResponse = query_borrower_info(
         deps,
@@ -590,8 +586,7 @@ pub fn claim_remainded_stables(deps: Deps, env: Env) -> ContractResult<Response>
         Err(StdError::generic_err(format!(
             "wait until there will be 0 loan amount (no bAsset stakers), current loan: {}",
             borrowed_amount
-        ))
-        .into())
+        )))
     } else {
         let aterra_balance =
             query_token_balance(deps, &external_config.aterra_token, &env.contract.address)?;
@@ -635,7 +630,7 @@ pub fn buy_psi_on_remainded_stable_coins(
     deps: Deps,
     env: Env,
     external_config: ExternalConfig,
-) -> ContractResult<Response> {
+) -> StdResult<Response> {
     let stable_coin_balance = query_balance(
         &deps.querier,
         &env.contract.address,

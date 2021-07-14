@@ -1,10 +1,8 @@
 use cosmwasm_std::StdError;
-use error::ContractError;
 use std::convert::TryFrom;
 
 mod commands;
 pub mod contract;
-pub mod error;
 mod queries;
 mod response;
 pub mod state;
@@ -13,8 +11,6 @@ mod utils;
 
 #[cfg(test)]
 mod tests;
-
-type ContractResult<T> = Result<T, ContractError>;
 
 //withdrawing from Anchor Deposit error
 pub const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
@@ -31,7 +27,7 @@ pub enum SubmsgIds {
 }
 
 impl TryFrom<u64> for SubmsgIds {
-    type Error = ContractError;
+    type Error = StdError;
 
     fn try_from(v: u64) -> Result<Self, Self::Error> {
         match v {
@@ -49,9 +45,10 @@ impl TryFrom<u64> for SubmsgIds {
             x if x == SubmsgIds::RedeemStableOnRemainder.id() => {
                 Ok(SubmsgIds::RedeemStableOnRemainder)
             }
-            unknown => {
-                Err(StdError::generic_err(format!("unknown reply message id: {}", unknown)).into())
-            }
+            unknown => Err(StdError::generic_err(format!(
+                "unknown reply message id: {}",
+                unknown
+            ))),
         }
     }
 }

@@ -2,7 +2,7 @@ use cosmwasm_storage::{singleton, singleton_read, to_length_prefixed};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_bignumber::{Decimal256, Uint256};
+use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::{Addr, Binary, Deps, QueryRequest, StdResult, Storage, Uint128, WasmQuery};
 use yield_optimizer::basset_farmer_config_holder::Config as ExternalConfig;
 
