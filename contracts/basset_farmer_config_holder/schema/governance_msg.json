@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GovernanceMsg",
+  "anyOf": [
+    {
+      "type": "object",
+      "required": [
+        "update_config"
+      ],
+      "properties": {
+        "update_config": {
+          "type": "object",
+          "properties": {
+            "governance_contract_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "nasset_token_rewards_contract_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}
