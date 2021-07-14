@@ -12,49 +12,57 @@ use yield_optimizer::{
     },
 };
 
-use crate::state::{load_child_contracts_info, load_config};
+use crate::state::{load_child_contracts_info, load_config, query_external_config_light};
 use crate::{
     state::{load_last_rewards_claiming_height, Config},
     utils::is_anc_rewards_claimable,
 };
+use yield_optimizer::basset_farmer_config_holder::Config as ExternalConfig;
 
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let config: Config = load_config(deps.storage)?;
+    let external_config: ExternalConfig = query_external_config_light(deps, &config)?;
     Ok(ConfigResponse {
-        governance_contract: config.governance_contract.to_string(),
-        anchor_token: config.anchor_token.to_string(),
-        anchor_overseer_contract: config.anchor_overseer_contract.to_string(),
-        anchor_market_contract: config.anchor_market_contract.to_string(),
-        custody_basset_contract: config.anchor_custody_basset_contract.to_string(),
-        anc_stable_swap_contract: config.anc_stable_swap_contract.to_string(),
-        psi_stable_swap_contract: config.psi_stable_swap_contract.to_string(),
+        governance_contract: external_config.governance_contract.to_string(),
+        anchor_token: external_config.anchor_token.to_string(),
+        anchor_overseer_contract: external_config.anchor_overseer_contract.to_string(),
+        anchor_market_contract: external_config.anchor_market_contract.to_string(),
+        custody_basset_contract: external_config.anchor_custody_basset_contract.to_string(),
+        anc_stable_swap_contract: external_config.anc_stable_swap_contract.to_string(),
+        psi_stable_swap_contract: external_config.psi_stable_swap_contract.to_string(),
         nasset_token: config.nasset_token.to_string(),
-        basset_token: config.basset_token.to_string(),
-        aterra_token: config.aterra_token.to_string(),
-        psi_token: config.psi_token.to_string(),
-        basset_farmer_strategy_contract: config.basset_farmer_strategy_contract.to_string(),
-        stable_denom: config.stable_denom,
-        claiming_rewards_delay: config.claiming_rewards_delay,
+        basset_token: external_config.basset_token.to_string(),
+        aterra_token: external_config.aterra_token.to_string(),
+        psi_token: external_config.psi_token.to_string(),
+        basset_farmer_strategy_contract: external_config
+            .basset_farmer_strategy_contract
+            .to_string(),
+        stable_denom: external_config.stable_denom,
+        claiming_rewards_delay: external_config.claiming_rewards_delay,
     })
 }
 
 pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
     let config: Config = load_config(deps.storage)?;
+    let external_config: ExternalConfig = query_external_config_light(deps, &config)?;
 
     // basset balance in custody contract
     let basset_in_custody = get_basset_in_custody(
         deps,
-        &config.anchor_custody_basset_contract,
+        &external_config.anchor_custody_basset_contract,
         &env.contract.address.clone(),
     )?;
 
-    let borrower_info: BorrowerInfoResponse =
-        query_borrower_info(deps, &config.anchor_market_contract, &env.contract.address)?;
+    let borrower_info: BorrowerInfoResponse = query_borrower_info(
+        deps,
+        &external_config.anchor_market_contract,
+        &env.contract.address,
+    )?;
     let borrowed_ust = borrower_info.loan_amount;
 
     let borrower_action = query_borrower_action(
         deps,
-        &config.basset_farmer_strategy_contract,
+        &external_config.basset_farmer_strategy_contract,
         borrowed_ust,
         basset_in_custody,
     )?;
@@ -72,13 +80,15 @@ pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
             amount,
             advised_buffer_size,
         } => {
-            let anchor_market_state = query_market_state(deps, &config.anchor_market_contract)?;
+            let anchor_market_state =
+                query_market_state(deps, &external_config.anchor_market_contract)?;
             let anchor_market_balance = query_balance(
                 &deps.querier,
-                &config.anchor_market_contract,
-                config.stable_denom,
+                &external_config.anchor_market_contract,
+                external_config.stable_denom,
             )?;
-            let anchor_market_config = query_market_config(deps, &config.anchor_market_contract)?;
+            let anchor_market_config =
+                query_market_config(deps, &external_config.anchor_market_contract)?;
             let is_borrowing_possible = assert_max_borrow_factor(
                 anchor_market_config,
                 anchor_market_state,
@@ -139,15 +149,19 @@ pub fn child_contracts_code_id(deps: Deps) -> StdResult<ChildContractsInfoRespon
 
 pub fn is_rewards_claimable(deps: Deps, env: Env) -> StdResult<IsRewardsClaimableResponse> {
     let config: Config = load_config(deps.storage)?;
+    let external_config: ExternalConfig = query_external_config_light(deps, &config)?;
     let last_rewards_claiming_height = load_last_rewards_claiming_height(deps.storage)?;
     let current_height = env.block.height;
-    let borrower_info =
-        query_borrower_info(deps, &config.anchor_market_contract, &env.contract.address)?;
+    let borrower_info = query_borrower_info(
+        deps,
+        &external_config.anchor_market_contract,
+        &env.contract.address,
+    )?;
 
     let is_rewards_claimable = is_anc_rewards_claimable(
         current_height,
         last_rewards_claiming_height,
-        config.claiming_rewards_delay,
+        external_config.claiming_rewards_delay,
     );
 
     Ok(IsRewardsClaimableResponse {

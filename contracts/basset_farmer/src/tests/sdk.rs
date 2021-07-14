@@ -79,23 +79,6 @@ impl Sdk {
             nasset_token_config_holder_code_id: NASSET_TOKEN_CONFIG_HOLDER_CODE_ID,
             nasset_token_rewards_code_id: NASSET_TOKEN_REWARDS_CODE_ID,
             psi_distributor_code_id: PSI_DISTRIBUTOR_CODE_ID,
-            claiming_rewards_delay: CLAIMING_REWARDS_DELAY,
-            collateral_token_symbol: COLLATERAL_TOKEN_SYMBOL.to_string(),
-            basset_token_addr: BASSET_TOKEN_ADDR.to_string(),
-            anchor_custody_basset_contract: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
-            anchor_overseer_contract: ANCHOR_OVERSEER_CONTRACT.to_string(),
-            governance_contract: GOVERNANCE_CONTRACT.to_string(),
-            anchor_token: ANCHOR_TOKEN.to_string(),
-            anchor_market_contract: ANCHOR_MARKET_CONTRACT.to_string(),
-            anc_stable_swap_contract: ANC_STABLE_SWAP_CONTRACT.to_string(),
-            psi_stable_swap_contract: PSI_STABLE_SWAP_CONTRACT.to_string(),
-            aterra_token: ATERRA_TOKEN.to_string(),
-            psi_token: PSI_TOKEN.to_string(),
-            basset_farmer_strategy_contract: BASSET_FARMER_CONFIG_CONTRACT.to_string(),
-            stable_denom: STABLE_DENOM.to_string(),
-            over_loan_balance_value: OVER_LOAN_BALANCE_VALUE.to_string(),
-            nasset_token_holders_psi_rewards_share: NASSET_TOKEN_HOLDERS_REWARDS_SHARE,
-            governance_contract_psi_rewards_share: GOVERNANCE_STAKER_REWARDS_SHARE,
         };
 
         let mut deps = mock_dependencies(&[]);

@@ -684,6 +684,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "yield-optimizer-basset-farmer-config-holder"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-bignumber",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw20",
+ "protobuf",
+ "schemars",
+ "serde",
+ "thiserror",
+ "yield_optimizer",
+]
+
+[[package]]
 name = "yield-optimizer-nasset-config-holder"
 version = "0.1.0"
 dependencies = [

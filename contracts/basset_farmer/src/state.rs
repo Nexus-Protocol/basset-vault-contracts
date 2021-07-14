@@ -1,31 +1,16 @@
-use cosmwasm_storage::{singleton, singleton_read};
+use cosmwasm_storage::{singleton, singleton_read, to_length_prefixed};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Addr, StdResult, Storage, Uint128};
+use cosmwasm_std::{Addr, Binary, Deps, QueryRequest, StdResult, Storage, Uint128, WasmQuery};
+use yield_optimizer::basset_farmer_config_holder::Config as ExternalConfig;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
-    pub governance_contract: Addr,
-    pub psi_distributor: Addr,
-    pub anchor_token: Addr,
-    pub anchor_overseer_contract: Addr,
-    pub anchor_market_contract: Addr,
-    pub anchor_custody_basset_contract: Addr,
-    pub anc_stable_swap_contract: Addr,
-    pub psi_stable_swap_contract: Addr,
+    pub config_holder: Addr,
     pub nasset_token: Addr,
-    pub basset_token: Addr,
-    pub aterra_token: Addr,
-    pub psi_token: Addr,
-    pub basset_farmer_strategy_contract: Addr,
-    pub stable_denom: String,
-    pub claiming_rewards_delay: u64,
-    //UST value in balance should be more than loan
-    //on what portion.
-    //for example: 1.01 means 1% more than loan
-    pub over_loan_balance_value: Decimal256,
+    pub psi_distributor: Addr,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
@@ -156,4 +141,18 @@ pub fn store_last_rewards_claiming_height(
     height: &u64,
 ) -> StdResult<()> {
     singleton(storage, KEY_LAST_REWARDS_CLAIMING_HEIGHT).save(height)
+}
+
+pub fn query_external_config(deps: Deps) -> StdResult<ExternalConfig> {
+    let config_holder_contract = load_config(deps.storage)?;
+    query_external_config_light(deps, &config_holder_contract)
+}
+
+pub fn query_external_config_light(deps: Deps, config: &Config) -> StdResult<ExternalConfig> {
+    let config: ExternalConfig = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
+        contract_addr: config.config_holder.to_string(),
+        key: Binary::from(to_length_prefixed(b"config")),
+    }))?;
+
+    Ok(config)
 }

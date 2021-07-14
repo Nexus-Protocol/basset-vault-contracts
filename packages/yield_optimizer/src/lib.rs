@@ -1,4 +1,5 @@
 pub mod basset_farmer;
+pub mod basset_farmer_config_holder;
 pub mod basset_farmer_strategy;
 pub mod common;
 pub mod nasset_token;
