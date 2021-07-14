@@ -1,5 +1,5 @@
 [package]
-name = "yield-optimizer-basset-farmer-config"
+name = "yield-optimizer-basset-farmer-strategy"
 version = "0.1.0"
 authors = ["Nexus Labs"]
 edition = "2018"
