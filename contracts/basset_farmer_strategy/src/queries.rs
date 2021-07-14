@@ -1,7 +1,7 @@
 use crate::price::{query_price, PriceResponse};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Deps, Env, StdResult, Timestamp};
-use yield_optimizer::basset_farmer_config::{BorrowerActionResponse, ConfigResponse};
+use yield_optimizer::basset_farmer_strategy::{BorrowerActionResponse, ConfigResponse};
 
 use crate::state::{load_config, Config};
 
@@ -133,7 +133,7 @@ mod test {
     use cosmwasm_bignumber::{Decimal256, Uint256};
     use cosmwasm_std::Timestamp;
     use std::str::FromStr;
-    use yield_optimizer::basset_farmer_config::BorrowerActionResponse;
+    use yield_optimizer::basset_farmer_strategy::BorrowerActionResponse;
 
     use crate::{price::PriceResponse, queries::LTVInfo};
 

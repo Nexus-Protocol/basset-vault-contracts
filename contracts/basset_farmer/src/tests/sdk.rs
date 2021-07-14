@@ -18,7 +18,7 @@ use std::iter::FromIterator;
 use yield_optimizer::basset_farmer::YourselfMsg;
 
 use yield_optimizer::basset_farmer::Cw20HookMsg;
-use yield_optimizer::basset_farmer_config::BorrowerActionResponse;
+use yield_optimizer::basset_farmer_strategy::BorrowerActionResponse;
 use yield_optimizer::psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg;
 use yield_optimizer::querier::{
     AnchorMarketEpochStateResponse, BorrowerInfoResponse, BorrowerResponse,
@@ -91,7 +91,7 @@ impl Sdk {
             psi_stable_swap_contract: PSI_STABLE_SWAP_CONTRACT.to_string(),
             aterra_token: ATERRA_TOKEN.to_string(),
             psi_token: PSI_TOKEN.to_string(),
-            basset_farmer_config_contract: BASSET_FARMER_CONFIG_CONTRACT.to_string(),
+            basset_farmer_strategy_contract: BASSET_FARMER_CONFIG_CONTRACT.to_string(),
             stable_denom: STABLE_DENOM.to_string(),
             over_loan_balance_value: OVER_LOAN_BALANCE_VALUE.to_string(),
             nasset_token_holders_psi_rewards_share: NASSET_TOKEN_HOLDERS_REWARDS_SHARE,

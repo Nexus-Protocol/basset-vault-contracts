@@ -26,7 +26,7 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 use yield_optimizer::{
     basset_farmer::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, YourselfMsg},
-    basset_farmer_config::{query_borrower_action, BorrowerActionResponse},
+    basset_farmer_strategy::{query_borrower_action, BorrowerActionResponse},
     querier::{
         get_basset_in_custody, query_aterra_state, query_balance, query_borrower_info,
         query_supply, query_token_balance, AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg,
@@ -51,7 +51,7 @@ pub fn update_config(
     basset_token_addr: Option<String>,
     aterra_token_addr: Option<String>,
     psi_token_addr: Option<String>,
-    basset_farmer_config_contract_addr: Option<String>,
+    basset_farmer_strategy_contract_addr: Option<String>,
     stable_denom: Option<String>,
     claiming_rewards_delay: Option<u64>,
     over_loan_balance_value: Option<String>,
@@ -110,9 +110,9 @@ pub fn update_config(
         current_config.psi_token = deps.api.addr_validate(psi_token_addr)?;
     }
 
-    if let Some(ref basset_farmer_config_contract_addr) = basset_farmer_config_contract_addr {
-        current_config.basset_farmer_config_contract =
-            deps.api.addr_validate(basset_farmer_config_contract_addr)?;
+    if let Some(ref basset_farmer_strategy_contract_addr) = basset_farmer_strategy_contract_addr {
+        current_config.basset_farmer_strategy_contract =
+            deps.api.addr_validate(basset_farmer_strategy_contract_addr)?;
     }
 
     if let Some(ref stable_denom) = stable_denom {
@@ -380,7 +380,7 @@ pub fn rebalance(
 
     let borrower_action = query_borrower_action(
         deps.as_ref(),
-        &config.basset_farmer_config_contract,
+        &config.basset_farmer_strategy_contract,
         borrowed_ust,
         basset_in_custody,
     )?;

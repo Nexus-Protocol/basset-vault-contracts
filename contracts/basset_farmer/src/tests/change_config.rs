@@ -26,7 +26,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
             basset_token_addr: Some("addr9990".to_string()),
             aterra_token_addr: Some("addr9989".to_string()),
             psi_token_addr: Some("addr9988".to_string()),
-            basset_farmer_config_contract_addr: Some("addr9987".to_string()),
+            basset_farmer_strategy_contract_addr: Some("addr9987".to_string()),
             stable_denom: Some("ukrt".to_string()),
             claiming_rewards_delay: Some(1000),
             over_loan_balance_value: Some("1.10".to_string()),
@@ -56,7 +56,7 @@ fn success_to_change_config_if_sender_governance() {
     let new_basset_token_addr = "addr9990".to_string();
     let new_aterra_token_addr = "addr9989".to_string();
     let new_psi_token_addr = "addr9988".to_string();
-    let new_basset_farmer_config_contract_addr = "addr9987".to_string();
+    let new_basset_farmer_strategy_contract_addr = "addr9987".to_string();
     let new_stable_denom = "ukrt".to_string();
     let new_claiming_rewards_delay = 1000;
     let new_over_loan_balance_value = "1.10".to_string();
@@ -77,8 +77,8 @@ fn success_to_change_config_if_sender_governance() {
             basset_token_addr: Some(new_basset_token_addr.clone()),
             aterra_token_addr: Some(new_aterra_token_addr.clone()),
             psi_token_addr: Some(new_psi_token_addr.clone()),
-            basset_farmer_config_contract_addr: Some(
-                new_basset_farmer_config_contract_addr.clone(),
+            basset_farmer_strategy_contract_addr: Some(
+                new_basset_farmer_strategy_contract_addr.clone(),
             ),
             stable_denom: Some(new_stable_denom.clone()),
             claiming_rewards_delay: Some(new_claiming_rewards_delay),
@@ -119,8 +119,8 @@ fn success_to_change_config_if_sender_governance() {
     assert_eq!(new_aterra_token_addr, config.aterra_token);
     assert_eq!(new_psi_token_addr, config.psi_token);
     assert_eq!(
-        new_basset_farmer_config_contract_addr,
-        config.basset_farmer_config_contract
+        new_basset_farmer_strategy_contract_addr,
+        config.basset_farmer_strategy_contract
     );
     assert_eq!(new_stable_denom, config.stable_denom);
     assert_eq!(new_claiming_rewards_delay, config.claiming_rewards_delay);

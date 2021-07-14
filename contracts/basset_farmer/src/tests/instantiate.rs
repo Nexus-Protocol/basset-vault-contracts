@@ -35,7 +35,7 @@ fn proper_initialization() {
             psi_stable_swap_contract: Addr::unchecked(PSI_STABLE_SWAP_CONTRACT),
             aterra_token: Addr::unchecked(ATERRA_TOKEN),
             psi_token: Addr::unchecked(PSI_TOKEN),
-            basset_farmer_config_contract: Addr::unchecked(BASSET_FARMER_CONFIG_CONTRACT),
+            basset_farmer_strategy_contract: Addr::unchecked(BASSET_FARMER_CONFIG_CONTRACT),
             stable_denom: STABLE_DENOM.to_string(),
             claiming_rewards_delay: CLAIMING_REWARDS_DELAY,
             psi_distributor: Addr::unchecked(PSI_DISTRIBUTOR_CONTRACT),

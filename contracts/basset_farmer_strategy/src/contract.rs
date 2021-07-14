@@ -9,7 +9,7 @@ use crate::{
     state::{load_config, save_config},
 };
 use crate::{state::Config, ContractResult};
-use yield_optimizer::basset_farmer_config::{ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg};
+use yield_optimizer::basset_farmer_strategy::{ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg};
 
 #[entry_point]
 pub fn instantiate(

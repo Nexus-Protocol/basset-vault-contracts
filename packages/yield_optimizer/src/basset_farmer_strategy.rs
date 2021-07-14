@@ -100,13 +100,13 @@ impl BorrowerActionResponse {
 
 pub fn query_borrower_action(
     deps: Deps,
-    basset_farmer_config_contract: &Addr,
+    basset_farmer_strategy_contract: &Addr,
     borrowed_amount: Uint256,
     locked_basset_amount: Uint256,
 ) -> StdResult<BorrowerActionResponse> {
     let borrower_action: BorrowerActionResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-            contract_addr: basset_farmer_config_contract.to_string(),
+            contract_addr: basset_farmer_strategy_contract.to_string(),
             msg: to_binary(&QueryMsg::BorrowerAction {
                 borrowed_amount,
                 locked_basset_amount,

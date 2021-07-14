@@ -5,7 +5,7 @@ use cosmwasm_std::{to_binary, WasmMsg};
 use cosmwasm_std::{CosmosMsg, SubMsg};
 use cw20::Cw20ExecuteMsg;
 use std::str::FromStr;
-use yield_optimizer::{basset_farmer_config::BorrowerActionResponse, querier::AnchorOverseerMsg};
+use yield_optimizer::{basset_farmer_strategy::BorrowerActionResponse, querier::AnchorOverseerMsg};
 
 #[test]
 fn withdraw_good_case() {

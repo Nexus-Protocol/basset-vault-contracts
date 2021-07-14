@@ -9,7 +9,7 @@ use std::str::FromStr;
 fn proper_initialization() {
     let mut deps = mock_dependencies(&[]);
 
-    let msg = yield_optimizer::basset_farmer_config::InstantiateMsg {
+    let msg = yield_optimizer::basset_farmer_strategy::InstantiateMsg {
         governance_contract_addr: "addr0000".to_string(),
         oracle_contract_addr: "addr0001".to_string(),
         basset_token_addr: "addr0002".to_string(),

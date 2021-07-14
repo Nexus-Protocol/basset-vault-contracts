@@ -4,7 +4,7 @@ use yield_optimizer::{
     basset_farmer::{
         ChildContractsInfoResponse, ConfigResponse, IsRewardsClaimableResponse, RebalanceResponse,
     },
-    basset_farmer_config::{query_borrower_action, BorrowerActionResponse},
+    basset_farmer_strategy::{query_borrower_action, BorrowerActionResponse},
     querier::{
         get_basset_in_custody, query_balance, query_borrower_info, query_market_config,
         query_market_state, AnchorMarketConfigResponse, AnchorMarketStateResponse,
@@ -32,7 +32,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         basset_token: config.basset_token.to_string(),
         aterra_token: config.aterra_token.to_string(),
         psi_token: config.psi_token.to_string(),
-        basset_farmer_config_contract: config.basset_farmer_config_contract.to_string(),
+        basset_farmer_strategy_contract: config.basset_farmer_strategy_contract.to_string(),
         stable_denom: config.stable_denom,
         claiming_rewards_delay: config.claiming_rewards_delay,
     })
@@ -54,7 +54,7 @@ pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
 
     let borrower_action = query_borrower_action(
         deps,
-        &config.basset_farmer_config_contract,
+        &config.basset_farmer_strategy_contract,
         borrowed_ust,
         basset_in_custody,
     )?;

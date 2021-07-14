@@ -10,7 +10,7 @@ use cosmwasm_std::{to_binary, Coin, ReplyOn, Response, SubMsg, Uint128, WasmMsg}
 use cw20::Cw20ExecuteMsg;
 use std::str::FromStr;
 use yield_optimizer::{
-    basset_farmer_config::BorrowerActionResponse,
+    basset_farmer_strategy::BorrowerActionResponse,
     querier::{AnchorMarketCw20Msg, AnchorMarketMsg},
 };
 

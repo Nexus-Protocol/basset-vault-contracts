@@ -54,9 +54,9 @@ pub fn instantiate(
         psi_stable_swap_contract: deps.api.addr_validate(&msg.psi_stable_swap_contract)?,
         aterra_token: deps.api.addr_validate(&msg.aterra_token)?,
         psi_token: deps.api.addr_validate(&msg.psi_token)?,
-        basset_farmer_config_contract: deps
+        basset_farmer_strategy_contract: deps
             .api
-            .addr_validate(&msg.basset_farmer_config_contract)?,
+            .addr_validate(&msg.basset_farmer_strategy_contract)?,
         stable_denom: msg.stable_denom,
         claiming_rewards_delay: msg.claiming_rewards_delay,
         psi_distributor: Addr::unchecked(""),
@@ -363,7 +363,7 @@ pub fn execute(
                     basset_token_addr,
                     aterra_token_addr,
                     psi_token_addr,
-                    basset_farmer_config_contract_addr,
+                    basset_farmer_strategy_contract_addr,
                     stable_denom,
                     claiming_rewards_delay,
                     over_loan_balance_value,
@@ -382,7 +382,7 @@ pub fn execute(
                     basset_token_addr,
                     aterra_token_addr,
                     psi_token_addr,
-                    basset_farmer_config_contract_addr,
+                    basset_farmer_strategy_contract_addr,
                     stable_denom,
                     claiming_rewards_delay,
                     over_loan_balance_value,

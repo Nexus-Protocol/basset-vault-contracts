@@ -19,7 +19,7 @@ pub struct Config {
     pub basset_token: Addr,
     pub aterra_token: Addr,
     pub psi_token: Addr,
-    pub basset_farmer_config_contract: Addr,
+    pub basset_farmer_strategy_contract: Addr,
     pub stable_denom: String,
     pub claiming_rewards_delay: u64,
     //UST value in balance should be more than loan
