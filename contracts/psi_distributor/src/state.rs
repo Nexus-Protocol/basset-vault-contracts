@@ -1,24 +1,23 @@
 use cosmwasm_storage::{singleton, singleton_read};
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::{Addr, StdError, StdResult, Storage};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Config {
     pub psi_token: Addr,
     pub governance_contract: Addr,
     pub rewards_distribution: RewardsDistribution,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct RewardShare {
     pub recipient: Addr,
     pub share: Decimal256,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct RewardsDistribution {
     distribution: Vec<RewardShare>,
 }

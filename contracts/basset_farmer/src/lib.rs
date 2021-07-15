@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 mod commands;
 pub mod contract;
 mod queries;
-mod response;
+mod reply_response;
 pub mod state;
 mod tax_querier;
 mod utils;

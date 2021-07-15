@@ -1,19 +1,18 @@
 use cosmwasm_storage::{singleton, singleton_read, to_length_prefixed};
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::{Addr, Binary, Deps, QueryRequest, StdResult, Storage, Uint128, WasmQuery};
 use yield_optimizer::basset_farmer_config_holder::Config as ExternalConfig;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Config {
     pub config_holder: Addr,
     pub nasset_token: Addr,
     pub psi_distributor: Addr,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct RepayingLoanState {
     pub iteration_index: u8,
     pub repayed_something: bool,
@@ -22,7 +21,7 @@ pub struct RepayingLoanState {
     pub aim_buffer_size: Uint256,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct ChildContractsInfo {
     pub nasset_token_code_id: u64,
     pub nasset_token_rewards_code_id: u64,

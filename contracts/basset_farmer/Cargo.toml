@@ -26,7 +26,7 @@ backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
 yield_optimizer = { path = "../../packages/yield_optimizer", default-features = false, version = "0.1.0"}
-protobuf = { version = "2", features = ["with-bytes"] }
+protobuf = { version = "2.24.1", features = ["with-bytes"] }
 cw20 = { version = "0.7" }
 cosmwasm-std = { version = "0.15", features = ["iterator"] }
 cosmwasm-storage = { version = "0.15", features = ["iterator"] }

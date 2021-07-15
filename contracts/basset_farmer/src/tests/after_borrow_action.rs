@@ -35,7 +35,7 @@ fn after_borrow_action_to_response_deposit() {
     let expected_response = Response {
         messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
-            msg: to_binary(&AnchorMarketMsg::DepositStable {}).unwrap(),
+            msg: to_binary(&AnchorMarketMsg::DepositStable).unwrap(),
             funds: vec![Coin {
                 denom: STABLE_DENOM.to_string(),
                 amount: deposit_amount.into(),

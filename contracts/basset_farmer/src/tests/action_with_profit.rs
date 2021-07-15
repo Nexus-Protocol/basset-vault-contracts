@@ -120,7 +120,7 @@ fn action_with_profit_deposit_to_anc() {
     let expected_response = Response {
         messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
-            msg: to_binary(&AnchorMarketMsg::DepositStable {}).unwrap(),
+            msg: to_binary(&AnchorMarketMsg::DepositStable).unwrap(),
             funds: vec![Coin {
                 denom: STABLE_DENOM.to_string(),
                 amount: stable_coin_to_lending,
@@ -165,7 +165,7 @@ fn action_with_profit_split() {
         messages: vec![
             SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
-                msg: to_binary(&AnchorMarketMsg::DepositStable {}).unwrap(),
+                msg: to_binary(&AnchorMarketMsg::DepositStable).unwrap(),
                 funds: vec![Coin {
                     denom: STABLE_DENOM.to_string(),
                     amount: stable_coin_to_lending,

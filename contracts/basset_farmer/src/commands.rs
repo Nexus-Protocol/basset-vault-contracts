@@ -602,7 +602,7 @@ pub fn claim_remainded_stables(deps: Deps, env: Env) -> StdResult<Response> {
                         msg: to_binary(&Cw20ExecuteMsg::Send {
                             contract: external_config.anchor_market_contract.to_string(),
                             amount: aterra_balance,
-                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
+                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable)?,
                         })?,
                         funds: vec![],
                     }

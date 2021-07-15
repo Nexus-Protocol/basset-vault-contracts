@@ -1,24 +1,23 @@
 use cosmwasm_storage::{singleton, singleton_read, Bucket, ReadonlyBucket};
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::{Addr, Decimal, StdResult, Storage, Uint128};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Config {
     pub psi_token: Addr,
     pub nasset_token: Addr,
     pub governance_contract: Addr,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct State {
     pub global_index: Decimal,
     pub total_balance: Uint128,
     pub prev_reward_balance: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct Holder {
     pub balance: Uint128,
     pub index: Decimal,

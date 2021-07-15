@@ -59,7 +59,7 @@ impl RepayLoanAction {
                     messages: vec![SubMsg {
                         msg: WasmMsg::Execute {
                             contract_addr: config.anchor_market_contract.to_string(),
-                            msg: to_binary(&AnchorMarketMsg::RepayStable {})?,
+                            msg: to_binary(&AnchorMarketMsg::RepayStable)?,
                             funds: vec![repay_stable_coin],
                         }
                         .into(),
@@ -80,7 +80,7 @@ impl RepayLoanAction {
                         msg: to_binary(&Cw20ExecuteMsg::Send {
                             contract: config.anchor_market_contract.to_string(),
                             amount: amount.into(),
-                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
+                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable)?,
                         })?,
                         funds: vec![],
                     }
@@ -111,7 +111,7 @@ impl RepayLoanAction {
                             //first message is to repay loan
                             msg: WasmMsg::Execute {
                                 contract_addr: config.anchor_market_contract.to_string(),
-                                msg: to_binary(&AnchorMarketMsg::RepayStable {})?,
+                                msg: to_binary(&AnchorMarketMsg::RepayStable)?,
                                 funds: vec![repay_stable_coin],
                             }
                             .into(),
@@ -125,7 +125,7 @@ impl RepayLoanAction {
                                 msg: to_binary(&Cw20ExecuteMsg::Send {
                                     contract: config.anchor_market_contract.to_string(),
                                     amount: aterra_amount_to_sell.into(),
-                                    msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
+                                    msg: to_binary(&AnchorMarketCw20Msg::RedeemStable)?,
                                 })?,
                                 funds: vec![],
                             }
@@ -275,7 +275,7 @@ impl AfterBorrowAction {
             &AfterBorrowAction::Deposit { amount } => Ok(Response {
                 messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: config.anchor_market_contract.to_string(),
-                    msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
+                    msg: to_binary(&AnchorMarketMsg::DepositStable)?,
                     funds: vec![Coin {
                         denom: config.stable_denom.clone(),
                         amount: amount.into(),
@@ -343,7 +343,7 @@ impl ActionWithProfit {
                 Ok(Response {
                     messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                         contract_addr: external_config.anchor_market_contract.to_string(),
-                        msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
+                        msg: to_binary(&AnchorMarketMsg::DepositStable)?,
                         funds: vec![Coin {
                             denom: external_config.stable_denom.clone(),
                             amount: stable_coin_to_lending,
@@ -416,7 +416,7 @@ impl ActionWithProfit {
                     messages: vec![
                         SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                             contract_addr: external_config.anchor_market_contract.to_string(),
-                            msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
+                            msg: to_binary(&AnchorMarketMsg::DepositStable)?,
                             funds: vec![Coin {
                                 denom: external_config.stable_denom.clone(),
                                 amount: stable_coin_to_lending,

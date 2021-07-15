@@ -3,7 +3,7 @@ use cosmwasm_std::{
     ReplyOn, Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 
-use crate::response::MsgInstantiateContractResponse;
+use crate::reply_response::MsgInstantiateContractResponse;
 use crate::state::Config;
 use crate::{
     commands, queries,
