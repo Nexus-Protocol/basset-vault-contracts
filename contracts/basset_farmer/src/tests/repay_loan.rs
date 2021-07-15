@@ -45,7 +45,7 @@ fn repay_loan_without_problems() {
                     msg: to_binary(&Cw20ExecuteMsg::Send {
                         contract: ANCHOR_MARKET_CONTRACT.to_string(),
                         amount: aterra_balance.into(),
-                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable).unwrap(),
                     })
                     .unwrap(),
                     funds: vec![],
@@ -91,7 +91,7 @@ fn repay_loan_without_problems() {
             vec![SubMsg {
                 msg: WasmMsg::Execute {
                     contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
-                    msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
+                    msg: to_binary(&AnchorMarketMsg::RepayStable).unwrap(),
                     funds: vec![repay_stable_coin.clone()],
                 }
                 .into(),
@@ -143,7 +143,7 @@ fn repay_loan_fail_to_redeem_aterra() {
                     msg: to_binary(&Cw20ExecuteMsg::Send {
                         contract: ANCHOR_MARKET_CONTRACT.to_string(),
                         amount: aterra_balance.into(),
-                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable).unwrap(),
                     })
                     .unwrap(),
                     funds: vec![],
@@ -166,7 +166,7 @@ fn repay_loan_fail_to_redeem_aterra() {
                 SubMsg {
                     msg: WasmMsg::Execute {
                         contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
-                        msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
+                        msg: to_binary(&AnchorMarketMsg::RepayStable).unwrap(),
                         funds: vec![Coin {
                             denom: STABLE_DENOM.to_string(),
                             amount: stable_coin_initial_balance,
@@ -184,7 +184,7 @@ fn repay_loan_fail_to_redeem_aterra() {
                             contract: ANCHOR_MARKET_CONTRACT.to_string(),
                             //sell aterra for same value as repaying long (4000*1.25 = 5k)
                             amount: Uint128::from(4_000u64),
-                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable).unwrap(),
                         })
                         .unwrap(),
                         funds: vec![],
@@ -217,7 +217,7 @@ fn repay_loan_fail_to_redeem_aterra() {
                 SubMsg {
                     msg: WasmMsg::Execute {
                         contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
-                        msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
+                        msg: to_binary(&AnchorMarketMsg::RepayStable).unwrap(),
                         funds: vec![Coin {
                             denom: STABLE_DENOM.to_string(),
                             amount: Uint128::from(5_000u64),
@@ -235,7 +235,7 @@ fn repay_loan_fail_to_redeem_aterra() {
                             contract: ANCHOR_MARKET_CONTRACT.to_string(),
                             //sell rest of aterra 3k (3000*1.25 = 3750)
                             amount: Uint128::from(3_000u64),
-                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable).unwrap(),
                         })
                         .unwrap(),
                         funds: vec![],
@@ -295,7 +295,7 @@ fn limited_recursion_depth_all_errors() {
                 SubMsg {
                     msg: WasmMsg::Execute {
                         contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
-                        msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
+                        msg: to_binary(&AnchorMarketMsg::RepayStable).unwrap(),
                         funds: vec![Coin {
                             denom: STABLE_DENOM.to_string(),
                             amount: stable_coin_initial_balance,
@@ -313,7 +313,7 @@ fn limited_recursion_depth_all_errors() {
                             contract: ANCHOR_MARKET_CONTRACT.to_string(),
                             //sell aterra for same value as repaying long (4000*1.25 = 5k)
                             amount: Uint128::from(4_000u64),
-                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable).unwrap(),
                         })
                         .unwrap(),
                         funds: vec![],
@@ -365,7 +365,7 @@ fn limited_recursion_depth_repayed_something() {
                 SubMsg {
                     msg: WasmMsg::Execute {
                         contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
-                        msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
+                        msg: to_binary(&AnchorMarketMsg::RepayStable).unwrap(),
                         funds: vec![Coin {
                             denom: STABLE_DENOM.to_string(),
                             amount: stable_coin_initial_balance,
@@ -383,7 +383,7 @@ fn limited_recursion_depth_repayed_something() {
                             contract: ANCHOR_MARKET_CONTRACT.to_string(),
                             //sell aterra for same value as repaying long (4000*1.25 = 5k)
                             amount: Uint128::from(4_000u64),
-                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable).unwrap(),
                         })
                         .unwrap(),
                         funds: vec![],

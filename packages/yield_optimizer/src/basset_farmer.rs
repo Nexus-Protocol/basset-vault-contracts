@@ -6,26 +6,13 @@ use cw20::Cw20ReceiveMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
+    pub governance_contract_addr: String,
+    pub config_holder_addr: String,
     pub nasset_token_code_id: u64,
     pub nasset_token_config_holder_code_id: u64,
     pub nasset_token_rewards_code_id: u64,
     pub psi_distributor_code_id: u64,
-    pub basset_token_addr: String,
-    //Luna / ETH / Sol, will be converted to nLuna, nETH, nSol
     pub collateral_token_symbol: String,
-    pub governance_contract: String,
-    pub anchor_token: String,
-    pub anchor_market_contract: String,
-    pub anchor_overseer_contract: String,
-    pub anchor_custody_basset_contract: String,
-    pub anc_stable_swap_contract: String,
-    pub psi_stable_swap_contract: String,
-    pub aterra_token: String,
-    pub psi_token: String,
-    pub basset_farmer_strategy_contract: String,
-    pub stable_denom: String,
-    pub claiming_rewards_delay: u64,
-    pub over_loan_balance_value: String,
     pub nasset_token_holders_psi_rewards_share: u64,
     pub governance_contract_psi_rewards_share: u64,
 }
@@ -61,22 +48,7 @@ pub enum AnyoneMsg {
 #[serde(rename_all = "snake_case")]
 pub enum GovernanceMsg {
     UpdateConfig {
-        governance_contract_addr: Option<String>,
         psi_distributor_addr: Option<String>,
-        anchor_token_addr: Option<String>,
-        anchor_overseer_contract_addr: Option<String>,
-        anchor_market_contract_addr: Option<String>,
-        anchor_custody_basset_contract_addr: Option<String>,
-        anc_stable_swap_contract_addr: Option<String>,
-        psi_stable_swap_contract_addr: Option<String>,
-        nasset_token_addr: Option<String>,
-        basset_token_addr: Option<String>,
-        aterra_token_addr: Option<String>,
-        psi_token_addr: Option<String>,
-        basset_farmer_strategy_contract_addr: Option<String>,
-        stable_denom: Option<String>,
-        claiming_rewards_delay: Option<u64>,
-        over_loan_balance_value: Option<String>,
     },
 }
 

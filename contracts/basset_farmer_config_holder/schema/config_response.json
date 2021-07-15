@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConfigResponse",
+  "type": "object",
+  "required": [
+    "governance_contract_addr",
+    "nasset_token_rewards_addr"
+  ],
+  "properties": {
+    "governance_contract_addr": {
+      "type": "string"
+    },
+    "nasset_token_rewards_addr": {
+      "type": "string"
+    }
+  }
+}

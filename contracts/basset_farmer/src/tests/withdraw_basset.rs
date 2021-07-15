@@ -23,13 +23,13 @@ fn withdraw_good_case() {
     let user_2_address = "addr6666".to_string();
     let deposit_2_amount: Uint256 = 6_000_000_000u128.into();
     sdk.set_nasset_supply(deposit_1_amount);
-    sdk.set_collateral_balance(deposit_1_amount, Uint256::zero());
+    sdk.set_collateral_balance(deposit_1_amount);
     sdk.set_basset_balance(deposit_2_amount);
     sdk.user_deposit(&user_2_address, deposit_2_amount.into())
         .unwrap();
 
     //set basset locked in custody & borrwer action
-    sdk.set_collateral_balance(deposit_1_amount + deposit_2_amount, Uint256::zero());
+    sdk.set_collateral_balance(deposit_1_amount + deposit_2_amount);
     sdk.set_nasset_supply(deposit_1_amount + deposit_2_amount);
     sdk.set_borrower_action(BorrowerActionResponse::Nothing);
 
@@ -70,7 +70,7 @@ fn withdraw_good_case() {
     );
 
     //set basset locked in custody & borrwer action
-    sdk.set_collateral_balance(deposit_2_amount, Uint256::zero());
+    sdk.set_collateral_balance(deposit_2_amount);
     sdk.set_nasset_supply(deposit_2_amount);
 
     //second user withdraw
@@ -128,17 +128,14 @@ fn withdraw_bad_case() {
     let user_2_address = "addr6666".to_string();
     let deposit_2_amount: Uint256 = 6_000_000_000u128.into();
     sdk.set_nasset_supply(deposit_1_amount);
-    sdk.set_collateral_balance(deposit_1_amount, Uint256::zero());
+    sdk.set_collateral_balance(deposit_1_amount);
     sdk.set_basset_balance(deposit_2_amount);
     sdk.user_deposit(&user_2_address, deposit_2_amount.into())
         .unwrap();
 
     //set basset locked in custody & borrwer action
     //but locked basset amount is half!
-    sdk.set_collateral_balance(
-        (deposit_1_amount + deposit_2_amount) / decimal_two,
-        Uint256::zero(),
-    );
+    sdk.set_collateral_balance((deposit_1_amount + deposit_2_amount) / decimal_two);
     sdk.set_nasset_supply(deposit_1_amount + deposit_2_amount);
     sdk.set_borrower_action(BorrowerActionResponse::Nothing);
 
@@ -182,7 +179,7 @@ fn withdraw_bad_case() {
     );
 
     //set basset locked in custody & borrwer action
-    sdk.set_collateral_balance(deposit_2_amount / decimal_two, Uint256::zero());
+    sdk.set_collateral_balance(deposit_2_amount / decimal_two);
     sdk.set_nasset_supply(deposit_2_amount);
 
     //second user withdraw
@@ -238,7 +235,7 @@ fn withdraw_nasset_but_basset_balance_is_zero() {
         .unwrap();
 
     //set basset locked in custody & borrwer action
-    sdk.set_collateral_balance(Uint256::zero(), Uint256::zero());
+    sdk.set_collateral_balance(Uint256::zero());
     sdk.set_nasset_supply(deposit_amount);
     sdk.set_borrower_action(BorrowerActionResponse::Nothing);
 

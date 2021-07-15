@@ -1,5 +1,4 @@
 use super::sdk::Sdk;
-use crate::error::ContractError;
 use crate::state::load_last_rewards_claiming_height;
 use crate::tests::sdk::{
     ANCHOR_MARKET_CONTRACT, ANCHOR_TOKEN, ANC_STABLE_SWAP_CONTRACT, CLAIMING_REWARDS_DELAY,
@@ -145,7 +144,7 @@ fn honest_work() {
         let honest_work_response = sdk.user_send_honest_work(CLAIMING_REWARDS_DELAY * 2 - 1);
         assert!(honest_work_response.is_err());
         let error = honest_work_response.err().unwrap();
-        if let ContractError::Std(StdError::GenericErr { msg }) = error {
+        if let StdError::GenericErr { msg } = error {
             assert_eq!("claiming too often", msg);
         } else {
             panic!("wrong error type");

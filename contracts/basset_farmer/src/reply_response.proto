@@ -4,6 +4,10 @@ syntax = "proto3";
 message MsgInstantiateContractResponse {
     // ContractAddress is the bech32 address of the new contract instance.
     string contract_address = 1;
+    // we do not need those fields, removing it will save some space in
+    // compiled wasm file
+    //
     // Data contains base64-encoded bytes to returned from the contract
-    bytes data = 2;
-  }
+    /* bytes data = 2; */
+}
+

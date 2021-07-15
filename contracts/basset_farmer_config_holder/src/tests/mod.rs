@@ -1,7 +1,5 @@
 mod change_config;
-mod distribute;
 mod instantiate;
-mod sdk;
 
 use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
@@ -14,6 +12,32 @@ use std::collections::HashMap;
 use yield_optimizer::querier::BorrowerResponse;
 
 use cw20::TokenInfoResponse;
+
+pub const NASSET_TOKEN_ADDR: &str = "addr0001";
+pub const ATERRA_TOKEN: &str = "addr0010";
+pub const STABLE_DENOM: &str = "uust";
+pub const ANCHOR_MARKET_CONTRACT: &str = "addr0007";
+pub const PSI_DISTRIBUTOR_CONTRACT: &str = "addr0015";
+pub const GOVERNANCE_CONTRACT: &str = "addr0016";
+pub const PSI_TOKEN: &str = "addr0011";
+pub const NASSET_TOKEN_CONFIG_HOLDER_CONTRACT: &str = "addr0017";
+pub const NASSET_TOKEN_REWARDS_CONTRACT: &str = "addr0018";
+pub const OVER_LOAN_BALANCE_VALUE: &str = "1.01";
+pub const COLLATERAL_TOKEN_SYMBOL: &str = "Luna";
+pub const BASSET_TOKEN_ADDR: &str = "addr0002";
+pub const ANCHOR_CUSTODY_BASSET_CONTRACT: &str = "addr0003";
+pub const ANCHOR_OVERSEER_CONTRACT: &str = "addr0004";
+pub const ANCHOR_TOKEN: &str = "addr0006";
+pub const ANC_STABLE_SWAP_CONTRACT: &str = "addr0008";
+pub const PSI_STABLE_SWAP_CONTRACT: &str = "addr0009";
+pub const BASSET_FARMER_CONFIG_CONTRACT: &str = "addr0012";
+pub const CLAIMING_REWARDS_DELAY: u64 = 1000;
+pub const NASSET_TOKEN_CODE_ID: u64 = 10u64;
+pub const NASSET_TOKEN_CONFIG_HOLDER_CODE_ID: u64 = 11u64;
+pub const NASSET_TOKEN_REWARDS_CODE_ID: u64 = 12u64;
+pub const PSI_DISTRIBUTOR_CODE_ID: u64 = 13u64;
+pub const NASSET_TOKEN_HOLDERS_REWARDS_SHARE: u64 = 70;
+pub const GOVERNANCE_STAKER_REWARDS_SHARE: u64 = 30;
 
 /// copypasted from TerraSwap
 /// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies

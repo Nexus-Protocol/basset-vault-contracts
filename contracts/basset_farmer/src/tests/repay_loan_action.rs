@@ -1,10 +1,7 @@
-use crate::{utils::RepayLoanAction, SubmsgIds};
+use crate::{state::query_external_config, utils::RepayLoanAction, SubmsgIds};
 
 use super::sdk::Sdk;
-use crate::{
-    state::load_config,
-    tests::sdk::{ANCHOR_MARKET_CONTRACT, ATERRA_TOKEN, STABLE_DENOM},
-};
+use crate::tests::sdk::{ANCHOR_MARKET_CONTRACT, ATERRA_TOKEN, STABLE_DENOM};
 use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::attr;
 use cosmwasm_std::{to_binary, Coin, ReplyOn, Response, SubMsg, WasmMsg};
@@ -15,23 +12,23 @@ use yield_optimizer::querier::{AnchorMarketCw20Msg, AnchorMarketMsg};
 #[test]
 fn repay_loan_action_to_response_nothing() {
     let sdk = Sdk::init();
-    let config = load_config(sdk.deps.as_ref().storage).unwrap();
+    let external_config = query_external_config(sdk.deps.as_ref()).unwrap();
 
     let repay_loan_action = RepayLoanAction::Nothing;
-    let response = repay_loan_action.to_response(&config).unwrap();
+    let response = repay_loan_action.to_response(&external_config).unwrap();
     assert_eq!(response, Response::default());
 }
 
 #[test]
 fn repay_loan_action_to_response_repay_loan() {
     let sdk = Sdk::init();
-    let config = load_config(sdk.deps.as_ref().storage).unwrap();
+    let external_config = query_external_config(sdk.deps.as_ref()).unwrap();
 
     let repay_amount = Uint256::from(2_000u64);
     let repay_loan_action = RepayLoanAction::RepayLoan {
         amount: repay_amount,
     };
-    let response = repay_loan_action.to_response(&config).unwrap();
+    let response = repay_loan_action.to_response(&external_config).unwrap();
 
     let repay_stable_coin = Coin {
         denom: STABLE_DENOM.to_string(),
@@ -42,7 +39,7 @@ fn repay_loan_action_to_response_repay_loan() {
         messages: vec![SubMsg {
             msg: WasmMsg::Execute {
                 contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
-                msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
+                msg: to_binary(&AnchorMarketMsg::RepayStable).unwrap(),
                 funds: vec![repay_stable_coin],
             }
             .into(),
@@ -59,13 +56,13 @@ fn repay_loan_action_to_response_repay_loan() {
 #[test]
 fn repay_loan_action_to_response_sell_aterra() {
     let sdk = Sdk::init();
-    let config = load_config(sdk.deps.as_ref().storage).unwrap();
+    let external_config = query_external_config(sdk.deps.as_ref()).unwrap();
 
     let sell_amount = Uint256::from(2_000u64);
     let repay_loan_action = RepayLoanAction::SellAterra {
         amount: sell_amount,
     };
-    let response = repay_loan_action.to_response(&config).unwrap();
+    let response = repay_loan_action.to_response(&external_config).unwrap();
 
     let expected_response = Response {
         events: vec![],
@@ -75,7 +72,7 @@ fn repay_loan_action_to_response_sell_aterra() {
                 msg: to_binary(&Cw20ExecuteMsg::Send {
                     contract: ANCHOR_MARKET_CONTRACT.to_string(),
                     amount: sell_amount.into(),
-                    msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                    msg: to_binary(&AnchorMarketCw20Msg::RedeemStable).unwrap(),
                 })
                 .unwrap(),
                 funds: vec![],
@@ -94,7 +91,7 @@ fn repay_loan_action_to_response_sell_aterra() {
 #[test]
 fn repay_loan_action_to_response_repay_loan_and_sell_aterra() {
     let sdk = Sdk::init();
-    let config = load_config(sdk.deps.as_ref().storage).unwrap();
+    let external_config = query_external_config(sdk.deps.as_ref()).unwrap();
 
     let repay_loan_amount = Uint256::from(5_000u64);
     let aterra_amount_to_sell = Uint256::from(2_000u64);
@@ -102,7 +99,7 @@ fn repay_loan_action_to_response_repay_loan_and_sell_aterra() {
         aterra_amount_to_sell,
         repay_loan_amount,
     };
-    let response = repay_loan_action.to_response(&config).unwrap();
+    let response = repay_loan_action.to_response(&external_config).unwrap();
 
     let repay_stable_coin = Coin {
         denom: STABLE_DENOM.to_string(),
@@ -114,7 +111,7 @@ fn repay_loan_action_to_response_repay_loan_and_sell_aterra() {
             SubMsg {
                 msg: WasmMsg::Execute {
                     contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
-                    msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
+                    msg: to_binary(&AnchorMarketMsg::RepayStable).unwrap(),
                     funds: vec![repay_stable_coin],
                 }
                 .into(),
@@ -128,7 +125,7 @@ fn repay_loan_action_to_response_repay_loan_and_sell_aterra() {
                     msg: to_binary(&Cw20ExecuteMsg::Send {
                         contract: ANCHOR_MARKET_CONTRACT.to_string(),
                         amount: aterra_amount_to_sell.into(),
-                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable).unwrap(),
                     })
                     .unwrap(),
                     funds: vec![],

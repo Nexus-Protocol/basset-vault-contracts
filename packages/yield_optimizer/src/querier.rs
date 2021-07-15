@@ -1,7 +1,7 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
-    to_binary, Addr, AllBalanceResponse, BalanceResponse, BankQuery, Binary, CanonicalAddr, Coin,
-    Deps, QuerierWrapper, QueryRequest, StdResult, Uint128, WasmQuery,
+    to_binary, Addr, AllBalanceResponse, BalanceResponse, BankQuery, Binary, Coin, Deps,
+    QuerierWrapper, QueryRequest, StdResult, Uint128, WasmQuery,
 };
 use cosmwasm_storage::to_length_prefixed;
 use cw20::TokenInfoResponse;
@@ -67,18 +67,24 @@ fn concat(namespace: &[u8], key: &[u8]) -> Vec<u8> {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct BorrowerInfoResponse {
     pub borrower: String,
-    pub interest_index: Decimal256,
-    pub reward_index: Decimal256,
     pub loan_amount: Uint256,
     pub pending_rewards: Decimal256,
+    // we do not need those fields, removing it will save some space in
+    // compiled wasm file
+    //
+    // pub interest_index: Decimal256,
+    // pub reward_index: Decimal256,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct BorrowerInfo {
-    pub interest_index: Decimal256,
-    pub reward_index: Decimal256,
     pub loan_amount: Uint256,
     pub pending_rewards: Decimal256,
+    // we do not need those fields, removing it will save some space in
+    // compiled wasm file
+    //
+    // pub interest_index: Decimal256,
+    // pub reward_index: Decimal256,
 }
 
 pub fn query_borrower_info(
@@ -96,8 +102,6 @@ pub fn query_borrower_info(
 
     Ok(BorrowerInfoResponse {
         borrower: borrower.to_string(),
-        interest_index: borrower_info.interest_index,
-        reward_index: borrower_info.reward_index,
         loan_amount: borrower_info.loan_amount,
         pending_rewards: borrower_info.pending_rewards,
     })
@@ -105,9 +109,12 @@ pub fn query_borrower_info(
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct BorrowerResponse {
-    pub borrower: String,
     pub balance: Uint256,
-    pub spendable: Uint256,
+    // we do not need those fields, removing it will save some space in
+    // compiled wasm file
+    //
+    // pub borrower: String,
+    // pub spendable: Uint256,
 }
 
 pub fn get_basset_in_custody(
@@ -133,12 +140,12 @@ pub enum AnchorMarketMsg {
     ClaimRewards {
         to: Option<String>,
     },
-    DepositStable {},
+    DepositStable,
     BorrowStable {
         borrow_amount: Uint256,
         to: Option<String>,
     },
-    RepayStable {},
+    RepayStable,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -146,7 +153,7 @@ pub enum AnchorMarketMsg {
 pub enum AnchorMarketCw20Msg {
     /// Return stable coins to a user
     /// according to exchange rate
-    RedeemStable {},
+    RedeemStable,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -180,11 +187,14 @@ pub fn query_aterra_state(
 pub struct AnchorMarketStateResponse {
     pub total_liabilities: Decimal256,
     pub total_reserves: Decimal256,
-    pub last_interest_updated: u64,
-    pub last_reward_updated: u64,
-    pub global_interest_index: Decimal256,
-    pub global_reward_index: Decimal256,
-    pub anc_emission_rate: Decimal256,
+    // we do not need those fields, removing it will save some space in
+    // compiled wasm file
+    //
+    // pub last_interest_updated: u64,
+    // pub last_reward_updated: u64,
+    // pub global_interest_index: Decimal256,
+    // pub global_reward_index: Decimal256,
+    // pub anc_emission_rate: Decimal256,
 }
 
 pub fn query_market_state(
@@ -202,16 +212,19 @@ pub fn query_market_state(
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct AnchorMarketConfigResponse {
-    pub contract_addr: CanonicalAddr,
-    pub owner_addr: CanonicalAddr,
-    pub aterra_contract: CanonicalAddr,
-    pub interest_model: CanonicalAddr,
-    pub distribution_model: CanonicalAddr,
-    pub overseer_contract: CanonicalAddr,
-    pub collector_contract: CanonicalAddr,
-    pub distributor_contract: CanonicalAddr,
-    pub stable_denom: String,
-    pub reserve_factor: Decimal256,
+    // we do not need those fields, removing it will save some space in
+    // compiled wasm file
+    //
+    // pub contract_addr: CanonicalAddr,
+    // pub owner_addr: CanonicalAddr,
+    // pub aterra_contract: CanonicalAddr,
+    // pub interest_model: CanonicalAddr,
+    // pub distribution_model: CanonicalAddr,
+    // pub overseer_contract: CanonicalAddr,
+    // pub collector_contract: CanonicalAddr,
+    // pub distributor_contract: CanonicalAddr,
+    // pub stable_denom: String,
+    // pub reserve_factor: Decimal256,
     pub max_borrow_factor: Decimal256,
 }
 
