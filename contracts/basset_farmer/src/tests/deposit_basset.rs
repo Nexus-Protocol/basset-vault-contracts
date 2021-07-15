@@ -63,7 +63,7 @@ fn deposit_basset() {
     let deposit_2_amount: Uint256 = 6_000_000_000u128.into();
     {
         sdk.set_nasset_supply(deposit_1_amount);
-        sdk.set_collateral_balance(deposit_1_amount, Uint256::zero());
+        sdk.set_collateral_balance(deposit_1_amount);
         sdk.set_basset_balance(deposit_2_amount);
         // -= USER SEND bAsset tokens to basset_farmer =-
         let response = sdk
@@ -107,7 +107,7 @@ fn do_not_accept_deposit_if_nluna_supply_is_not_zero_but_bluna_in_custody_is_zer
     let mut sdk = Sdk::init();
 
     sdk.set_nasset_supply(Uint256::one());
-    sdk.set_collateral_balance(Uint256::zero(), Uint256::zero());
+    sdk.set_collateral_balance(Uint256::zero());
 
     //farmer comes
     let user_address = "addr9999".to_string();

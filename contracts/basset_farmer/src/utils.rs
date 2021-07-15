@@ -44,13 +44,13 @@ impl RepayLoanAction {
         }
     }
 
-    pub fn to_response(&self, config: &ExternalConfig) -> StdResult<Response> {
+    pub fn to_response(&self, external_config: &ExternalConfig) -> StdResult<Response> {
         match self {
             RepayLoanAction::Nothing => Ok(Response::default()),
 
             &RepayLoanAction::RepayLoan { amount } => {
                 let repay_stable_coin = Coin {
-                    denom: config.stable_denom.clone(),
+                    denom: external_config.stable_denom.clone(),
                     amount: amount.into(),
                 };
 
@@ -58,7 +58,7 @@ impl RepayLoanAction {
                     events: vec![],
                     messages: vec![SubMsg {
                         msg: WasmMsg::Execute {
-                            contract_addr: config.anchor_market_contract.to_string(),
+                            contract_addr: external_config.anchor_market_contract.to_string(),
                             msg: to_binary(&AnchorMarketMsg::RepayStable)?,
                             funds: vec![repay_stable_coin],
                         }
@@ -76,9 +76,9 @@ impl RepayLoanAction {
                 events: vec![],
                 messages: vec![SubMsg {
                     msg: WasmMsg::Execute {
-                        contract_addr: config.aterra_token.to_string(),
+                        contract_addr: external_config.aterra_token.to_string(),
                         msg: to_binary(&Cw20ExecuteMsg::Send {
-                            contract: config.anchor_market_contract.to_string(),
+                            contract: external_config.anchor_market_contract.to_string(),
                             amount: amount.into(),
                             msg: to_binary(&AnchorMarketCw20Msg::RedeemStable)?,
                         })?,
@@ -100,7 +100,7 @@ impl RepayLoanAction {
                 aterra_amount_to_sell,
             } => {
                 let repay_stable_coin = Coin {
-                    denom: config.stable_denom.to_string(),
+                    denom: external_config.stable_denom.to_string(),
                     amount: repay_loan_amount.into(),
                 };
 
@@ -110,7 +110,7 @@ impl RepayLoanAction {
                         SubMsg {
                             //first message is to repay loan
                             msg: WasmMsg::Execute {
-                                contract_addr: config.anchor_market_contract.to_string(),
+                                contract_addr: external_config.anchor_market_contract.to_string(),
                                 msg: to_binary(&AnchorMarketMsg::RepayStable)?,
                                 funds: vec![repay_stable_coin],
                             }
@@ -121,9 +121,9 @@ impl RepayLoanAction {
                         },
                         SubMsg {
                             msg: WasmMsg::Execute {
-                                contract_addr: config.aterra_token.to_string(),
+                                contract_addr: external_config.aterra_token.to_string(),
                                 msg: to_binary(&Cw20ExecuteMsg::Send {
-                                    contract: config.anchor_market_contract.to_string(),
+                                    contract: external_config.anchor_market_contract.to_string(),
                                     amount: aterra_amount_to_sell.into(),
                                     msg: to_binary(&AnchorMarketCw20Msg::RedeemStable)?,
                                 })?,

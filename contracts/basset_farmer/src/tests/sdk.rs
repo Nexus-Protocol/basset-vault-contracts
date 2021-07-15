@@ -1,7 +1,8 @@
 use crate::tests::mock_dependencies;
 use crate::TOO_HIGH_BORROW_DEMAND_ERR_MSG;
-use crate::{response::MsgInstantiateContractResponse, ContractResult, SubmsgIds};
+use crate::{reply_response::MsgInstantiateContractResponse, SubmsgIds};
 use cosmwasm_bignumber::{Decimal256, Uint256};
+use cosmwasm_std::StdResult;
 use cosmwasm_std::{
     attr,
     testing::{mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
@@ -53,7 +54,8 @@ pub const ANCHOR_OVERSEER_CONTRACT: &str = "addr0004";
 pub const ANCHOR_TOKEN: &str = "addr0006";
 pub const ANC_STABLE_SWAP_CONTRACT: &str = "addr0008";
 pub const PSI_STABLE_SWAP_CONTRACT: &str = "addr0009";
-pub const BASSET_FARMER_CONFIG_CONTRACT: &str = "addr0012";
+pub const BASSET_FARMER_STRATEGY_CONTRACT: &str = "addr0012";
+pub const BASSET_FARMER_CONFIG_HOLDER_CONTRACT: &str = "addr0013";
 pub const CLAIMING_REWARDS_DELAY: u64 = 1000;
 pub const NASSET_TOKEN_CODE_ID: u64 = 10u64;
 pub const NASSET_TOKEN_CONFIG_HOLDER_CODE_ID: u64 = 11u64;
@@ -79,6 +81,11 @@ impl Sdk {
             nasset_token_config_holder_code_id: NASSET_TOKEN_CONFIG_HOLDER_CODE_ID,
             nasset_token_rewards_code_id: NASSET_TOKEN_REWARDS_CODE_ID,
             psi_distributor_code_id: PSI_DISTRIBUTOR_CODE_ID,
+            governance_contract_addr: GOVERNANCE_CONTRACT.to_string(),
+            config_holder_addr: BASSET_FARMER_CONFIG_HOLDER_CONTRACT.to_string(),
+            collateral_token_symbol: COLLATERAL_TOKEN_SYMBOL.to_string(),
+            nasset_token_holders_psi_rewards_share: NASSET_TOKEN_HOLDERS_REWARDS_SHARE,
+            governance_contract_psi_rewards_share: GOVERNANCE_STAKER_REWARDS_SHARE,
         };
 
         let mut deps = mock_dependencies(&[]);
@@ -127,7 +134,7 @@ impl Sdk {
                     msg: WasmMsg::Instantiate {
                         code_id: init_msg.nasset_token_config_holder_code_id,
                         msg: to_binary(&NAssetTokenConfigHolderInstantiateMsg {
-                            governance_contract_addr: init_msg.governance_contract.clone()
+                            governance_contract_addr: init_msg.governance_contract_addr.clone()
                         })
                         .unwrap(),
                         funds: vec![],
@@ -234,8 +241,8 @@ impl Sdk {
                         code_id: init_msg.nasset_token_rewards_code_id,
                         msg: to_binary(&NAssetTokenRewardsInstantiateMsg {
                             nasset_token_addr: nasset_contract_addr.to_string(),
-                            psi_token_addr: init_msg.psi_token.clone(),
-                            governance_contract_addr: init_msg.governance_contract.clone()
+                            psi_token_addr: PSI_TOKEN.to_string(),
+                            governance_contract_addr: init_msg.governance_contract_addr.clone()
                         })
                         .unwrap(),
                         funds: vec![],
@@ -292,7 +299,7 @@ impl Sdk {
                                 nasset_token_rewards_contract_addr: nasset_token_rewards_contract
                                     .to_string(),
                                 nasset_token_rewards_share: NASSET_TOKEN_HOLDERS_REWARDS_SHARE,
-                                governance_contract_addr: init_msg.governance_contract.clone(),
+                                governance_contract_addr: init_msg.governance_contract_addr.clone(),
                                 governance_contract_share: GOVERNANCE_STAKER_REWARDS_SHARE,
                             })
                             .unwrap(),
@@ -368,8 +375,6 @@ impl Sdk {
                 &MOCK_CONTRACT_ADDR.to_string(),
                 &BorrowerInfoResponse {
                     borrower: MOCK_CONTRACT_ADDR.to_string(),
-                    interest_index: Decimal256::one(),
-                    reward_index: Decimal256::zero(),
                     loan_amount: value,
                     pending_rewards: Decimal256::zero(),
                 },
@@ -397,7 +402,7 @@ impl Sdk {
     fn set_wasm_query_respones(&mut self) {
         self.deps.querier.with_wasm_query_response(&[
             (
-                &BASSET_FARMER_CONFIG_CONTRACT.to_string(),
+                &BASSET_FARMER_STRATEGY_CONTRACT.to_string(),
                 &to_binary(&self.borrower_action).unwrap(),
             ),
             (
@@ -411,16 +416,12 @@ impl Sdk {
         ]);
     }
 
-    pub fn set_collateral_balance(&mut self, balance: Uint256, spendable: Uint256) {
+    pub fn set_collateral_balance(&mut self, balance: Uint256) {
         self.deps.querier.with_locked_basset(&[(
             &ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
             &[(
                 &MOCK_CONTRACT_ADDR.to_string(),
-                &BorrowerResponse {
-                    borrower: MOCK_CONTRACT_ADDR.to_string(),
-                    balance,
-                    spendable,
-                },
+                &BorrowerResponse { balance },
             )],
         )]);
     }
@@ -468,7 +469,7 @@ impl Sdk {
         ]);
     }
 
-    pub fn rebalance(&mut self) -> ContractResult<Response<Empty>> {
+    pub fn rebalance(&mut self) -> StdResult<Response<Empty>> {
         let rebalance_msg = yield_optimizer::basset_farmer::AnyoneMsg::Rebalance;
         let info = mock_info(&"addr9999".to_string(), &vec![]);
         crate::contract::execute(
@@ -491,7 +492,7 @@ impl Sdk {
         );
     }
 
-    pub fn aterra_redeem_success(&mut self) -> ContractResult<Response<Empty>> {
+    pub fn aterra_redeem_success(&mut self) -> StdResult<Response<Empty>> {
         let reply_msg = Reply {
             id: SubmsgIds::RedeemStableOnRepayLoan.id(),
             result: cosmwasm_std::ContractResult::Ok(SubMsgExecutionResponse {
@@ -504,7 +505,7 @@ impl Sdk {
         crate::contract::reply(self.deps.as_mut(), mock_env(), reply_msg)
     }
 
-    pub fn aterra_redeed_failed(&mut self) -> ContractResult<Response<Empty>> {
+    pub fn aterra_redeed_failed(&mut self) -> StdResult<Response<Empty>> {
         let reply_msg = Reply {
             id: SubmsgIds::RedeemStableOnRepayLoan.id(),
             result: cosmwasm_std::ContractResult::Err(format!(
@@ -516,7 +517,7 @@ impl Sdk {
         crate::contract::reply(self.deps.as_mut(), mock_env(), reply_msg)
     }
 
-    pub fn continue_repay_loan(&mut self) -> ContractResult<Response<Empty>> {
+    pub fn continue_repay_loan(&mut self) -> StdResult<Response<Empty>> {
         let reply_msg = Reply {
             id: SubmsgIds::RepayLoan.id(),
             result: cosmwasm_std::ContractResult::Ok(SubMsgExecutionResponse {
@@ -528,11 +529,7 @@ impl Sdk {
         crate::contract::reply(self.deps.as_mut(), mock_env(), reply_msg)
     }
 
-    pub fn user_deposit(
-        &mut self,
-        address: &str,
-        amount: Uint128,
-    ) -> ContractResult<Response<Empty>> {
+    pub fn user_deposit(&mut self, address: &str, amount: Uint128) -> StdResult<Response<Empty>> {
         let cw20_deposit_msg = Cw20ReceiveMsg {
             sender: address.to_string(),
             amount,
@@ -548,11 +545,7 @@ impl Sdk {
         )
     }
 
-    pub fn user_withdraw(
-        &mut self,
-        address: &str,
-        amount: Uint128,
-    ) -> ContractResult<Response<Empty>> {
+    pub fn user_withdraw(&mut self, address: &str, amount: Uint128) -> StdResult<Response<Empty>> {
         let cw20_deposit_msg = Cw20ReceiveMsg {
             sender: address.to_string(),
             amount,
@@ -568,7 +561,7 @@ impl Sdk {
         )
     }
 
-    pub fn user_send_honest_work(&mut self, block_height: u64) -> ContractResult<Response<Empty>> {
+    pub fn user_send_honest_work(&mut self, block_height: u64) -> StdResult<Response<Empty>> {
         let honest_work_msg = yield_optimizer::basset_farmer::AnyoneMsg::HonestWork;
         let mut env = mock_env();
         env.block.height = block_height;
@@ -583,7 +576,7 @@ impl Sdk {
         )
     }
 
-    pub fn send_swap_anc(&mut self) -> ContractResult<Response<Empty>> {
+    pub fn send_swap_anc(&mut self) -> StdResult<Response<Empty>> {
         let info = mock_info(MOCK_CONTRACT_ADDR, &vec![]);
         crate::contract::execute(
             self.deps.as_mut(),
@@ -595,7 +588,7 @@ impl Sdk {
         )
     }
 
-    pub fn send_distribute_rewards(&mut self) -> ContractResult<Response<Empty>> {
+    pub fn send_distribute_rewards(&mut self) -> StdResult<Response<Empty>> {
         let info = mock_info(MOCK_CONTRACT_ADDR, &vec![]);
         crate::contract::execute(
             self.deps.as_mut(),
