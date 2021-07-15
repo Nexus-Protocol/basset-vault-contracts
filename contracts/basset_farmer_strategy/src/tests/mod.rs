@@ -103,9 +103,7 @@ impl WasmMockQuerier {
 
                     let empty_borrowers = HashMap::new();
                     let default_borrower = BorrowerResponse {
-                        borrower: address.to_string(),
                         balance: Uint256::zero(),
-                        spendable: Uint256::zero(),
                     };
 
                     let borrowers_map = self
