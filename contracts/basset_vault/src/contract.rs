@@ -316,7 +316,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 
         ExecuteMsg::Yourself { yourself_msg } => {
             if info.sender != env.contract.address {
-                return Err(StdError::generic_err("unauthhorized"));
+                return Err(StdError::generic_err("unauthorized"));
             }
 
             match yourself_msg {
@@ -329,7 +329,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             let config: Config = load_config(deps.storage)?;
             let external_config = query_external_config_light(deps.as_ref(), &config)?;
             if info.sender != external_config.governance_contract {
-                return Err(StdError::generic_err("unauthhorized"));
+                return Err(StdError::generic_err("unauthorized"));
             }
 
             match governance_msg {

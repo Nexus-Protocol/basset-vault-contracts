@@ -72,7 +72,7 @@ pub fn receive_cw20_deposit(
     let config: Config = load_config(deps.storage)?;
     let external_config: ExternalConfig = query_external_config_light(deps.as_ref(), &config)?;
     if basset_addr != external_config.basset_token {
-        return Err(StdError::generic_err("unauthhorized"));
+        return Err(StdError::generic_err("unauthorized"));
     }
 
     //we trust cw20 contract
@@ -186,7 +186,7 @@ pub fn receive_cw20_withdraw(
     // only nAsset contract can execute this message
     let config: Config = load_config(deps.storage)?;
     if contract_addr != config.nasset_token {
-        return Err(StdError::generic_err("unauthhorized"));
+        return Err(StdError::generic_err("unauthorized"));
     }
 
     //we trust cw20 contract
