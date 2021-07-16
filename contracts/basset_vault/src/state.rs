@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::{Addr, Binary, Deps, QueryRequest, StdResult, Storage, Uint128, WasmQuery};
-use yield_optimizer::basset_vault_config_holder::Config as ExternalConfig;
+use basset_vault::basset_vault_config_holder::Config as ExternalConfig;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Config {

@@ -12,7 +12,7 @@ use cosmwasm_std::{
 };
 use cosmwasm_storage::to_length_prefixed;
 use std::collections::HashMap;
-use yield_optimizer::querier::BorrowerResponse;
+use basset_vault::querier::BorrowerResponse;
 
 use cw20::TokenInfoResponse;
 

@@ -9,7 +9,7 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{to_binary, Coin, ReplyOn, Response, SubMsg, Uint128, WasmMsg};
 use cw20::Cw20ExecuteMsg;
 use std::str::FromStr;
-use yield_optimizer::{
+use basset_vault::{
     basset_vault_strategy::BorrowerActionResponse,
     querier::{AnchorMarketCw20Msg, AnchorMarketMsg},
 };

@@ -4,14 +4,14 @@ use crate::tests::sdk::GOVERNANCE_CONTRACT_ADDR;
 
 use super::sdk::Sdk;
 use cosmwasm_std::testing::{mock_env, mock_info};
-use yield_optimizer::psi_distributor::{ExecuteMsg, GovernanceMsg};
+use basset_vault::psi_distributor::{ExecuteMsg, GovernanceMsg};
 
 #[test]
 fn fail_to_change_config_if_sender_is_not_governance() {
     let mut sdk = Sdk::init();
 
     let change_config_msg = ExecuteMsg::GovernanceMsg {
-        governance_msg: yield_optimizer::psi_distributor::GovernanceMsg::UpdateConfig {
+        governance_msg: basset_vault::psi_distributor::GovernanceMsg::UpdateConfig {
             psi_token_contract_addr: Some("addr9999".to_string()),
             governance_contract_addr: Some("addr9997".to_string()),
         },

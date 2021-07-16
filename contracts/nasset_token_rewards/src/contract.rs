@@ -10,7 +10,7 @@ use crate::{
     state::{load_config, save_config, save_state, State},
 };
 use crate::{state::Config, ContractResult};
-use yield_optimizer::nasset_token_rewards::{
+use basset_vault::nasset_token_rewards::{
     AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg, TokenMsg,
 };
 

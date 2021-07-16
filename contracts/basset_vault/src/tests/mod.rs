@@ -20,8 +20,8 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::str::FromStr;
 use terra_cosmwasm::{TaxCapResponse, TaxRateResponse, TerraQuery, TerraQueryWrapper, TerraRoute};
-use yield_optimizer::basset_vault_config_holder::Config as ExternalConfig;
-use yield_optimizer::querier::{BorrowerInfoResponse, BorrowerResponse};
+use basset_vault::basset_vault_config_holder::Config as ExternalConfig;
+use basset_vault::querier::{BorrowerInfoResponse, BorrowerResponse};
 
 use cw20::TokenInfoResponse;
 

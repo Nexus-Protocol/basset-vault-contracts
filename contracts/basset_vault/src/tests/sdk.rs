@@ -16,15 +16,15 @@ use cw20::MinterResponse;
 use protobuf::Message;
 use std::collections::HashMap;
 use std::iter::FromIterator;
-use yield_optimizer::basset_vault::YourselfMsg;
+use basset_vault::basset_vault::YourselfMsg;
 
-use yield_optimizer::basset_vault::Cw20HookMsg;
-use yield_optimizer::basset_vault_strategy::BorrowerActionResponse;
-use yield_optimizer::psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg;
-use yield_optimizer::querier::{
+use basset_vault::basset_vault::Cw20HookMsg;
+use basset_vault::basset_vault_strategy::BorrowerActionResponse;
+use basset_vault::psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg;
+use basset_vault::querier::{
     AnchorMarketEpochStateResponse, BorrowerInfoResponse, BorrowerResponse,
 };
-use yield_optimizer::{
+use basset_vault::{
     basset_vault::ExecuteMsg,
     nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
     nasset_token_config_holder::{
@@ -76,7 +76,7 @@ pub struct Sdk {
 
 impl Sdk {
     pub fn init() -> Self {
-        let msg = yield_optimizer::basset_vault::InstantiateMsg {
+        let msg = basset_vault::basset_vault::InstantiateMsg {
             nasset_token_code_id: NASSET_TOKEN_CODE_ID,
             nasset_token_config_holder_code_id: NASSET_TOKEN_CONFIG_HOLDER_CODE_ID,
             nasset_token_rewards_code_id: NASSET_TOKEN_REWARDS_CODE_ID,
@@ -112,7 +112,7 @@ impl Sdk {
 
     pub fn instantiate_basset_vault<A: Storage, B: Api, C: Querier>(
         deps: &mut OwnedDeps<A, B, C>,
-        init_msg: yield_optimizer::basset_vault::InstantiateMsg,
+        init_msg: basset_vault::basset_vault::InstantiateMsg,
         psi_token: &str,
         nasset_token_config_holder_contract: &str,
         nasset_contract_addr: &str,
@@ -470,7 +470,7 @@ impl Sdk {
     }
 
     pub fn rebalance(&mut self) -> StdResult<Response<Empty>> {
-        let rebalance_msg = yield_optimizer::basset_vault::AnyoneMsg::Rebalance;
+        let rebalance_msg = basset_vault::basset_vault::AnyoneMsg::Rebalance;
         let info = mock_info(&"addr9999".to_string(), &vec![]);
         crate::contract::execute(
             self.deps.as_mut(),
@@ -562,7 +562,7 @@ impl Sdk {
     }
 
     pub fn user_send_honest_work(&mut self, block_height: u64) -> StdResult<Response<Empty>> {
-        let honest_work_msg = yield_optimizer::basset_vault::AnyoneMsg::HonestWork;
+        let honest_work_msg = basset_vault::basset_vault::AnyoneMsg::HonestWork;
         let mut env = mock_env();
         env.block.height = block_height;
         let info = mock_info(&"addr9999".to_string(), &vec![]);

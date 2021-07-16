@@ -6,7 +6,7 @@ use cw20_base::allowances::{execute_decrease_allowance, execute_increase_allowan
 use cw20_base::contract::instantiate as cw20_instantiate;
 use cw20_base::contract::query as cw20_query;
 use cw20_base::msg::{ExecuteMsg, InstantiateMsg as TokenInstantiateMsg, QueryMsg};
-use yield_optimizer::nasset_token::InstantiateMsg;
+use basset_vault::nasset_token::InstantiateMsg;
 
 #[entry_point]
 pub fn instantiate(

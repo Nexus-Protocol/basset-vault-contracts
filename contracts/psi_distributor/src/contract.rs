@@ -10,7 +10,7 @@ use crate::{
     state::{load_config, store_config, Config, RewardShare, RewardsDistribution},
     ContractResult,
 };
-use yield_optimizer::psi_distributor::{
+use basset_vault::psi_distributor::{
     AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg,
 };
 

@@ -23,8 +23,8 @@ use crate::{
 };
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
-use yield_optimizer::basset_vault_config_holder::Config as ExternalConfig;
-use yield_optimizer::{
+use basset_vault::basset_vault_config_holder::Config as ExternalConfig;
+use basset_vault::{
     basset_vault::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, YourselfMsg},
     basset_vault_strategy::{query_borrower_action, BorrowerActionResponse},
     querier::{

@@ -9,6 +9,131 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
+name = "basset-vault"
+version = "1.0.0"
+dependencies = [
+ "cosmwasm-bignumber",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw20",
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "basset-vault-basset-vault"
+version = "1.0.0"
+dependencies = [
+ "basset-vault",
+ "cosmwasm-bignumber",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw20",
+ "protobuf",
+ "schemars",
+ "serde",
+ "terra-cosmwasm",
+]
+
+[[package]]
+name = "basset-vault-basset-vault-config-holder"
+version = "1.0.0"
+dependencies = [
+ "basset-vault",
+ "cosmwasm-bignumber",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw20",
+ "protobuf",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "basset-vault-basset-vault-strategy"
+version = "1.0.0"
+dependencies = [
+ "basset-vault",
+ "cosmwasm-bignumber",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw20",
+ "protobuf",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "basset-vault-nasset-config-holder"
+version = "1.0.0"
+dependencies = [
+ "basset-vault",
+ "cosmwasm-bignumber",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw20",
+ "protobuf",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "basset-vault-nasset-rewards"
+version = "1.0.0"
+dependencies = [
+ "basset-vault",
+ "cosmwasm-bignumber",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw20",
+ "protobuf",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "basset-vault-nasset-token"
+version = "1.0.0"
+dependencies = [
+ "basset-vault",
+ "cosmwasm-bignumber",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw20",
+ "cw20-base",
+ "protobuf",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "basset-vault-psi-distributor"
+version = "1.0.0"
+dependencies = [
+ "basset-vault",
+ "cosmwasm-bignumber",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw20",
+ "protobuf",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "bigint"
 version = "4.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -651,131 +776,6 @@ name = "wyz"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
-
-[[package]]
-name = "yield-optimizer-basset-farmer"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-bignumber",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw20",
- "protobuf",
- "schemars",
- "serde",
- "terra-cosmwasm",
- "yield_optimizer",
-]
-
-[[package]]
-name = "yield-optimizer-basset-farmer-config-holder"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-bignumber",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw20",
- "protobuf",
- "schemars",
- "serde",
- "thiserror",
- "yield_optimizer",
-]
-
-[[package]]
-name = "yield-optimizer-basset-farmer-strategy"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-bignumber",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw20",
- "protobuf",
- "schemars",
- "serde",
- "thiserror",
- "yield_optimizer",
-]
-
-[[package]]
-name = "yield-optimizer-nasset-config-holder"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-bignumber",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw20",
- "protobuf",
- "schemars",
- "serde",
- "thiserror",
- "yield_optimizer",
-]
-
-[[package]]
-name = "yield-optimizer-nasset-rewards"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-bignumber",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw20",
- "protobuf",
- "schemars",
- "serde",
- "thiserror",
- "yield_optimizer",
-]
-
-[[package]]
-name = "yield-optimizer-nasset-token"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-bignumber",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw20",
- "cw20-base",
- "protobuf",
- "schemars",
- "serde",
- "thiserror",
- "yield_optimizer",
-]
-
-[[package]]
-name = "yield-optimizer-psi-distributor"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-bignumber",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw20",
- "protobuf",
- "schemars",
- "serde",
- "thiserror",
- "yield_optimizer",
-]
-
-[[package]]
-name = "yield_optimizer"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-bignumber",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw20",
- "schemars",
- "serde",
-]
 
 [[package]]
 name = "zeroize"

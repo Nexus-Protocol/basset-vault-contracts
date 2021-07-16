@@ -1,13 +1,13 @@
 [package]
-name = "yield_optimizer"
-version = "0.1.0"
+name = "basset-vault"
+version = "1.0.0"
 authors = ["Nexus Labs"]
 edition = "2018"
-description = "Common yeild-optimizer types"
+description = "Common basset-vault types"
 license = "Apache-2.0"
-repository = "https://github.com/nexus/yield-optimizer-contracts"
-homepage = "https://nexus.io"
-documentation = "https://docs.nexus.io"
+repository = "https://github.com/Nexus-Protocol/basset-vault-contracts"
+homepage = "todo"
+documentation = "todo"
 
 [features]
 # for quicker tests, cargo test --lib

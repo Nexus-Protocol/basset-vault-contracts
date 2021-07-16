@@ -1,6 +1,6 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Deps, Env, StdResult};
-use yield_optimizer::{
+use basset_vault::{
     basset_vault::{
         ChildContractsInfoResponse, ConfigResponse, IsRewardsClaimableResponse, RebalanceResponse,
     },
@@ -17,7 +17,7 @@ use crate::{
     state::{load_last_rewards_claiming_height, Config},
     utils::is_anc_rewards_claimable,
 };
-use yield_optimizer::basset_vault_config_holder::Config as ExternalConfig;
+use basset_vault::basset_vault_config_holder::Config as ExternalConfig;
 
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let config: Config = load_config(deps.storage)?;

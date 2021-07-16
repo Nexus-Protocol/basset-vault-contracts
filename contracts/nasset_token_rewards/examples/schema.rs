@@ -2,7 +2,7 @@ use std::env::current_dir;
 use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-use yield_optimizer::nasset_token_rewards::{
+use basset_vault::nasset_token_rewards::{
     AccruedRewardsResponse, AnyoneMsg, ConfigResponse, ExecuteMsg, GovernanceMsg, HolderResponse,
     HoldersResponse, InstantiateMsg, QueryMsg, StateResponse, TokenMsg,
 };

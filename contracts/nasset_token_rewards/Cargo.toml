@@ -1,13 +1,13 @@
 [package]
-name = "yield-optimizer-nasset-rewards"
-version = "0.1.0"
+name = "basset-vault-nasset-rewards"
+version = "1.0.0"
 authors = ["Nexus Labs"]
 edition = "2018"
 description = "Contract that calculates rewards for nAsset token holders"
 license = "Apache-2.0"
-repository = "https://github.com/nexus/yield-optimizer-contracts"
-homepage = "https://nexus.io"
-documentation = "https://docs.nexus.io"
+repository = "https://github.com/Nexus-Protocol/basset-vault-contracts"
+homepage = "todo"
+documentation = "todo"
 
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
@@ -25,7 +25,7 @@ crate-type = ["cdylib", "rlib"]
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-yield_optimizer = { path = "../../packages/yield_optimizer", default-features = false, version = "0.1.0"}
+basset-vault = { path = "../../packages/basset_vault", default-features = false, version = "1.0.0"}
 thiserror = { version = "1.0.24" }
 protobuf = { version = "2", features = ["with-bytes"] }
 cw20 = { version = "0.7" }

@@ -4,8 +4,8 @@ use cosmwasm_std::{DepsMut, OwnedDeps};
 use cw20::{Cw20ReceiveMsg, MinterResponse, TokenInfoResponse};
 use cw20_base::contract::{query_minter, query_token_info};
 use cw20_base::msg::ExecuteMsg;
-use yield_optimizer::nasset_token::InstantiateMsg as TokenInstantiateMsg;
-use yield_optimizer::nasset_token_rewards::{
+use basset_vault::nasset_token::InstantiateMsg as TokenInstantiateMsg;
+use basset_vault::nasset_token_rewards::{
     ExecuteMsg as NAssetRewardsExecuteMsg, TokenMsg as NassetRewardsTokenMsg,
 };
 

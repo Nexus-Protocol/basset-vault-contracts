@@ -1,6 +1,6 @@
 use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
-use yield_optimizer::nasset_token_config_holder::Config;
+use basset_vault::nasset_token_config_holder::Config;
 
 use crate::state::load_config;
 
@@ -9,7 +9,7 @@ fn proper_initialization() {
     let mut deps = mock_dependencies(&[]);
 
     let nasset_token_rewards_contract_addr = "addr0000".to_string();
-    let msg = yield_optimizer::nasset_token_config_holder::InstantiateMsg {
+    let msg = basset_vault::nasset_token_config_holder::InstantiateMsg {
         governance_contract_addr: "addr0001".to_string(),
     };
 
@@ -23,9 +23,9 @@ fn proper_initialization() {
 
     // set rewards_contract
     {
-        let set_rewards_token_addr_msg = yield_optimizer::nasset_token_config_holder::ExecuteMsg::Anyone {
+        let set_rewards_token_addr_msg = basset_vault::nasset_token_config_holder::ExecuteMsg::Anyone {
             anyone_msg:
-                yield_optimizer::nasset_token_config_holder::AnyoneMsg::SetTokenRewardsContract {
+                basset_vault::nasset_token_config_holder::AnyoneMsg::SetTokenRewardsContract {
                     nasset_token_rewards_contract_addr: nasset_token_rewards_contract_addr.clone(),
                 },
         };
@@ -46,9 +46,9 @@ fn proper_initialization() {
 
     // set rewards_contract second time
     {
-        let set_rewards_token_addr_msg = yield_optimizer::nasset_token_config_holder::ExecuteMsg::Anyone {
+        let set_rewards_token_addr_msg = basset_vault::nasset_token_config_holder::ExecuteMsg::Anyone {
             anyone_msg:
-                yield_optimizer::nasset_token_config_holder::AnyoneMsg::SetTokenRewardsContract {
+                basset_vault::nasset_token_config_holder::AnyoneMsg::SetTokenRewardsContract {
                     nasset_token_rewards_contract_addr: "no_way!".to_string(),
                 },
         };

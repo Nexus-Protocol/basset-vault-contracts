@@ -19,7 +19,7 @@ use crate::{
 use cw20::MinterResponse;
 use protobuf::Message;
 use std::convert::TryFrom;
-use yield_optimizer::{
+use basset_vault::{
     basset_vault::{AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg, YourselfMsg},
     nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
     nasset_token_config_holder::{

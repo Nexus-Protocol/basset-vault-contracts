@@ -12,7 +12,7 @@ use cosmwasm_std::{
 };
 use cosmwasm_storage::to_length_prefixed;
 use std::collections::HashMap;
-use yield_optimizer::nasset_token_config_holder::Config;
+use basset_vault::nasset_token_config_holder::Config;
 
 /// copypasted from TerraSwap
 /// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies

@@ -7,7 +7,7 @@ use cosmwasm_std::{
 };
 use cosmwasm_std::{Empty, Response, Uint128};
 
-use yield_optimizer::nasset_token_rewards::ExecuteMsg;
+use basset_vault::nasset_token_rewards::ExecuteMsg;
 
 use super::WasmMockQuerier;
 
@@ -21,7 +21,7 @@ pub struct Sdk {
 
 impl Sdk {
     pub fn init() -> Self {
-        let msg = yield_optimizer::nasset_token_rewards::InstantiateMsg {
+        let msg = basset_vault::nasset_token_rewards::InstantiateMsg {
             psi_token_addr: PSI_TOKEN_ADDR.to_string(),
             nasset_token_addr: NASSET_TOKEN_ADDR.to_string(),
             governance_contract_addr: GOVERNANCE_CONTRACT_ADDR.to_string(),
@@ -45,7 +45,7 @@ impl Sdk {
 
     pub fn increase_user_balance(&mut self, user_addr: &Addr, deposit_amount: Uint128) {
         let user_increase_balance =
-            yield_optimizer::nasset_token_rewards::TokenMsg::IncreaseBalance {
+            basset_vault::nasset_token_rewards::TokenMsg::IncreaseBalance {
                 address: user_addr.to_string(),
                 amount: deposit_amount,
             };
@@ -64,7 +64,7 @@ impl Sdk {
 
     pub fn decrease_user_balance(&mut self, user_addr: &Addr, withdraw_amount: Uint128) {
         let decrease_balance_msg =
-            yield_optimizer::nasset_token_rewards::TokenMsg::DecreaseBalance {
+            basset_vault::nasset_token_rewards::TokenMsg::DecreaseBalance {
                 address: user_addr.to_string(),
                 amount: withdraw_amount,
             };
@@ -82,7 +82,7 @@ impl Sdk {
     }
 
     pub fn update_index(&mut self) -> ContractResult<Response> {
-        let update_index_msg = yield_optimizer::nasset_token_rewards::AnyoneMsg::UpdateGlobalIndex;
+        let update_index_msg = basset_vault::nasset_token_rewards::AnyoneMsg::UpdateGlobalIndex;
         let info = mock_info(&"addr9999".to_string(), &vec![]);
         crate::contract::execute(
             self.deps.as_mut(),
@@ -96,7 +96,7 @@ impl Sdk {
 
     pub fn claim_rewards(&mut self, sender: &Addr) -> ContractResult<Response<Empty>> {
         let claim_msg =
-            yield_optimizer::nasset_token_rewards::AnyoneMsg::ClaimRewards { recipient: None };
+            basset_vault::nasset_token_rewards::AnyoneMsg::ClaimRewards { recipient: None };
         let info = mock_info(&sender.to_string(), &vec![]);
         crate::contract::execute(
             self.deps.as_mut(),

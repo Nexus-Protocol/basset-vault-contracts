@@ -1,7 +1,7 @@
 use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
-use yield_optimizer::basset_vault_config_holder::Config;
+use basset_vault::basset_vault_config_holder::Config;
 
 use crate::state::load_config;
 use crate::tests::{
@@ -17,7 +17,7 @@ use std::str::FromStr;
 fn proper_initialization() {
     let mut deps = mock_dependencies(&[]);
 
-    let msg = yield_optimizer::basset_vault_config_holder::InstantiateMsg {
+    let msg = basset_vault::basset_vault_config_holder::InstantiateMsg {
         governance_contract_addr: GOVERNANCE_CONTRACT.to_string(),
         claiming_rewards_delay: CLAIMING_REWARDS_DELAY,
         collateral_token_symbol: COLLATERAL_TOKEN_SYMBOL.to_string(),

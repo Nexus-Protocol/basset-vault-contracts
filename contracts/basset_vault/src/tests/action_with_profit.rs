@@ -11,7 +11,7 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{attr, CosmosMsg, SubMsg};
 use cosmwasm_std::{to_binary, Coin, Response, Uint128, WasmMsg};
 
-use yield_optimizer::{
+use basset_vault::{
     psi_distributor::{
         AnyoneMsg as PsiDistributorAnyoneMsg, ExecuteMsg as PsiDistributorExecuteMsg,
     },

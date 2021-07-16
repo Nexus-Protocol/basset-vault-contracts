@@ -2,7 +2,7 @@ use std::env::current_dir;
 use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-use yield_optimizer::basset_vault::{
+use basset_vault::basset_vault::{
     AnyoneMsg, ChildContractsInfoResponse, ConfigResponse, Cw20HookMsg, ExecuteMsg, GovernanceMsg,
     InstantiateMsg, IsRewardsClaimableResponse, QueryMsg, RebalanceResponse, YourselfMsg,
 };

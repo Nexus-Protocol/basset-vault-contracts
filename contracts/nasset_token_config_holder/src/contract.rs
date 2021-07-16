@@ -5,7 +5,7 @@ use cosmwasm_std::{
 use crate::error::ContractError;
 use crate::state::{load_config, save_config, set_nasset_token_rewards_contract};
 use crate::ContractResult;
-use yield_optimizer::nasset_token_config_holder::{
+use basset_vault::nasset_token_config_holder::{
     AnyoneMsg, Config, ConfigResponse, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg,
 };
 

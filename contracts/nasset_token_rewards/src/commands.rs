@@ -2,7 +2,7 @@ use cosmwasm_std::{
     attr, to_binary, Addr, CosmosMsg, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdError,
     SubMsg, Uint128, WasmMsg,
 };
-use yield_optimizer::querier::query_token_balance;
+use basset_vault::querier::query_token_balance;
 
 use crate::{
     math::decimal_summation_in_256,

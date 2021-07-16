@@ -9,7 +9,7 @@ use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::{attr, CosmosMsg, SubMsg};
 use cosmwasm_std::{to_binary, Coin, Response, WasmMsg};
 
-use yield_optimizer::querier::AnchorMarketMsg;
+use basset_vault::querier::AnchorMarketMsg;
 
 #[test]
 fn after_borrow_action_to_response_nothing() {

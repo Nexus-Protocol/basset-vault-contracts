@@ -7,7 +7,7 @@ use cw20::{
     TokenInfoResponse,
 };
 use cw20_base::msg::{ExecuteMsg, QueryMsg};
-use yield_optimizer::nasset_token::InstantiateMsg;
+use basset_vault::nasset_token::InstantiateMsg;
 
 fn main() {
     let mut out_dir = current_dir().unwrap();

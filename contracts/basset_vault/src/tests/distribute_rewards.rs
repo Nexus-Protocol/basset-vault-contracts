@@ -10,11 +10,11 @@ use cosmwasm_std::{to_binary, Coin, StdError, SubMsg, WasmMsg};
 use cosmwasm_std::{CosmosMsg, Uint128};
 use cw20::Cw20ExecuteMsg;
 use std::str::FromStr;
-use yield_optimizer::basset_vault::{
+use basset_vault::basset_vault::{
     ExecuteMsg as BassetFarmerExecuteMsg, YourselfMsg as BassetFarmerYourselfMsg,
 };
-use yield_optimizer::terraswap::{Asset, AssetInfo};
-use yield_optimizer::{
+use basset_vault::terraswap::{Asset, AssetInfo};
+use basset_vault::{
     psi_distributor::{
         AnyoneMsg as PsiDistributorAnyoneMsg, ExecuteMsg as PsiDistributorExecuteMsg,
     },

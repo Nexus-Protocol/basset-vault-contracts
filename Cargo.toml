@@ -1,7 +1,7 @@
 [workspace]
 members = ["packages/*", "contracts/*"]
 
-[profile.release.package.yield_optimizer]
+[profile.release.package.basset-vault]
 opt-level = 3
 debug = false
 debug-assertions = false

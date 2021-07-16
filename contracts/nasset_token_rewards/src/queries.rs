@@ -5,7 +5,7 @@ use crate::{
 };
 use cosmwasm_std::{Addr, Deps, StdResult, Storage, Uint128};
 use cosmwasm_storage::ReadonlyBucket;
-use yield_optimizer::{
+use basset_vault::{
     common::OrderBy,
     nasset_token_rewards::{
         AccruedRewardsResponse, ConfigResponse, HolderResponse, HoldersResponse, StateResponse,

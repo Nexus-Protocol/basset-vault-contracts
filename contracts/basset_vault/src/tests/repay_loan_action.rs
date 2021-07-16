@@ -7,7 +7,7 @@ use cosmwasm_std::attr;
 use cosmwasm_std::{to_binary, Coin, ReplyOn, Response, SubMsg, WasmMsg};
 use cw20::Cw20ExecuteMsg;
 
-use yield_optimizer::querier::{AnchorMarketCw20Msg, AnchorMarketMsg};
+use basset_vault::querier::{AnchorMarketCw20Msg, AnchorMarketMsg};
 
 #[test]
 fn repay_loan_action_to_response_nothing() {

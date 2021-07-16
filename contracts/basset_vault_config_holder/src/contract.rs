@@ -7,7 +7,7 @@ use crate::error::ContractError;
 use crate::state::{load_config, save_config};
 use crate::ContractResult;
 use std::str::FromStr;
-use yield_optimizer::basset_vault_config_holder::{
+use basset_vault::basset_vault_config_holder::{
     Config, ConfigResponse, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg,
 };
 

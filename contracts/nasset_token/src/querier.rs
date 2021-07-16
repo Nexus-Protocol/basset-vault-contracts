@@ -2,7 +2,7 @@ use cosmwasm_std::{Addr, Binary, Deps, QueryRequest, StdResult, WasmQuery};
 
 use crate::state::load_config_holder_contract;
 use cosmwasm_storage::to_length_prefixed;
-use yield_optimizer::nasset_token_config_holder::Config;
+use basset_vault::nasset_token_config_holder::Config;
 
 pub fn query_rewards_contract(deps: Deps) -> StdResult<Addr> {
     let config_holder_contract = load_config_holder_contract(deps.storage)?;

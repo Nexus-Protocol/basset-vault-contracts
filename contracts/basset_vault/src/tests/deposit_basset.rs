@@ -5,7 +5,7 @@ use cosmwasm_std::{testing::MOCK_CONTRACT_ADDR, CosmosMsg};
 use cosmwasm_std::{to_binary, SubMsg, Uint128, WasmMsg};
 use cw20::Cw20ExecuteMsg;
 
-use yield_optimizer::{
+use basset_vault::{
     basset_vault::{AnyoneMsg, ExecuteMsg},
     querier::AnchorOverseerMsg,
 };

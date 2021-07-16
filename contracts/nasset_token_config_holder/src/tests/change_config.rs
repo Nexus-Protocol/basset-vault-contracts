@@ -3,13 +3,13 @@ use crate::state::load_config;
 
 use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
-use yield_optimizer::nasset_token_config_holder::{ExecuteMsg, GovernanceMsg};
+use basset_vault::nasset_token_config_holder::{ExecuteMsg, GovernanceMsg};
 
 #[test]
 fn fail_to_change_config_if_sender_is_not_governance() {
     let mut deps = mock_dependencies(&[]);
 
-    let msg = yield_optimizer::nasset_token_config_holder::InstantiateMsg {
+    let msg = basset_vault::nasset_token_config_holder::InstantiateMsg {
         governance_contract_addr: "addr0001".to_string(),
     };
 
@@ -43,7 +43,7 @@ fn success_to_change_config_if_sender_governance() {
     let mut deps = mock_dependencies(&[]);
     let governance_contract_addr = "addr0000".to_string();
 
-    let msg = yield_optimizer::nasset_token_config_holder::InstantiateMsg {
+    let msg = basset_vault::nasset_token_config_holder::InstantiateMsg {
         governance_contract_addr: governance_contract_addr.clone(),
     };
 

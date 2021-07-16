@@ -6,7 +6,7 @@ use crate::state::{load_config, store_config, RewardShare, RewardsDistribution};
 use crate::{state::Config, ContractResult};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ExecuteMsg;
-use yield_optimizer::querier::query_token_balance;
+use basset_vault::querier::query_token_balance;
 
 pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
     let config: Config = load_config(deps.storage)?;

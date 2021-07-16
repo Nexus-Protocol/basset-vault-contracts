@@ -11,7 +11,7 @@ use cw20_base::contract::{
     execute_burn as cw20_burn, execute_mint as cw20_mint, execute_send as cw20_send,
     execute_transfer as cw20_transfer,
 };
-use yield_optimizer::nasset_token_rewards::{
+use basset_vault::nasset_token_rewards::{
     ExecuteMsg as NAssetRewardsExecuteMsg, TokenMsg as NassetRewardsTokenMsg,
 };
 

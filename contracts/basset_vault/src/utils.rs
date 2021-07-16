@@ -7,8 +7,8 @@ use crate::state::Config;
 use crate::tax_querier::TaxInfo;
 use crate::SubmsgIds;
 use cw20::Cw20ExecuteMsg;
-use yield_optimizer::basset_vault_config_holder::Config as ExternalConfig;
-use yield_optimizer::{
+use basset_vault::basset_vault_config_holder::Config as ExternalConfig;
+use basset_vault::{
     psi_distributor::{
         AnyoneMsg as PsiDistributorAnyoneMsg, ExecuteMsg as PsiDistributorExecuteMsg,
     },

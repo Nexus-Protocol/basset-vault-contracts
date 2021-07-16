@@ -1,6 +1,6 @@
 use cosmwasm_std::{StdResult, Storage};
 use cosmwasm_storage::{singleton, singleton_read};
-use yield_optimizer::basset_vault_config_holder::Config;
+use basset_vault::basset_vault_config_holder::Config;
 
 static KEY_CONFIG: &[u8] = b"config";
 

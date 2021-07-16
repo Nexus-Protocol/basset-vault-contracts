@@ -1,5 +1,5 @@
 use cosmwasm_std::{Deps, StdResult};
-use yield_optimizer::psi_distributor::ConfigResponse;
+use basset_vault::psi_distributor::ConfigResponse;
 
 use crate::state::load_config;
 use crate::state::Config;

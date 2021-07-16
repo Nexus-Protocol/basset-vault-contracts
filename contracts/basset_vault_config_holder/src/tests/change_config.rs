@@ -11,7 +11,7 @@ use crate::tests::{
 use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
-use yield_optimizer::basset_vault_config_holder::{ExecuteMsg, GovernanceMsg};
+use basset_vault::basset_vault_config_holder::{ExecuteMsg, GovernanceMsg};
 
 use std::str::FromStr;
 
@@ -19,7 +19,7 @@ use std::str::FromStr;
 fn fail_to_change_config_if_sender_is_not_governance() {
     let mut deps = mock_dependencies(&[]);
 
-    let msg = yield_optimizer::basset_vault_config_holder::InstantiateMsg {
+    let msg = basset_vault::basset_vault_config_holder::InstantiateMsg {
         governance_contract_addr: GOVERNANCE_CONTRACT.to_string(),
         claiming_rewards_delay: CLAIMING_REWARDS_DELAY,
         collateral_token_symbol: COLLATERAL_TOKEN_SYMBOL.to_string(),
@@ -74,7 +74,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
 fn success_to_change_config_if_sender_governance() {
     let mut deps = mock_dependencies(&[]);
 
-    let msg = yield_optimizer::basset_vault_config_holder::InstantiateMsg {
+    let msg = basset_vault::basset_vault_config_holder::InstantiateMsg {
         governance_contract_addr: GOVERNANCE_CONTRACT.to_string(),
         claiming_rewards_delay: CLAIMING_REWARDS_DELAY,
         collateral_token_symbol: COLLATERAL_TOKEN_SYMBOL.to_string(),

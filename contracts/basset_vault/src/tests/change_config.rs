@@ -4,7 +4,7 @@ use crate::tests::sdk::GOVERNANCE_CONTRACT;
 use super::sdk::Sdk;
 use cosmwasm_std::testing::{mock_env, mock_info};
 use cosmwasm_std::StdError;
-use yield_optimizer::basset_vault::{ExecuteMsg, GovernanceMsg};
+use basset_vault::basset_vault::{ExecuteMsg, GovernanceMsg};
 
 #[test]
 fn fail_to_change_config_if_sender_is_not_governance() {
