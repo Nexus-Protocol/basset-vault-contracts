@@ -429,7 +429,7 @@ pub(crate) fn repay_logic(
     repay_action.to_response(&external_config)
 }
 
-pub(crate) const LOAN_REPAYMENT_MAX_RECURSION_DEEP: u8 = 6;
+pub(crate) const LOAN_REPAYMENT_MAX_RECURSION_DEEP: u8 = 10;
 
 pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Response> {
     let mut repaying_loan_state = load_repaying_loan_state(deps.storage)?;

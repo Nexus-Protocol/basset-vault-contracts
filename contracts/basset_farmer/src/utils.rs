@@ -148,7 +148,6 @@ impl RepayLoanAction {
     }
 }
 
-//TODO: refactor maybe?
 pub fn get_repay_loan_action(
     stable_coin_balance: Uint256,
     aterra_balance: Uint256,
