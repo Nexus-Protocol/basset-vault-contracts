@@ -1,6 +1,6 @@
-pub mod basset_farmer;
-pub mod basset_farmer_config_holder;
-pub mod basset_farmer_strategy;
+pub mod basset_vault;
+pub mod basset_vault_config_holder;
+pub mod basset_vault_strategy;
 pub mod common;
 pub mod nasset_token;
 pub mod nasset_token_config_holder;
