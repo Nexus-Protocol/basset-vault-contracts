@@ -11,13 +11,57 @@
         "update_config": {
           "type": "object",
           "properties": {
+            "anc_stable_swap_contract_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "anchor_custody_basset_contract_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "anchor_market_contract_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "anchor_overseer_contract_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "basset_vault_strategy_contract_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "claiming_rewards_delay": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            },
             "governance_contract_addr": {
               "type": [
                 "string",
                 "null"
               ]
             },
-            "nasset_token_rewards_contract_addr": {
+            "over_loan_balance_value": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "psi_stable_swap_contract_addr": {
               "type": [
                 "string",
                 "null"

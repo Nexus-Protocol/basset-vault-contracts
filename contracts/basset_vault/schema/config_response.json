@@ -8,8 +8,8 @@
     "anchor_overseer_contract",
     "anchor_token",
     "aterra_token",
-    "basset_farmer_config_contract",
     "basset_token",
+    "basset_vault_strategy_contract",
     "claiming_rewards_delay",
     "custody_basset_contract",
     "governance_contract",
@@ -34,10 +34,10 @@
     "aterra_token": {
       "type": "string"
     },
-    "basset_farmer_config_contract": {
+    "basset_token": {
       "type": "string"
     },
-    "basset_token": {
+    "basset_vault_strategy_contract": {
       "type": "string"
     },
     "claiming_rewards_delay": {
