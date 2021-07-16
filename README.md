@@ -54,7 +54,7 @@ and is used when redeeming aUST returns error.
 In case of error we repaying loan from UST on balance, and then redeem aUST for exactly the same amount. Repeat that cycle until
 balance achieved.
 
-Take a look at [repay logic](./ontracts/basset_farmer/src/commands.rs#L396).
+Take a look at [repay logic](./contracts/basset_farmer/src/commands.rs#L396).
 
 And on (submsg id: `RedeemStableOnRepayLoan` & `RepayLoan` & `Borrowing` & `RedeemStableOnRemainder`) [reply handler](./contracts/basset_farmer/src/contract.rs#L82).
 
