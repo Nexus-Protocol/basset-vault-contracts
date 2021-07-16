@@ -68,11 +68,9 @@ Worth to mention that in case of borrowing error on deposit - we return error to
 Borrow UST from Anchor and use it in a sophisticated Mirror strategies.
 Will be available in the future.
 
----
-
 ## bAsset vault config holder
 
----
+Compiled `basset_vault` contract weighted > 500K (limit for smart contract in Terra blockchain). To shrink it we moved fat `Config` structure to another contract.
 
 ## bAsset vault strategy
 
@@ -92,28 +90,20 @@ Halving LTV if price in bAsset oracle is obsolete.
 
 Frontrun oracle price and maintain LTV at maximum(`basset_max_ltv` - 0.1%).
 
----
-
 ## PSi distributor
 
 This contract receive PSi bought by `basset_vault` and distribute it between:
 1. `nAsset` token holders
 2. governance stakers
 
----
-
 ## nAsset token
 
 CW20 compatible contract that rewards token **holders** (no need to stake).
 `nAsset` token represent share of `bAsset` tokens used as collateral by `basset_vault`.
 
----
-
 ## nAsset token config holder
 
 Helper contract. CW20 contract have no ability to reward token holders, so some workaround needed. (same as in `bLuna`)
-
----
 
 ## nAsset token rewards
 
