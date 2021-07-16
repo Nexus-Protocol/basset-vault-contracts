@@ -107,7 +107,7 @@ pub fn deposit_basset(
     if basset_in_custody.is_zero() && !nasset_supply.is_zero() {
         //read comments in 'withdraw_basset' function for a reason to return error here
         return Err(StdError::generic_err(
-            "bAsset balance is zero, but nLuna supply is not! Freeze contract.",
+            "bAsset balance is zero, but nAsset supply is not! Freeze contract.",
         ));
     }
 
