@@ -1,7 +1,7 @@
 ## Contracts
 
 1. [bAsset vault](#basset-vault)
-2. [bAsset vault config holder](#basset-vault-config-holer)
+2. [bAsset vault config holder](#basset-vault-config-holder)
 3. [bAsset vault strategy](#basset-vault-strategy)
 4. [psi distributor](#psi-distributor)
 5. [nAsset token](#nasset-token)
