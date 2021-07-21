@@ -35,8 +35,6 @@ pub const NASSET_TOKEN_CODE_ID: u64 = 10u64;
 pub const NASSET_TOKEN_CONFIG_HOLDER_CODE_ID: u64 = 11u64;
 pub const NASSET_TOKEN_REWARDS_CODE_ID: u64 = 12u64;
 pub const PSI_DISTRIBUTOR_CODE_ID: u64 = 13u64;
-pub const NASSET_TOKEN_HOLDERS_REWARDS_SHARE: u64 = 70;
-pub const GOVERNANCE_STAKER_REWARDS_SHARE: u64 = 30;
 
 /// copypasted from TerraSwap
 /// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies

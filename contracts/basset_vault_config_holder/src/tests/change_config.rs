@@ -4,8 +4,7 @@ use crate::state::load_config;
 use crate::tests::{
     ANCHOR_CUSTODY_BASSET_CONTRACT, ANCHOR_MARKET_CONTRACT, ANCHOR_OVERSEER_CONTRACT, ANCHOR_TOKEN,
     ANC_STABLE_SWAP_CONTRACT, ATERRA_TOKEN, BASSET_FARMER_CONFIG_CONTRACT, BASSET_TOKEN_ADDR,
-    CLAIMING_REWARDS_DELAY, GOVERNANCE_CONTRACT, GOVERNANCE_STAKER_REWARDS_SHARE,
-    NASSET_TOKEN_HOLDERS_REWARDS_SHARE, OVER_LOAN_BALANCE_VALUE, PSI_STABLE_SWAP_CONTRACT,
+    CLAIMING_REWARDS_DELAY, GOVERNANCE_CONTRACT, OVER_LOAN_BALANCE_VALUE, PSI_STABLE_SWAP_CONTRACT,
     PSI_TOKEN, STABLE_DENOM,
 };
 use basset_vault::basset_vault_config_holder::{ExecuteMsg, GovernanceMsg};
@@ -34,8 +33,6 @@ fn fail_to_change_config_if_sender_is_not_governance() {
         basset_vault_strategy_contract_addr: BASSET_FARMER_CONFIG_CONTRACT.to_string(),
         stable_denom: STABLE_DENOM.to_string(),
         over_loan_balance_value: OVER_LOAN_BALANCE_VALUE.to_string(),
-        nasset_token_holders_psi_rewards_share: NASSET_TOKEN_HOLDERS_REWARDS_SHARE,
-        governance_contract_psi_rewards_share: GOVERNANCE_STAKER_REWARDS_SHARE,
     };
 
     let env = mock_env();
@@ -88,8 +85,6 @@ fn success_to_change_config_if_sender_governance() {
         basset_vault_strategy_contract_addr: BASSET_FARMER_CONFIG_CONTRACT.to_string(),
         stable_denom: STABLE_DENOM.to_string(),
         over_loan_balance_value: OVER_LOAN_BALANCE_VALUE.to_string(),
-        nasset_token_holders_psi_rewards_share: NASSET_TOKEN_HOLDERS_REWARDS_SHARE,
-        governance_contract_psi_rewards_share: GOVERNANCE_STAKER_REWARDS_SHARE,
     };
 
     let env = mock_env();

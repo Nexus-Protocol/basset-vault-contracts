@@ -13,8 +13,6 @@
     "basset_vault_strategy_contract_addr",
     "claiming_rewards_delay",
     "governance_contract_addr",
-    "governance_contract_psi_rewards_share",
-    "nasset_token_holders_psi_rewards_share",
     "over_loan_balance_value",
     "psi_stable_swap_contract_addr",
     "psi_token_addr",
@@ -52,16 +50,6 @@
     },
     "governance_contract_addr": {
       "type": "string"
-    },
-    "governance_contract_psi_rewards_share": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
-    },
-    "nasset_token_holders_psi_rewards_share": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
     },
     "over_loan_balance_value": {
       "type": "string"
