@@ -4,14 +4,14 @@ use crate::state::load_config;
 use crate::tests::{
     ANCHOR_CUSTODY_BASSET_CONTRACT, ANCHOR_MARKET_CONTRACT, ANCHOR_OVERSEER_CONTRACT, ANCHOR_TOKEN,
     ANC_STABLE_SWAP_CONTRACT, ATERRA_TOKEN, BASSET_FARMER_CONFIG_CONTRACT, BASSET_TOKEN_ADDR,
-    CLAIMING_REWARDS_DELAY, COLLATERAL_TOKEN_SYMBOL, GOVERNANCE_CONTRACT,
-    GOVERNANCE_STAKER_REWARDS_SHARE, NASSET_TOKEN_HOLDERS_REWARDS_SHARE, OVER_LOAN_BALANCE_VALUE,
-    PSI_STABLE_SWAP_CONTRACT, PSI_TOKEN, STABLE_DENOM,
+    CLAIMING_REWARDS_DELAY, GOVERNANCE_CONTRACT, GOVERNANCE_STAKER_REWARDS_SHARE,
+    NASSET_TOKEN_HOLDERS_REWARDS_SHARE, OVER_LOAN_BALANCE_VALUE, PSI_STABLE_SWAP_CONTRACT,
+    PSI_TOKEN, STABLE_DENOM,
 };
+use basset_vault::basset_vault_config_holder::{ExecuteMsg, GovernanceMsg};
 use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
-use basset_vault::basset_vault_config_holder::{ExecuteMsg, GovernanceMsg};
 
 use std::str::FromStr;
 
@@ -22,7 +22,6 @@ fn fail_to_change_config_if_sender_is_not_governance() {
     let msg = basset_vault::basset_vault_config_holder::InstantiateMsg {
         governance_contract_addr: GOVERNANCE_CONTRACT.to_string(),
         claiming_rewards_delay: CLAIMING_REWARDS_DELAY,
-        collateral_token_symbol: COLLATERAL_TOKEN_SYMBOL.to_string(),
         basset_token_addr: BASSET_TOKEN_ADDR.to_string(),
         anchor_custody_basset_contract_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
         anchor_overseer_contract_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
@@ -77,7 +76,6 @@ fn success_to_change_config_if_sender_governance() {
     let msg = basset_vault::basset_vault_config_holder::InstantiateMsg {
         governance_contract_addr: GOVERNANCE_CONTRACT.to_string(),
         claiming_rewards_delay: CLAIMING_REWARDS_DELAY,
-        collateral_token_symbol: COLLATERAL_TOKEN_SYMBOL.to_string(),
         basset_token_addr: BASSET_TOKEN_ADDR.to_string(),
         anchor_custody_basset_contract_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
         anchor_overseer_contract_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),

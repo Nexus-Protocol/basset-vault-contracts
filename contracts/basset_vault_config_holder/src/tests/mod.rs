@@ -1,6 +1,7 @@
 mod change_config;
 mod instantiate;
 
+use basset_vault::querier::BorrowerResponse;
 use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
@@ -9,7 +10,6 @@ use cosmwasm_std::{
 };
 use cosmwasm_storage::to_length_prefixed;
 use std::collections::HashMap;
-use basset_vault::querier::BorrowerResponse;
 
 use cw20::TokenInfoResponse;
 
@@ -23,7 +23,6 @@ pub const PSI_TOKEN: &str = "addr0011";
 pub const NASSET_TOKEN_CONFIG_HOLDER_CONTRACT: &str = "addr0017";
 pub const NASSET_TOKEN_REWARDS_CONTRACT: &str = "addr0018";
 pub const OVER_LOAN_BALANCE_VALUE: &str = "1.01";
-pub const COLLATERAL_TOKEN_SYMBOL: &str = "Luna";
 pub const BASSET_TOKEN_ADDR: &str = "addr0002";
 pub const ANCHOR_CUSTODY_BASSET_CONTRACT: &str = "addr0003";
 pub const ANCHOR_OVERSEER_CONTRACT: &str = "addr0004";
