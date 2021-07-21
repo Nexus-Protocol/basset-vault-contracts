@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 pub struct InstantiateMsg {
     pub governance_contract_addr: String,
     pub basset_token_addr: String,
-    //Luna / ETH / Sol, will be converted to nLuna, nETH, nSol
     pub anchor_token_addr: String,
     pub anchor_market_contract_addr: String,
     pub anchor_overseer_contract_addr: String,
