@@ -56,7 +56,7 @@ pub fn execute(
 ) -> ContractResult<Response> {
     match msg {
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
-            AnyoneMsg::DistributeRewards => commands::distribute_rewards(deps, env),
+            AnyoneMsg::DistributeRewards {} => commands::distribute_rewards(deps, env),
         },
 
         ExecuteMsg::GovernanceMsg { governance_msg } => {
@@ -87,6 +87,6 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Config => to_binary(&queries::query_config(deps)?),
+        QueryMsg::Config {} => to_binary(&queries::query_config(deps)?),
     }
 }

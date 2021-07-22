@@ -3,55 +3,11 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "collateral_token_symbol",
-    "config_holder_addr",
-    "governance_contract_addr",
-    "governance_contract_psi_rewards_share",
-    "nasset_token_code_id",
-    "nasset_token_config_holder_code_id",
-    "nasset_token_holders_psi_rewards_share",
-    "nasset_token_rewards_code_id",
-    "psi_distributor_code_id"
+    "governance_contract_addr"
   ],
   "properties": {
-    "collateral_token_symbol": {
-      "type": "string"
-    },
-    "config_holder_addr": {
-      "type": "string"
-    },
     "governance_contract_addr": {
       "type": "string"
-    },
-    "governance_contract_psi_rewards_share": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
-    },
-    "nasset_token_code_id": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
-    },
-    "nasset_token_config_holder_code_id": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
-    },
-    "nasset_token_holders_psi_rewards_share": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
-    },
-    "nasset_token_rewards_code_id": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
-    },
-    "psi_distributor_code_id": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
     }
   }
 }

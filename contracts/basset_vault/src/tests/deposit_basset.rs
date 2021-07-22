@@ -49,7 +49,7 @@ fn deposit_basset() {
                 SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: MOCK_CONTRACT_ADDR.to_string(),
                     msg: to_binary(&ExecuteMsg::Anyone {
-                        anyone_msg: AnyoneMsg::Rebalance,
+                        anyone_msg: AnyoneMsg::Rebalance {},
                     })
                     .unwrap(),
                     funds: vec![],
@@ -92,7 +92,7 @@ fn deposit_basset() {
                 SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: MOCK_CONTRACT_ADDR.to_string(),
                     msg: to_binary(&ExecuteMsg::Anyone {
-                        anyone_msg: AnyoneMsg::Rebalance,
+                        anyone_msg: AnyoneMsg::Rebalance {},
                     })
                     .unwrap(),
                     funds: vec![],

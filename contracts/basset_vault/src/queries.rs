@@ -1,5 +1,3 @@
-use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Deps, Env, StdResult};
 use basset_vault::{
     basset_vault::{
         ChildContractsInfoResponse, ConfigResponse, IsRewardsClaimableResponse, RebalanceResponse,
@@ -11,6 +9,8 @@ use basset_vault::{
         BorrowerInfoResponse,
     },
 };
+use cosmwasm_bignumber::{Decimal256, Uint256};
+use cosmwasm_std::{Deps, Env, StdResult};
 
 use crate::state::{load_child_contracts_info, load_config, query_external_config_light};
 use crate::{
@@ -34,9 +34,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         basset_token: external_config.basset_token.to_string(),
         aterra_token: external_config.aterra_token.to_string(),
         psi_token: external_config.psi_token.to_string(),
-        basset_vault_strategy_contract: external_config
-            .basset_vault_strategy_contract
-            .to_string(),
+        basset_vault_strategy_contract: external_config.basset_vault_strategy_contract.to_string(),
         stable_denom: external_config.stable_denom,
         claiming_rewards_delay: external_config.claiming_rewards_delay,
     })
@@ -68,7 +66,7 @@ pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
     )?;
 
     let response = match borrower_action {
-        BorrowerActionResponse::Nothing => RebalanceResponse::Nothing,
+        BorrowerActionResponse::Nothing {} => RebalanceResponse::Nothing {},
         BorrowerActionResponse::Repay {
             amount,
             advised_buffer_size,

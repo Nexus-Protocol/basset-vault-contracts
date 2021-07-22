@@ -1,7 +1,6 @@
-
+use basset_vault::psi_distributor::{AnyoneMsg, ExecuteMsg};
 use cosmwasm_std::testing::{mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{OwnedDeps, Response, Uint128};
-use basset_vault::psi_distributor::{AnyoneMsg, ExecuteMsg};
 
 use crate::ContractResult;
 
@@ -45,7 +44,7 @@ impl Sdk {
 
     pub fn distribute_rewards(&mut self) -> ContractResult<Response> {
         let distribute_msg = ExecuteMsg::Anyone {
-            anyone_msg: AnyoneMsg::DistributeRewards,
+            anyone_msg: AnyoneMsg::DistributeRewards {},
         };
 
         let info = mock_info("addr9999", &[]);

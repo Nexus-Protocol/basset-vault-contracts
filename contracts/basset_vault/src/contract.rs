@@ -16,9 +16,6 @@ use crate::{
     },
     SubmsgIds, TOO_HIGH_BORROW_DEMAND_ERR_MSG,
 };
-use cw20::MinterResponse;
-use protobuf::Message;
-use std::convert::TryFrom;
 use basset_vault::{
     basset_vault::{AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg, YourselfMsg},
     nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
@@ -31,6 +28,9 @@ use basset_vault::{
     psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg,
     querier::get_basset_in_custody,
 };
+use cw20::MinterResponse;
+use protobuf::Message;
+use std::convert::TryFrom;
 
 #[entry_point]
 pub fn instantiate(
@@ -296,7 +296,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
         ExecuteMsg::Receive(msg) => commands::receive_cw20(deps, env, info, msg),
 
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
-            AnyoneMsg::Rebalance => {
+            AnyoneMsg::Rebalance {} => {
                 let external_config = query_external_config(deps.as_ref())?;
 
                 // basset balance in custody contract
@@ -309,9 +309,9 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                 commands::rebalance(deps, env, &external_config, basset_in_custody, None)
             }
 
-            AnyoneMsg::HonestWork => commands::claim_anc_rewards(deps, env),
+            AnyoneMsg::HonestWork {} => commands::claim_anc_rewards(deps, env),
 
-            AnyoneMsg::ClaimRemainder => commands::claim_remainded_stables(deps.as_ref(), env),
+            AnyoneMsg::ClaimRemainder {} => commands::claim_remainded_stables(deps.as_ref(), env),
         },
 
         ExecuteMsg::Yourself { yourself_msg } => {
@@ -320,8 +320,8 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             }
 
             match yourself_msg {
-                YourselfMsg::SwapAnc => commands::swap_anc(deps, env),
-                YourselfMsg::DisributeRewards => commands::distribute_rewards(deps, env),
+                YourselfMsg::SwapAnc {} => commands::swap_anc(deps, env),
+                YourselfMsg::DisributeRewards {} => commands::distribute_rewards(deps, env),
             }
         }
 
@@ -344,9 +344,9 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Config => to_binary(&queries::query_config(deps)?),
-        QueryMsg::Rebalance => to_binary(&queries::query_rebalance(deps, env)?),
-        QueryMsg::ChildContractsCodeId => to_binary(&queries::child_contracts_code_id(deps)?),
-        QueryMsg::IsRewardsClaimable => to_binary(&queries::is_rewards_claimable(deps, env)?),
+        QueryMsg::Config {} => to_binary(&queries::query_config(deps)?),
+        QueryMsg::Rebalance {} => to_binary(&queries::query_rebalance(deps, env)?),
+        QueryMsg::ChildContractsCodeId {} => to_binary(&queries::child_contracts_code_id(deps)?),
+        QueryMsg::IsRewardsClaimable {} => to_binary(&queries::is_rewards_claimable(deps, env)?),
     }
 }

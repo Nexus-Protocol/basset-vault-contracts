@@ -45,9 +45,19 @@
   ],
   "definitions": {
     "AnyoneMsg": {
-      "type": "string",
-      "enum": [
-        "distribute_rewards"
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "distribute_rewards"
+          ],
+          "properties": {
+            "distribute_rewards": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        }
       ]
     },
     "GovernanceMsg": {

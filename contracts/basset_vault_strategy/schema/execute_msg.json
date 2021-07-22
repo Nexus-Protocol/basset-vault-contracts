@@ -5,10 +5,30 @@
     {
       "type": "object",
       "required": [
-        "governance_msg"
+        "anyone"
       ],
       "properties": {
-        "governance_msg": {
+        "anyone": {
+          "type": "object",
+          "required": [
+            "anyone_msg"
+          ],
+          "properties": {
+            "anyone_msg": {
+              "$ref": "#/definitions/AnyoneMsg"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "governance"
+      ],
+      "properties": {
+        "governance": {
           "type": "object",
           "required": [
             "governance_msg"
@@ -24,9 +44,30 @@
     }
   ],
   "definitions": {
-    "Decimal256": {
-      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal256(1_000_000_000_000_000_000) == 1.0 The greatest possible value that can be represented is 115792089237316195423570985008687907853269984665640564039457.584007913129639935 (which is (2^128 - 1) / 10^18)",
-      "type": "string"
+    "AnyoneMsg": {
+      "anyOf": [
+        {
+          "description": "Anyone can set rewards_token_addr for the first time",
+          "type": "object",
+          "required": [
+            "set_token_rewards_contract"
+          ],
+          "properties": {
+            "set_token_rewards_contract": {
+              "type": "object",
+              "required": [
+                "nasset_token_rewards_contract_addr"
+              ],
+              "properties": {
+                "nasset_token_rewards_contract_addr": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     },
     "GovernanceMsg": {
       "anyOf": [
@@ -39,83 +80,13 @@
             "update_config": {
               "type": "object",
               "properties": {
-                "basset_max_ltv": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/Decimal256"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "basset_token_addr": {
+                "governance_contract_addr": {
                   "type": [
                     "string",
                     "null"
                   ]
                 },
-                "borrow_ltv_aim": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/Decimal256"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "borrow_ltv_max": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/Decimal256"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "borrow_ltv_min": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/Decimal256"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "buffer_part": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/Decimal256"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "governance_addr": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "oracle_addr": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "price_timeframe": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ],
-                  "format": "uint64",
-                  "minimum": 0.0
-                },
-                "stable_denom": {
+                "nasset_token_rewards_contract_addr": {
                   "type": [
                     "string",
                     "null"

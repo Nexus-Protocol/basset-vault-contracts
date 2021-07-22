@@ -1,11 +1,11 @@
 use super::sdk::Sdk;
 use crate::tests::sdk::{ANCHOR_OVERSEER_CONTRACT, BASSET_TOKEN_ADDR, NASSET_TOKEN_ADDR};
+use basset_vault::{basset_vault_strategy::BorrowerActionResponse, querier::AnchorOverseerMsg};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{to_binary, WasmMsg};
 use cosmwasm_std::{CosmosMsg, SubMsg};
 use cw20::Cw20ExecuteMsg;
 use std::str::FromStr;
-use basset_vault::{basset_vault_strategy::BorrowerActionResponse, querier::AnchorOverseerMsg};
 
 #[test]
 fn withdraw_good_case() {
@@ -31,7 +31,7 @@ fn withdraw_good_case() {
     //set basset locked in custody & borrwer action
     sdk.set_collateral_balance(deposit_1_amount + deposit_2_amount);
     sdk.set_nasset_supply(deposit_1_amount + deposit_2_amount);
-    sdk.set_borrower_action(BorrowerActionResponse::Nothing);
+    sdk.set_borrower_action(BorrowerActionResponse::Nothing {});
 
     //first user withdraw
     let user_1_withdraw_response = sdk
@@ -137,7 +137,7 @@ fn withdraw_bad_case() {
     //but locked basset amount is half!
     sdk.set_collateral_balance((deposit_1_amount + deposit_2_amount) / decimal_two);
     sdk.set_nasset_supply(deposit_1_amount + deposit_2_amount);
-    sdk.set_borrower_action(BorrowerActionResponse::Nothing);
+    sdk.set_borrower_action(BorrowerActionResponse::Nothing {});
 
     //first user withdraw
     let user_1_withdraw_response = sdk
@@ -237,7 +237,7 @@ fn withdraw_nasset_but_basset_balance_is_zero() {
     //set basset locked in custody & borrwer action
     sdk.set_collateral_balance(Uint256::zero());
     sdk.set_nasset_supply(deposit_amount);
-    sdk.set_borrower_action(BorrowerActionResponse::Nothing);
+    sdk.set_borrower_action(BorrowerActionResponse::Nothing {});
 
     //user withdraw
     let user_withdraw_response = sdk.user_withdraw(&user_address, deposit_amount.into());

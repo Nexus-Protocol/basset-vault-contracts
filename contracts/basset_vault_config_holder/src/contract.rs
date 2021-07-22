@@ -6,10 +6,10 @@ use cosmwasm_std::{
 use crate::error::ContractError;
 use crate::state::{load_config, save_config};
 use crate::ContractResult;
-use std::str::FromStr;
 use basset_vault::basset_vault_config_holder::{
     Config, ConfigResponse, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg,
 };
+use std::str::FromStr;
 
 #[entry_point]
 pub fn instantiate(
@@ -151,7 +151,7 @@ fn update_config(
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Config => to_binary(&query_config(deps)?),
+        QueryMsg::Config {} => to_binary(&query_config(deps)?),
     }
 }
 

@@ -49,7 +49,7 @@ pub fn execute(
 ) -> ContractResult<Response> {
     match msg {
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
-            AnyoneMsg::UpdateGlobalIndex => commands::update_global_index(deps, env),
+            AnyoneMsg::UpdateGlobalIndex {} => commands::update_global_index(deps, env),
 
             AnyoneMsg::ClaimRewards { recipient } => {
                 commands::claim_rewards(deps, env, info, recipient)
@@ -103,8 +103,8 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Config => to_binary(&queries::query_config(deps)?),
-        QueryMsg::State => to_binary(&queries::query_state(deps)?),
+        QueryMsg::Config {} => to_binary(&queries::query_config(deps)?),
+        QueryMsg::State {} => to_binary(&queries::query_state(deps)?),
         QueryMsg::AccruedRewards { address } => {
             to_binary(&queries::query_accrued_rewards(deps, address)?)
         }

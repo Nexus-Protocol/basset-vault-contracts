@@ -1,11 +1,18 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "QueryMsg",
-  "type": "string",
-  "enum": [
-    "config",
-    "rebalance",
-    "child_contracts_code_id",
-    "is_rewards_claimable"
+  "anyOf": [
+    {
+      "type": "object",
+      "required": [
+        "config"
+      ],
+      "properties": {
+        "config": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    }
   ]
 }

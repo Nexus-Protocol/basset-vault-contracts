@@ -4,12 +4,6 @@ use crate::tests::sdk::{
     ANCHOR_MARKET_CONTRACT, ANCHOR_TOKEN, ANC_STABLE_SWAP_CONTRACT, CLAIMING_REWARDS_DELAY,
     OVER_LOAN_BALANCE_VALUE, PSI_DISTRIBUTOR_CONTRACT, PSI_STABLE_SWAP_CONTRACT, STABLE_DENOM,
 };
-use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::testing::MOCK_CONTRACT_ADDR;
-use cosmwasm_std::{to_binary, Coin, StdError, SubMsg, WasmMsg};
-use cosmwasm_std::{CosmosMsg, Uint128};
-use cw20::Cw20ExecuteMsg;
-use std::str::FromStr;
 use basset_vault::basset_vault::{
     ExecuteMsg as BassetFarmerExecuteMsg, YourselfMsg as BassetFarmerYourselfMsg,
 };
@@ -21,6 +15,12 @@ use basset_vault::{
     querier::AnchorMarketMsg,
     terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
 };
+use cosmwasm_bignumber::{Decimal256, Uint256};
+use cosmwasm_std::testing::MOCK_CONTRACT_ADDR;
+use cosmwasm_std::{to_binary, Coin, StdError, SubMsg, WasmMsg};
+use cosmwasm_std::{CosmosMsg, Uint128};
+use cw20::Cw20ExecuteMsg;
+use std::str::FromStr;
 
 #[test]
 fn honest_work() {
@@ -45,7 +45,7 @@ fn honest_work() {
                 SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: MOCK_CONTRACT_ADDR.to_string(),
                     msg: to_binary(&BassetFarmerExecuteMsg::Yourself {
-                        yourself_msg: BassetFarmerYourselfMsg::SwapAnc
+                        yourself_msg: BassetFarmerYourselfMsg::SwapAnc {}
                     })
                     .unwrap(),
                     funds: vec![],
@@ -85,7 +85,7 @@ fn honest_work() {
                 SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: MOCK_CONTRACT_ADDR.to_string(),
                     msg: to_binary(&BassetFarmerExecuteMsg::Yourself {
-                        yourself_msg: BassetFarmerYourselfMsg::DisributeRewards,
+                        yourself_msg: BassetFarmerYourselfMsg::DisributeRewards {},
                     })
                     .unwrap(),
                     funds: vec![],
@@ -130,7 +130,7 @@ fn honest_work() {
                 SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: PSI_DISTRIBUTOR_CONTRACT.to_string(),
                     msg: to_binary(&PsiDistributorExecuteMsg::Anyone {
-                        anyone_msg: PsiDistributorAnyoneMsg::DistributeRewards,
+                        anyone_msg: PsiDistributorAnyoneMsg::DistributeRewards {},
                     })
                     .unwrap(),
                     funds: vec![],
@@ -168,7 +168,7 @@ fn honest_work() {
                 SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: MOCK_CONTRACT_ADDR.to_string(),
                     msg: to_binary(&BassetFarmerExecuteMsg::Yourself {
-                        yourself_msg: BassetFarmerYourselfMsg::SwapAnc
+                        yourself_msg: BassetFarmerYourselfMsg::SwapAnc {}
                     })
                     .unwrap(),
                     funds: vec![],

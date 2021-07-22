@@ -44,11 +44,10 @@ impl Sdk {
     }
 
     pub fn increase_user_balance(&mut self, user_addr: &Addr, deposit_amount: Uint128) {
-        let user_increase_balance =
-            basset_vault::nasset_token_rewards::TokenMsg::IncreaseBalance {
-                address: user_addr.to_string(),
-                amount: deposit_amount,
-            };
+        let user_increase_balance = basset_vault::nasset_token_rewards::TokenMsg::IncreaseBalance {
+            address: user_addr.to_string(),
+            amount: deposit_amount,
+        };
 
         let info = mock_info(NASSET_TOKEN_ADDR, &vec![]);
         let res = crate::contract::execute(
@@ -63,11 +62,10 @@ impl Sdk {
     }
 
     pub fn decrease_user_balance(&mut self, user_addr: &Addr, withdraw_amount: Uint128) {
-        let decrease_balance_msg =
-            basset_vault::nasset_token_rewards::TokenMsg::DecreaseBalance {
-                address: user_addr.to_string(),
-                amount: withdraw_amount,
-            };
+        let decrease_balance_msg = basset_vault::nasset_token_rewards::TokenMsg::DecreaseBalance {
+            address: user_addr.to_string(),
+            amount: withdraw_amount,
+        };
 
         let info = mock_info(NASSET_TOKEN_ADDR, &vec![]);
         let res = crate::contract::execute(
@@ -82,7 +80,7 @@ impl Sdk {
     }
 
     pub fn update_index(&mut self) -> ContractResult<Response> {
-        let update_index_msg = basset_vault::nasset_token_rewards::AnyoneMsg::UpdateGlobalIndex;
+        let update_index_msg = basset_vault::nasset_token_rewards::AnyoneMsg::UpdateGlobalIndex {};
         let info = mock_info(&"addr9999".to_string(), &vec![]);
         crate::contract::execute(
             self.deps.as_mut(),

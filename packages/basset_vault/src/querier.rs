@@ -140,12 +140,12 @@ pub enum AnchorMarketMsg {
     ClaimRewards {
         to: Option<String>,
     },
-    DepositStable,
+    DepositStable {},
     BorrowStable {
         borrow_amount: Uint256,
         to: Option<String>,
     },
-    RepayStable,
+    RepayStable {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -153,7 +153,7 @@ pub enum AnchorMarketMsg {
 pub enum AnchorMarketCw20Msg {
     /// Return stable coins to a user
     /// according to exchange rate
-    RedeemStable,
+    RedeemStable {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

@@ -44,7 +44,7 @@ pub enum GovernanceMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    Config,
+    Config {},
     BorrowerAction {
         borrowed_amount: Uint256,
         locked_basset_amount: Uint256,
@@ -67,7 +67,7 @@ pub struct ConfigResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub enum BorrowerActionResponse {
-    Nothing,
+    Nothing {},
     Borrow {
         amount: Uint256,
         advised_buffer_size: Uint256,
@@ -94,7 +94,7 @@ impl BorrowerActionResponse {
     }
 
     pub fn nothing() -> Self {
-        BorrowerActionResponse::Nothing
+        BorrowerActionResponse::Nothing {}
     }
 }
 
