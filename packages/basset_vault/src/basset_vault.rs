@@ -29,19 +29,19 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum YourselfMsg {
-    SwapAnc,
-    DisributeRewards,
+    SwapAnc {},
+    DisributeRewards {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AnyoneMsg {
-    HonestWork,
-    Rebalance,
+    HonestWork {},
+    Rebalance {},
     // Because basset_vault always have more UST than loan,
     // then when last user will withdraw bAsset some UST remains in contract.
     // This command utilise it.
-    ClaimRemainder,
+    ClaimRemainder {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -55,17 +55,17 @@ pub enum GovernanceMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum Cw20HookMsg {
-    Deposit,
-    Withdraw,
+    Deposit {},
+    Withdraw {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    Config,
-    Rebalance,
-    ChildContractsCodeId,
-    IsRewardsClaimable,
+    Config {},
+    Rebalance {},
+    ChildContractsCodeId {},
+    IsRewardsClaimable {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -88,7 +88,7 @@ pub struct ConfigResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub enum RebalanceResponse {
-    Nothing,
+    Nothing {},
     Borrow {
         amount: Uint256,
         advised_buffer_size: Uint256,

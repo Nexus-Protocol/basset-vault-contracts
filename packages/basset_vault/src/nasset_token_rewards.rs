@@ -22,7 +22,7 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AnyoneMsg {
-    UpdateGlobalIndex,
+    UpdateGlobalIndex {},
     ClaimRewards { recipient: Option<String> },
     //Claim rewards for some address, rewards will be sent to it, not to sender!
     ClaimRewardsForSomeone { address: String },
@@ -54,8 +54,8 @@ pub enum TokenMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    Config,
-    State,
+    Config {},
+    State {},
     AccruedRewards {
         address: String,
     },

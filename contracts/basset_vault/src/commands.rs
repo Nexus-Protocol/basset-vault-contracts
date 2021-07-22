@@ -21,8 +21,6 @@ use crate::{
     },
     SubmsgIds,
 };
-use cosmwasm_bignumber::{Decimal256, Uint256};
-use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 use basset_vault::basset_vault_config_holder::Config as ExternalConfig;
 use basset_vault::{
     basset_vault::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, YourselfMsg},
@@ -35,6 +33,8 @@ use basset_vault::{
     terraswap::{Asset, AssetInfo},
     terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
 };
+use cosmwasm_bignumber::{Decimal256, Uint256};
+use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 
 pub fn update_config(
     deps: DepsMut,
@@ -56,8 +56,8 @@ pub fn receive_cw20(
     cw20_msg: Cw20ReceiveMsg,
 ) -> StdResult<Response> {
     match from_binary(&cw20_msg.msg)? {
-        Cw20HookMsg::Deposit => commands::receive_cw20_deposit(deps, env, info, cw20_msg),
-        Cw20HookMsg::Withdraw => commands::receive_cw20_withdraw(deps, env, info, cw20_msg),
+        Cw20HookMsg::Deposit {} => commands::receive_cw20_deposit(deps, env, info, cw20_msg),
+        Cw20HookMsg::Withdraw {} => commands::receive_cw20_withdraw(deps, env, info, cw20_msg),
     }
 }
 
@@ -161,7 +161,7 @@ pub fn deposit_basset(
             SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: env.contract.address.to_string(),
                 msg: to_binary(&ExecuteMsg::Anyone {
-                    anyone_msg: AnyoneMsg::Rebalance,
+                    anyone_msg: AnyoneMsg::Rebalance {},
                 })?,
                 funds: vec![],
             })),
@@ -314,7 +314,7 @@ pub fn rebalance(
     )?;
 
     match borrower_action {
-        BorrowerActionResponse::Nothing => {
+        BorrowerActionResponse::Nothing {} => {
             //maybe it is better to return error here, but
             //we cant, cause it is used in 'withdraw'
             return Ok(Response {
@@ -474,7 +474,7 @@ pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
             SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: env.contract.address.to_string(),
                 msg: to_binary(&ExecuteMsg::Yourself {
-                    yourself_msg: YourselfMsg::SwapAnc,
+                    yourself_msg: YourselfMsg::SwapAnc {},
                 })?,
                 funds: vec![],
             })),
@@ -523,7 +523,7 @@ pub fn swap_anc(deps: DepsMut, env: Env) -> StdResult<Response> {
             SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: env.contract.address.to_string(),
                 msg: to_binary(&ExecuteMsg::Yourself {
-                    yourself_msg: YourselfMsg::DisributeRewards,
+                    yourself_msg: YourselfMsg::DisributeRewards {},
                 })?,
                 funds: vec![],
             })),
@@ -602,7 +602,7 @@ pub fn claim_remainded_stables(deps: Deps, env: Env) -> StdResult<Response> {
                         msg: to_binary(&Cw20ExecuteMsg::Send {
                             contract: external_config.anchor_market_contract.to_string(),
                             amount: aterra_balance,
-                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable)?,
+                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
                         })?,
                         funds: vec![],
                     }

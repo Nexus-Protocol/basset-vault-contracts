@@ -39,7 +39,7 @@ fn repay_loan_action_to_response_repay_loan() {
         messages: vec![SubMsg {
             msg: WasmMsg::Execute {
                 contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
-                msg: to_binary(&AnchorMarketMsg::RepayStable).unwrap(),
+                msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
                 funds: vec![repay_stable_coin],
             }
             .into(),
@@ -72,7 +72,7 @@ fn repay_loan_action_to_response_sell_aterra() {
                 msg: to_binary(&Cw20ExecuteMsg::Send {
                     contract: ANCHOR_MARKET_CONTRACT.to_string(),
                     amount: sell_amount.into(),
-                    msg: to_binary(&AnchorMarketCw20Msg::RedeemStable).unwrap(),
+                    msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
                 })
                 .unwrap(),
                 funds: vec![],
@@ -111,7 +111,7 @@ fn repay_loan_action_to_response_repay_loan_and_sell_aterra() {
             SubMsg {
                 msg: WasmMsg::Execute {
                     contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
-                    msg: to_binary(&AnchorMarketMsg::RepayStable).unwrap(),
+                    msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
                     funds: vec![repay_stable_coin],
                 }
                 .into(),
@@ -125,7 +125,7 @@ fn repay_loan_action_to_response_repay_loan_and_sell_aterra() {
                     msg: to_binary(&Cw20ExecuteMsg::Send {
                         contract: ANCHOR_MARKET_CONTRACT.to_string(),
                         amount: aterra_amount_to_sell.into(),
-                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable).unwrap(),
+                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
                     })
                     .unwrap(),
                     funds: vec![],

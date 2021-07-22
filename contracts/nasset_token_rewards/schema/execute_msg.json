@@ -67,10 +67,16 @@
     "AnyoneMsg": {
       "anyOf": [
         {
-          "type": "string",
-          "enum": [
+          "type": "object",
+          "required": [
             "update_global_index"
-          ]
+          ],
+          "properties": {
+            "update_global_index": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
         },
         {
           "type": "object",

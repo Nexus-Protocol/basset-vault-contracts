@@ -13,10 +13,10 @@ use cosmwasm_std::{to_binary, Coin, Empty, Response, Uint128};
 use cw20::Cw20ReceiveMsg;
 use cw20::MinterResponse;
 
+use basset_vault::basset_vault::YourselfMsg;
 use protobuf::Message;
 use std::collections::HashMap;
 use std::iter::FromIterator;
-use basset_vault::basset_vault::YourselfMsg;
 
 use basset_vault::basset_vault::Cw20HookMsg;
 use basset_vault::basset_vault_strategy::BorrowerActionResponse;
@@ -106,7 +106,7 @@ impl Sdk {
             basset_balance: Uint128::zero(),
             nasset_supply: Uint128::zero(),
             aterra_exchange_rate: Decimal256::zero(),
-            borrower_action: BorrowerActionResponse::Nothing,
+            borrower_action: BorrowerActionResponse::Nothing {},
         }
     }
 
@@ -470,7 +470,7 @@ impl Sdk {
     }
 
     pub fn rebalance(&mut self) -> StdResult<Response<Empty>> {
-        let rebalance_msg = basset_vault::basset_vault::AnyoneMsg::Rebalance;
+        let rebalance_msg = basset_vault::basset_vault::AnyoneMsg::Rebalance {};
         let info = mock_info(&"addr9999".to_string(), &vec![]);
         crate::contract::execute(
             self.deps.as_mut(),
@@ -533,7 +533,7 @@ impl Sdk {
         let cw20_deposit_msg = Cw20ReceiveMsg {
             sender: address.to_string(),
             amount,
-            msg: to_binary(&Cw20HookMsg::Deposit).unwrap(),
+            msg: to_binary(&Cw20HookMsg::Deposit {}).unwrap(),
         };
 
         let info = mock_info(BASSET_TOKEN_ADDR, &vec![]);
@@ -549,7 +549,7 @@ impl Sdk {
         let cw20_deposit_msg = Cw20ReceiveMsg {
             sender: address.to_string(),
             amount,
-            msg: to_binary(&Cw20HookMsg::Withdraw).unwrap(),
+            msg: to_binary(&Cw20HookMsg::Withdraw {}).unwrap(),
         };
 
         let info = mock_info(NASSET_TOKEN_ADDR, &vec![]);
@@ -562,7 +562,7 @@ impl Sdk {
     }
 
     pub fn user_send_honest_work(&mut self, block_height: u64) -> StdResult<Response<Empty>> {
-        let honest_work_msg = basset_vault::basset_vault::AnyoneMsg::HonestWork;
+        let honest_work_msg = basset_vault::basset_vault::AnyoneMsg::HonestWork {};
         let mut env = mock_env();
         env.block.height = block_height;
         let info = mock_info(&"addr9999".to_string(), &vec![]);
@@ -583,7 +583,7 @@ impl Sdk {
             mock_env(),
             info,
             ExecuteMsg::Yourself {
-                yourself_msg: YourselfMsg::SwapAnc,
+                yourself_msg: YourselfMsg::SwapAnc {},
             },
         )
     }
@@ -595,7 +595,7 @@ impl Sdk {
             mock_env(),
             info,
             ExecuteMsg::Yourself {
-                yourself_msg: YourselfMsg::DisributeRewards,
+                yourself_msg: YourselfMsg::DisributeRewards {},
             },
         )
     }

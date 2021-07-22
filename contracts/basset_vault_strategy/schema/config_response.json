@@ -3,54 +3,14 @@
   "title": "ConfigResponse",
   "type": "object",
   "required": [
-    "basset_max_ltv",
-    "basset_token",
-    "borrow_ltv_aim",
-    "borrow_ltv_max",
-    "borrow_ltv_min",
-    "buffer_part",
-    "governance_contract",
-    "oracle_contract",
-    "price_timeframe",
-    "stable_denom"
+    "governance_contract_addr",
+    "nasset_token_rewards_addr"
   ],
   "properties": {
-    "basset_max_ltv": {
-      "$ref": "#/definitions/Decimal256"
-    },
-    "basset_token": {
+    "governance_contract_addr": {
       "type": "string"
     },
-    "borrow_ltv_aim": {
-      "$ref": "#/definitions/Decimal256"
-    },
-    "borrow_ltv_max": {
-      "$ref": "#/definitions/Decimal256"
-    },
-    "borrow_ltv_min": {
-      "$ref": "#/definitions/Decimal256"
-    },
-    "buffer_part": {
-      "$ref": "#/definitions/Decimal256"
-    },
-    "governance_contract": {
-      "type": "string"
-    },
-    "oracle_contract": {
-      "type": "string"
-    },
-    "price_timeframe": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
-    },
-    "stable_denom": {
-      "type": "string"
-    }
-  },
-  "definitions": {
-    "Decimal256": {
-      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal256(1_000_000_000_000_000_000) == 1.0 The greatest possible value that can be represented is 115792089237316195423570985008687907853269984665640564039457.584007913129639935 (which is (2^128 - 1) / 10^18)",
+    "nasset_token_rewards_addr": {
       "type": "string"
     }
   }
