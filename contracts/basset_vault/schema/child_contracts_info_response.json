@@ -1,19 +1,19 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ConfigResponse",
+  "title": "ChildContractsInfoResponse",
   "type": "object",
   "required": [
-    "basset_vault_strategy_contract_addr",
+    "collateral_token_symbol",
     "community_pool_contract_addr",
     "fee_rate",
-    "governance_contract_addr",
     "manual_ltv",
-    "nasset_token_rewards_contract_addr",
-    "psi_token_addr",
+    "nasset_token_code_id",
+    "nasset_token_rewards_code_id",
+    "psi_distributor_code_id",
     "tax_rate"
   ],
   "properties": {
-    "basset_vault_strategy_contract_addr": {
+    "collateral_token_symbol": {
       "type": "string"
     },
     "community_pool_contract_addr": {
@@ -22,17 +22,23 @@
     "fee_rate": {
       "$ref": "#/definitions/Decimal256"
     },
-    "governance_contract_addr": {
-      "type": "string"
-    },
     "manual_ltv": {
       "$ref": "#/definitions/Decimal256"
     },
-    "nasset_token_rewards_contract_addr": {
-      "type": "string"
+    "nasset_token_code_id": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
     },
-    "psi_token_addr": {
-      "type": "string"
+    "nasset_token_rewards_code_id": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "psi_distributor_code_id": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
     },
     "tax_rate": {
       "$ref": "#/definitions/Decimal256"

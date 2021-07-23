@@ -13,6 +13,42 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "rebalance"
+      ],
+      "properties": {
+        "rebalance": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "child_contracts_code_id"
+      ],
+      "properties": {
+        "child_contracts_code_id": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "is_rewards_claimable"
+      ],
+      "properties": {
+        "is_rewards_claimable": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     }
   ]
 }

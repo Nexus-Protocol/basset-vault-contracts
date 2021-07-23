@@ -60,6 +60,10 @@
         }
       ]
     },
+    "Decimal256": {
+      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal256(1_000_000_000_000_000_000) == 1.0 The greatest possible value that can be represented is 115792089237316195423570985008687907853269984665640564039457.584007913129639935 (which is (2^128 - 1) / 10^18)",
+      "type": "string"
+    },
     "GovernanceMsg": {
       "anyOf": [
         {
@@ -71,52 +75,59 @@
             "update_config": {
               "type": "object",
               "properties": {
+                "basset_vault_strategy_contract_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "community_pool_contract_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "fee_rate": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/Decimal256"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "governance_contract_addr": {
                   "type": [
                     "string",
                     "null"
                   ]
                 },
-                "psi_token_contract_addr": {
+                "manual_ltv": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/Decimal256"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "nasset_token_rewards_contract_addr": {
                   "type": [
                     "string",
                     "null"
                   ]
-                }
-              }
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "update_rewards_distribution"
-          ],
-          "properties": {
-            "update_rewards_distribution": {
-              "type": "object",
-              "required": [
-                "distribution"
-              ],
-              "properties": {
-                "distribution": {
-                  "type": "array",
-                  "items": {
-                    "type": "array",
-                    "items": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "integer",
-                        "format": "uint64",
-                        "minimum": 0.0
-                      }
-                    ],
-                    "maxItems": 2,
-                    "minItems": 2
-                  }
+                },
+                "tax_rate": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/Decimal256"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               }
             }

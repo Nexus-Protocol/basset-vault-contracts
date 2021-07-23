@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RebalanceResponse",
+  "anyOf": [
+    {
+      "type": "object",
+      "required": [
+        "Nothing"
+      ],
+      "properties": {
+        "Nothing": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "Borrow"
+      ],
+      "properties": {
+        "Borrow": {
+          "type": "object",
+          "required": [
+            "advised_buffer_size",
+            "amount",
+            "is_possible"
+          ],
+          "properties": {
+            "advised_buffer_size": {
+              "$ref": "#/definitions/Uint256"
+            },
+            "amount": {
+              "$ref": "#/definitions/Uint256"
+            },
+            "is_possible": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "Repay"
+      ],
+      "properties": {
+        "Repay": {
+          "type": "object",
+          "required": [
+            "advised_buffer_size",
+            "amount"
+          ],
+          "properties": {
+            "advised_buffer_size": {
+              "$ref": "#/definitions/Uint256"
+            },
+            "amount": {
+              "$ref": "#/definitions/Uint256"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "Uint256": {
+      "type": "string"
+    }
+  }
+}

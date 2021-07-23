@@ -11,13 +11,7 @@
         "update_config": {
           "type": "object",
           "properties": {
-            "governance_contract_addr": {
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "nasset_token_rewards_contract_addr": {
+            "psi_distributor_addr": {
               "type": [
                 "string",
                 "null"

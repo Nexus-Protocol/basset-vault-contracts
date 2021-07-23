@@ -3,10 +3,129 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "governance_contract_addr"
+    "anc_stable_swap_contract_addr",
+    "anchor_custody_basset_contract_addr",
+    "anchor_market_contract_addr",
+    "anchor_overseer_contract_addr",
+    "anchor_token_addr",
+    "aterra_token_addr",
+    "basset_token_addr",
+    "basset_vault_strategy_contract_addr",
+    "claiming_rewards_delay",
+    "collateral_token_symbol",
+    "community_pool_contract_addr",
+    "fee_rate",
+    "governance_contract_addr",
+    "manual_ltv",
+    "nasset_token_code_id",
+    "nasset_token_config_holder_code_id",
+    "nasset_token_rewards_code_id",
+    "over_loan_balance_value",
+    "psi_distributor_code_id",
+    "psi_stable_swap_contract_addr",
+    "psi_token_addr",
+    "stable_denom",
+    "tax_rate"
   ],
   "properties": {
+    "anc_stable_swap_contract_addr": {
+      "type": "string"
+    },
+    "anchor_custody_basset_contract_addr": {
+      "type": "string"
+    },
+    "anchor_market_contract_addr": {
+      "type": "string"
+    },
+    "anchor_overseer_contract_addr": {
+      "type": "string"
+    },
+    "anchor_token_addr": {
+      "type": "string"
+    },
+    "aterra_token_addr": {
+      "type": "string"
+    },
+    "basset_token_addr": {
+      "type": "string"
+    },
+    "basset_vault_strategy_contract_addr": {
+      "type": "string"
+    },
+    "claiming_rewards_delay": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "collateral_token_symbol": {
+      "type": "string"
+    },
+    "community_pool_contract_addr": {
+      "type": "string"
+    },
+    "fee_rate": {
+      "description": "fees, need to calc how much send to governance and community pools",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Decimal256"
+        }
+      ]
+    },
     "governance_contract_addr": {
+      "type": "string"
+    },
+    "manual_ltv": {
+      "description": "mean ltv that user manage by himself (advise: 60%)",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Decimal256"
+        }
+      ]
+    },
+    "nasset_token_code_id": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "nasset_token_config_holder_code_id": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "nasset_token_rewards_code_id": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "over_loan_balance_value": {
+      "description": "UST value in balance should be more than loan on what portion. for example: 1.01 means 1% more than loan",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Decimal256"
+        }
+      ]
+    },
+    "psi_distributor_code_id": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "psi_stable_swap_contract_addr": {
+      "type": "string"
+    },
+    "psi_token_addr": {
+      "type": "string"
+    },
+    "stable_denom": {
+      "type": "string"
+    },
+    "tax_rate": {
+      "$ref": "#/definitions/Decimal256"
+    }
+  },
+  "definitions": {
+    "Decimal256": {
+      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal256(1_000_000_000_000_000_000) == 1.0 The greatest possible value that can be represented is 115792089237316195423570985008687907853269984665640564039457.584007913129639935 (which is (2^128 - 1) / 10^18)",
       "type": "string"
     }
   }

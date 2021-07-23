@@ -13,6 +13,35 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "borrower_action"
+      ],
+      "properties": {
+        "borrower_action": {
+          "type": "object",
+          "required": [
+            "borrowed_amount",
+            "locked_basset_amount"
+          ],
+          "properties": {
+            "borrowed_amount": {
+              "$ref": "#/definitions/Uint256"
+            },
+            "locked_basset_amount": {
+              "$ref": "#/definitions/Uint256"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     }
-  ]
+  ],
+  "definitions": {
+    "Uint256": {
+      "type": "string"
+    }
+  }
 }
