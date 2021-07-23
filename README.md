@@ -90,6 +90,7 @@ Frontrun oracle price and maintain LTV at maximum(`basset_max_ltv` - 0.1%).
 This contract receive PSi bought by `basset_vault` and distribute it between:
 1. `nAsset` token holders
 2. governance stakers
+3. community pool
 
 ## nAsset token
 
