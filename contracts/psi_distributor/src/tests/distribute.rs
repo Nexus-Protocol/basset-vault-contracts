@@ -1,7 +1,10 @@
 use super::sdk::Sdk;
 use crate::{
     error::ContractError,
-    tests::sdk::{GOVERNANCE_CONTRACT_ADDR, NASSET_TOKEN_REWARDS_CONTRACT_ADDR, PSI_TOKEN_ADDR},
+    tests::sdk::{
+        COMMUNITY_POOL_CONTRACT_ADDR, GOVERNANCE_CONTRACT_ADDR, NASSET_TOKEN_REWARDS_CONTRACT_ADDR,
+        PSI_TOKEN_ADDR,
+    },
 };
 use cosmwasm_std::{to_binary, StdError, Uint128};
 use cosmwasm_std::{CosmosMsg, SubMsg, WasmMsg};
@@ -26,7 +29,7 @@ fn distribute_rewards() {
                 funds: vec![],
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: NASSET_TOKEN_REWARDS_CONTRACT_ADDR.to_string(),
-                    amount: Uint128::from(700u64),
+                    amount: Uint128::from(900u64),
                 })
                 .unwrap(),
             })),
@@ -35,7 +38,16 @@ fn distribute_rewards() {
                 funds: vec![],
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: GOVERNANCE_CONTRACT_ADDR.to_string(),
-                    amount: Uint128::from(300u64),
+                    amount: Uint128::from(75u64),
+                })
+                .unwrap(),
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: PSI_TOKEN_ADDR.to_string(),
+                funds: vec![],
+                msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: COMMUNITY_POOL_CONTRACT_ADDR.to_string(),
+                    amount: Uint128::from(25u64),
                 })
                 .unwrap(),
             })),

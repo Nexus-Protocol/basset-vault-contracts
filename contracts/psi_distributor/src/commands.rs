@@ -1,12 +1,10 @@
-use cosmwasm_std::{
-    attr, to_binary, CosmosMsg, DepsMut, Env, Response, StdError, StdResult, SubMsg, WasmMsg,
-};
+use cosmwasm_std::{attr, to_binary, CosmosMsg, DepsMut, Env, Response, StdError, SubMsg, WasmMsg};
 
-use crate::state::{load_config, store_config, RewardShare, RewardsDistribution};
+use crate::state::{load_aim_ltv, load_config, store_config};
 use crate::{state::Config, ContractResult};
+use basset_vault::querier::query_token_balance;
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ExecuteMsg;
-use basset_vault::querier::query_token_balance;
 
 pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
     let config: Config = load_config(deps.storage)?;
@@ -17,71 +15,207 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
         return Err(StdError::generic_err("psi balance is zero").into());
     }
 
-    let mut messages = Vec::with_capacity(config.rewards_distribution.distribution().len());
+    let aim_ltv = load_aim_ltv(deps.as_ref(), &config)?;
 
-    let mut attributes = Vec::with_capacity(config.rewards_distribution.distribution().len() * 2);
-    attributes.push(attr("action", "rewards_distribution"));
+    let rewards_distribution = RewardsDistribution::calc(
+        psi_balance,
+        aim_ltv,
+        config.manual_ltv,
+        config.fee_rate,
+        config.tax_rate,
+    );
 
-    for reward_share in config.rewards_distribution.distribution().iter() {
-        let reward = psi_balance * reward_share.share;
-        messages.push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+    let messages = vec![
+        SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.psi_token.to_string(),
             funds: vec![],
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                recipient: reward_share.recipient.to_string(),
-                amount: reward.into(),
+                recipient: config.nasset_token_rewards_contract.to_string(),
+                amount: rewards_distribution.nasset_holder.into(),
             })?,
-        })));
-
-        attributes.push(attr("recepient", reward_share.recipient.to_string()));
-        attributes.push(attr("reward_amount", reward));
-    }
+        })),
+        SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: config.psi_token.to_string(),
+            funds: vec![],
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: config.governance_contract.to_string(),
+                amount: rewards_distribution.governance.into(),
+            })?,
+        })),
+        SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: config.psi_token.to_string(),
+            funds: vec![],
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: config.community_pool_contract.to_string(),
+                amount: rewards_distribution.community_pool.into(),
+            })?,
+        })),
+    ];
 
     Ok(Response {
         messages,
-        attributes,
+        attributes: vec![
+            attr("action", "rewards_distribution"),
+            attr("nassest_holder_rewards", rewards_distribution.nasset_holder),
+            attr("governance_rewars", rewards_distribution.governance),
+            attr("community_pool_rewars", rewards_distribution.community_pool),
+        ],
         data: None,
         events: vec![],
     })
 }
 
+struct RewardsDistribution {
+    pub nasset_holder: Uint256,
+    pub governance: Uint256,
+    pub community_pool: Uint256,
+}
+
+impl RewardsDistribution {
+    pub fn calc(
+        psi_amount: Uint256,
+        aim_ltv: Decimal256,
+        manual_ltv: Decimal256,
+        fee_rate: Decimal256,
+        tax_rate: Decimal256,
+    ) -> Self {
+        if manual_ltv >= aim_ltv {
+            return Self {
+                nasset_holder: psi_amount,
+                governance: Uint256::zero(),
+                community_pool: Uint256::zero(),
+            };
+        }
+
+        let protocol_fee = (aim_ltv - manual_ltv) * fee_rate;
+
+        let nassest_holder_rewards = psi_amount * (Decimal256::one() - protocol_fee);
+        let governance_rewars =
+            (psi_amount - nassest_holder_rewards) * (Decimal256::one() - tax_rate);
+        let community_pool_rewards = psi_amount - nassest_holder_rewards - governance_rewars;
+
+        Self {
+            nasset_holder: nassest_holder_rewards,
+            governance: governance_rewars,
+            community_pool: community_pool_rewards,
+        }
+    }
+}
+
 pub fn update_config(
     deps: DepsMut,
     mut current_config: Config,
-    psi_token_addr: Option<String>,
     governance_contract_addr: Option<String>,
+    nasset_token_rewards_contract_addr: Option<String>,
+    community_pool_contract_addr: Option<String>,
+    basset_vault_strategy_contract_addr: Option<String>,
+    manual_ltv: Option<Decimal256>,
+    fee_rate: Option<Decimal256>,
+    tax_rate: Option<Decimal256>,
 ) -> ContractResult<Response> {
-    if let Some(ref psi_token_addr) = psi_token_addr {
-        current_config.psi_token = deps.api.addr_validate(psi_token_addr)?;
-    }
-
     if let Some(ref governance_contract_addr) = governance_contract_addr {
         current_config.governance_contract = deps.api.addr_validate(governance_contract_addr)?;
+    }
+
+    if let Some(ref nasset_token_rewards_contract_addr) = nasset_token_rewards_contract_addr {
+        current_config.nasset_token_rewards_contract =
+            deps.api.addr_validate(nasset_token_rewards_contract_addr)?;
+    }
+
+    if let Some(ref community_pool_contract_addr) = community_pool_contract_addr {
+        current_config.community_pool_contract =
+            deps.api.addr_validate(community_pool_contract_addr)?;
+    }
+
+    if let Some(ref basset_vault_strategy_contract_addr) = basset_vault_strategy_contract_addr {
+        current_config.basset_vault_strategy_contract = deps
+            .api
+            .addr_validate(basset_vault_strategy_contract_addr)?;
+    }
+
+    if let Some(manual_ltv) = manual_ltv {
+        current_config.manual_ltv = manual_ltv;
+    }
+
+    if let Some(fee_rate) = fee_rate {
+        current_config.fee_rate = fee_rate;
+    }
+
+    if let Some(tax_rate) = tax_rate {
+        current_config.tax_rate = tax_rate;
     }
 
     store_config(deps.storage, &current_config)?;
     Ok(Response::default())
 }
 
-pub fn update_distribution(
-    deps: DepsMut,
-    mut current_config: Config,
-    distribution: Vec<(String, u64)>,
-) -> ContractResult<Response> {
-    let rewards_share: StdResult<Vec<RewardShare>> = distribution
-        .into_iter()
-        .map(|(addr_str, percent)| {
-            let rew = RewardShare {
-                recipient: deps.api.addr_validate(&addr_str)?,
-                share: Decimal256::percent(percent),
-            };
-            Ok(rew)
-        })
-        .collect();
+#[cfg(test)]
+mod test {
+    use super::RewardsDistribution;
+    use cosmwasm_bignumber::{Decimal256, Uint256};
+    use std::str::FromStr;
 
-    let distribution = RewardsDistribution::new(rewards_share?)?;
-    current_config.rewards_distribution = distribution;
+    #[test]
+    pub fn manual_ltv_bigger_than_aim() {
+        let psi_amount = Uint256::from(1_000u64);
+        let aim_ltv = Decimal256::from_str("0.8").unwrap();
+        let manual_ltv = Decimal256::from_str("0.81").unwrap();
+        let fee_rate = Decimal256::from_str("0.5").unwrap();
+        let tax_rate = Decimal256::from_str("0.25").unwrap();
 
-    store_config(deps.storage, &current_config)?;
-    Ok(Response::default())
+        let rewards_distribution =
+            RewardsDistribution::calc(psi_amount, aim_ltv, manual_ltv, fee_rate, tax_rate);
+
+        assert_eq!(rewards_distribution.nasset_holder, psi_amount);
+        assert_eq!(rewards_distribution.governance, Uint256::zero());
+        assert_eq!(rewards_distribution.community_pool, Uint256::zero());
+    }
+
+    #[test]
+    pub fn manual_ltv_equlas_than_aim() {
+        let psi_amount = Uint256::from(1_000u64);
+        let aim_ltv = Decimal256::from_str("0.8").unwrap();
+        let manual_ltv = Decimal256::from_str("0.8").unwrap();
+        let fee_rate = Decimal256::from_str("0.5").unwrap();
+        let tax_rate = Decimal256::from_str("0.25").unwrap();
+
+        let rewards_distribution =
+            RewardsDistribution::calc(psi_amount, aim_ltv, manual_ltv, fee_rate, tax_rate);
+
+        assert_eq!(rewards_distribution.nasset_holder, psi_amount);
+        assert_eq!(rewards_distribution.governance, Uint256::zero());
+        assert_eq!(rewards_distribution.community_pool, Uint256::zero());
+    }
+
+    #[test]
+    pub fn normal_case() {
+        let psi_amount = Uint256::from(1_000u64);
+        let aim_ltv = Decimal256::from_str("0.8").unwrap();
+        let manual_ltv = Decimal256::from_str("0.6").unwrap();
+        let fee_rate = Decimal256::from_str("0.5").unwrap();
+        let tax_rate = Decimal256::from_str("0.25").unwrap();
+
+        let rewards_distribution =
+            RewardsDistribution::calc(psi_amount, aim_ltv, manual_ltv, fee_rate, tax_rate);
+
+        assert_eq!(rewards_distribution.nasset_holder, Uint256::from(900u64));
+        assert_eq!(rewards_distribution.governance, Uint256::from(75u64));
+        assert_eq!(rewards_distribution.community_pool, Uint256::from(25u64));
+    }
+
+    #[test]
+    pub fn normal_case_2() {
+        let psi_amount = Uint256::from(1_000u64);
+        let aim_ltv = Decimal256::from_str("1").unwrap();
+        let manual_ltv = Decimal256::zero();
+        let fee_rate = Decimal256::from_str("0.5").unwrap();
+        let tax_rate = Decimal256::from_str("0.25").unwrap();
+
+        let rewards_distribution =
+            RewardsDistribution::calc(psi_amount, aim_ltv, manual_ltv, fee_rate, tax_rate);
+
+        assert_eq!(rewards_distribution.nasset_holder, Uint256::from(500u64));
+        assert_eq!(rewards_distribution.governance, Uint256::from(375u64));
+        assert_eq!(rewards_distribution.community_pool, Uint256::from(125u64));
+    }
 }

@@ -3,17 +3,20 @@ mod distribute;
 mod instantiate;
 mod sdk;
 
-use cosmwasm_bignumber::Uint256;
+use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
     from_slice, to_binary, Addr, Api, CanonicalAddr, Coin, ContractResult, Empty, OwnedDeps,
     Querier, QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
 };
 use cosmwasm_storage::to_length_prefixed;
-use std::collections::HashMap;
-use basset_vault::querier::BorrowerResponse;
-
 use cw20::TokenInfoResponse;
+use std::collections::HashMap;
+
+use crate::state::BassetStrategyConfig;
+
+use self::sdk::{AIM_LTV, BASSET_VAULT_STRATEGY_CONTRACT_ADDR};
+use std::str::FromStr;
 
 /// copypasted from TerraSwap
 /// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies
@@ -32,7 +35,6 @@ pub fn mock_dependencies(
 }
 
 pub struct WasmMockQuerier {
-    borrowers_info: HashMap<String, HashMap<String, BorrowerResponse>>,
     base: MockQuerier<Empty>,
     token_querier: TokenQuerier,
 }
@@ -87,36 +89,21 @@ impl WasmMockQuerier {
             QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
                 let key: &[u8] = key.as_slice();
 
-                let prefix_borrower_info = to_length_prefixed(b"borrower").to_vec();
-                if key[..prefix_borrower_info.len()].to_vec() == prefix_borrower_info {
-                    let key_address: &[u8] = &key[prefix_borrower_info.len()..];
-                    let address_raw: CanonicalAddr = CanonicalAddr::from(key_address);
+                let prefix_config = to_length_prefixed(b"config").to_vec();
 
-                    let api: MockApi = MockApi::default();
-                    let address: Addr = match api.addr_humanize(&address_raw) {
-                        Ok(v) => v,
-                        Err(e) => {
-                            return SystemResult::Err(SystemError::InvalidRequest {
-                                error: format!("Parsing query request: {}", e),
-                                request: key.into(),
-                            })
-                        }
+                if key.to_vec() == prefix_config {
+                    if contract_addr != BASSET_VAULT_STRATEGY_CONTRACT_ADDR {
+                        return SystemResult::Err(SystemError::InvalidRequest {
+                            error: format!("Wrong contract ({}) to ask for config", contract_addr),
+                            request: key.into(),
+                        });
+                    }
+                    let basset_strategy_config = BassetStrategyConfig {
+                        borrow_ltv_aim: Decimal256::from_str(AIM_LTV).unwrap(),
                     };
-
-                    let empty_borrowers = HashMap::new();
-                    let default_borrower = BorrowerResponse {
-                        balance: Uint256::zero(),
-                    };
-
-                    let borrowers_map = self
-                        .borrowers_info
-                        .get(contract_addr)
-                        .unwrap_or(&empty_borrowers);
-                    let borrower_info = borrowers_map
-                        .get(&address.to_string())
-                        .unwrap_or(&default_borrower);
-
-                    return SystemResult::Ok(ContractResult::from(to_binary(&borrower_info)));
+                    return SystemResult::Ok(ContractResult::from(to_binary(
+                        &basset_strategy_config,
+                    )));
                 }
 
                 let balances: &HashMap<String, Uint128> =
@@ -187,7 +174,6 @@ impl WasmMockQuerier {
 impl WasmMockQuerier {
     pub fn new(base: MockQuerier) -> Self {
         WasmMockQuerier {
-            borrowers_info: HashMap::new(),
             base,
             token_querier: TokenQuerier::default(),
         }

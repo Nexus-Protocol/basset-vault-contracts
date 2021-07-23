@@ -1,13 +1,13 @@
 use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
 };
 
 use crate::{
     commands,
     error::ContractError,
     queries,
-    state::{load_config, store_config, Config, RewardShare, RewardsDistribution},
+    state::{load_config, store_config, Config},
     ContractResult,
 };
 use basset_vault::psi_distributor::{
@@ -21,26 +21,27 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> ContractResult<Response> {
-    let nasset_token_rewards_addr = deps
-        .api
-        .addr_validate(&msg.nasset_token_rewards_contract_addr)?;
-    let governance_contract = deps.api.addr_validate(&msg.governance_contract_addr)?;
-
-    let rewards_distribution = vec![
-        RewardShare {
-            recipient: nasset_token_rewards_addr,
-            share: Decimal256::percent(msg.nasset_token_rewards_share),
-        },
-        RewardShare {
-            recipient: governance_contract.clone(),
-            share: Decimal256::percent(msg.governance_contract_share),
-        },
-    ];
+    let one = Decimal256::one();
+    if msg.manual_ltv >= one || msg.fee_rate >= one || msg.tax_rate >= one {
+        return Err(StdError::generic_err(
+            "none of decimal numbers can be bigger or equal to zero",
+        )
+        .into());
+    }
 
     let config = Config {
         psi_token: deps.api.addr_validate(&msg.psi_token_addr)?,
-        governance_contract,
-        rewards_distribution: RewardsDistribution::new(rewards_distribution)?,
+        governance_contract: deps.api.addr_validate(&msg.governance_contract_addr)?,
+        nasset_token_rewards_contract: deps
+            .api
+            .addr_validate(&msg.nasset_token_rewards_contract_addr)?,
+        community_pool_contract: deps.api.addr_validate(&msg.community_pool_contract_addr)?,
+        basset_vault_strategy_contract: deps
+            .api
+            .addr_validate(&msg.basset_vault_strategy_contract_addr)?,
+        manual_ltv: msg.manual_ltv,
+        fee_rate: msg.fee_rate,
+        tax_rate: msg.tax_rate,
     };
     store_config(deps.storage, &config)?;
 
@@ -67,18 +68,24 @@ pub fn execute(
 
             match governance_msg {
                 GovernanceMsg::UpdateConfig {
-                    psi_token_contract_addr,
                     governance_contract_addr,
+                    nasset_token_rewards_contract_addr,
+                    community_pool_contract_addr,
+                    basset_vault_strategy_contract_addr,
+                    manual_ltv,
+                    fee_rate,
+                    tax_rate,
                 } => commands::update_config(
                     deps,
                     config,
-                    psi_token_contract_addr,
                     governance_contract_addr,
+                    nasset_token_rewards_contract_addr,
+                    community_pool_contract_addr,
+                    basset_vault_strategy_contract_addr,
+                    manual_ltv,
+                    fee_rate,
+                    tax_rate,
                 ),
-
-                GovernanceMsg::UpdateRewardsDistribution { distribution } => {
-                    commands::update_distribution(deps, config, distribution)
-                }
             }
         }
     }
