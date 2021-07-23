@@ -79,23 +79,23 @@ pub struct Sdk {
 impl Sdk {
     pub fn init() -> Self {
         let msg = basset_vault::basset_vault::InstantiateMsg {
-            governance_contract_addr: GOVERNANCE_CONTRACT.to_string(),
-            community_pool_contract_addr: COMMUNITY_POOL_CONTRACT_ADDR.to_string(),
-            nasset_token_code_id: NASSET_TOKEN_CODE_ID,
-            nasset_token_config_holder_code_id: NASSET_TOKEN_CONFIG_HOLDER_CODE_ID,
-            nasset_token_rewards_code_id: NASSET_TOKEN_REWARDS_CODE_ID,
-            psi_distributor_code_id: PSI_DISTRIBUTOR_CODE_ID,
-            collateral_token_symbol: COLLATERAL_TOKEN_SYMBOL.to_string(),
-            basset_token_addr: BASSET_TOKEN_ADDR.to_string(),
-            anchor_token_addr: ANCHOR_TOKEN.to_string(),
-            anchor_market_contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
-            anchor_overseer_contract_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
-            anchor_custody_basset_contract_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
-            anc_stable_swap_contract_addr: ANC_STABLE_SWAP_CONTRACT.to_string(),
-            psi_stable_swap_contract_addr: PSI_STABLE_SWAP_CONTRACT.to_string(),
-            aterra_token_addr: ATERRA_TOKEN.to_string(),
-            psi_token_addr: PSI_TOKEN.to_string(),
-            basset_vault_strategy_contract_addr: BASSET_VAULT_STRATEGY_CONTRACT.to_string(),
+            gov_addr: GOVERNANCE_CONTRACT.to_string(),
+            community_addr: COMMUNITY_POOL_CONTRACT_ADDR.to_string(),
+            nasset_t_ci: NASSET_TOKEN_CODE_ID,
+            nasset_t_ch_ci: NASSET_TOKEN_CONFIG_HOLDER_CODE_ID,
+            nasset_t_r_ci: NASSET_TOKEN_REWARDS_CODE_ID,
+            psi_distr_ci: PSI_DISTRIBUTOR_CODE_ID,
+            collateral_ts: COLLATERAL_TOKEN_SYMBOL.to_string(),
+            basset_addr: BASSET_TOKEN_ADDR.to_string(),
+            anchor_addr: ANCHOR_TOKEN.to_string(),
+            a_market_addr: ANCHOR_MARKET_CONTRACT.to_string(),
+            a_overseer_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
+            a_custody_basset_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+            anc_stable_swap_addr: ANC_STABLE_SWAP_CONTRACT.to_string(),
+            psi_stable_swap_addr: PSI_STABLE_SWAP_CONTRACT.to_string(),
+            aterra_addr: ATERRA_TOKEN.to_string(),
+            psi_addr: PSI_TOKEN.to_string(),
+            basset_vs_addr: BASSET_VAULT_STRATEGY_CONTRACT.to_string(),
             stable_denom: STABLE_DENOM.to_string(),
             claiming_rewards_delay: CLAIMING_REWARDS_DELAY,
             over_loan_balance_value: Decimal256::from_str(&OVER_LOAN_BALANCE_VALUE.to_string())
@@ -147,9 +147,9 @@ impl Sdk {
                 res.messages,
                 vec![SubMsg {
                     msg: WasmMsg::Instantiate {
-                        code_id: init_msg.nasset_token_config_holder_code_id,
+                        code_id: init_msg.nasset_t_ch_ci,
                         msg: to_binary(&NAssetTokenConfigHolderInstantiateMsg {
-                            governance_contract_addr: init_msg.governance_contract_addr.clone()
+                            governance_contract_addr: init_msg.gov_addr.clone()
                         })
                         .unwrap(),
                         funds: vec![],
@@ -192,7 +192,7 @@ impl Sdk {
                 res.messages,
                 vec![SubMsg {
                     msg: WasmMsg::Instantiate {
-                        code_id: init_msg.nasset_token_code_id,
+                        code_id: init_msg.nasset_t_ci,
                         msg: to_binary(&NAssetTokenInstantiateMsg {
                             name: "nexus bAsset token share representation".to_string(),
                             symbol: format!("n{}", COLLATERAL_TOKEN_SYMBOL),
@@ -253,11 +253,11 @@ impl Sdk {
                 res.messages,
                 vec![SubMsg {
                     msg: WasmMsg::Instantiate {
-                        code_id: init_msg.nasset_token_rewards_code_id,
+                        code_id: init_msg.nasset_t_r_ci,
                         msg: to_binary(&NAssetTokenRewardsInstantiateMsg {
                             nasset_token_addr: nasset_contract_addr.to_string(),
                             psi_token_addr: PSI_TOKEN.to_string(),
-                            governance_contract_addr: init_msg.governance_contract_addr.clone()
+                            governance_contract_addr: init_msg.gov_addr.clone()
                         })
                         .unwrap(),
                         funds: vec![],
@@ -308,17 +308,15 @@ impl Sdk {
                 vec![
                     SubMsg {
                         msg: WasmMsg::Instantiate {
-                            code_id: init_msg.psi_distributor_code_id,
+                            code_id: init_msg.psi_distr_ci,
                             msg: to_binary(&PsiDistributorInstantiateMsg {
                                 psi_token_addr: PSI_TOKEN.to_string(),
                                 nasset_token_rewards_contract_addr: nasset_token_rewards_contract
                                     .to_string(),
-                                governance_contract_addr: init_msg.governance_contract_addr.clone(),
-                                community_pool_contract_addr: init_msg
-                                    .community_pool_contract_addr
-                                    .clone(),
+                                governance_contract_addr: init_msg.gov_addr.clone(),
+                                community_pool_contract_addr: init_msg.community_addr.clone(),
                                 basset_vault_strategy_contract_addr: init_msg
-                                    .basset_vault_strategy_contract_addr
+                                    .basset_vs_addr
                                     .clone(),
                                 manual_ltv: init_msg.manual_ltv,
                                 fee_rate: init_msg.fee_rate,

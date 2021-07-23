@@ -31,6 +31,8 @@ use cw20::MinterResponse;
 use protobuf::Message;
 use std::convert::TryFrom;
 
+//TODO: разделить CONFIG на несколько составляющих чтобы не читать всю эту байду каждый раз
+
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
@@ -39,21 +41,17 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
     let config = Config {
-        governance_contract: deps.api.addr_validate(&msg.governance_contract_addr)?,
-        anchor_token: deps.api.addr_validate(&msg.anchor_token_addr)?,
-        anchor_overseer_contract: deps.api.addr_validate(&msg.anchor_overseer_contract_addr)?,
-        anchor_market_contract: deps.api.addr_validate(&msg.anchor_market_contract_addr)?,
-        anchor_custody_basset_contract: deps
-            .api
-            .addr_validate(&msg.anchor_custody_basset_contract_addr)?,
-        anc_stable_swap_contract: deps.api.addr_validate(&msg.anc_stable_swap_contract_addr)?,
-        psi_stable_swap_contract: deps.api.addr_validate(&msg.psi_stable_swap_contract_addr)?,
-        basset_token: deps.api.addr_validate(&msg.basset_token_addr)?,
-        aterra_token: deps.api.addr_validate(&msg.aterra_token_addr)?,
-        psi_token: deps.api.addr_validate(&msg.psi_token_addr)?,
-        basset_vault_strategy_contract: deps
-            .api
-            .addr_validate(&msg.basset_vault_strategy_contract_addr)?,
+        governance_contract: deps.api.addr_validate(&msg.gov_addr)?,
+        anchor_token: deps.api.addr_validate(&msg.anchor_addr)?,
+        anchor_overseer_contract: deps.api.addr_validate(&msg.a_overseer_addr)?,
+        anchor_market_contract: deps.api.addr_validate(&msg.a_market_addr)?,
+        anchor_custody_basset_contract: deps.api.addr_validate(&msg.a_custody_basset_addr)?,
+        anc_stable_swap_contract: deps.api.addr_validate(&msg.anc_stable_swap_addr)?,
+        psi_stable_swap_contract: deps.api.addr_validate(&msg.psi_stable_swap_addr)?,
+        basset_token: deps.api.addr_validate(&msg.basset_addr)?,
+        aterra_token: deps.api.addr_validate(&msg.aterra_addr)?,
+        psi_token: deps.api.addr_validate(&msg.psi_addr)?,
+        basset_vault_strategy_contract: deps.api.addr_validate(&msg.basset_vs_addr)?,
         stable_denom: msg.stable_denom,
         claiming_rewards_delay: msg.claiming_rewards_delay,
         over_loan_balance_value: msg.over_loan_balance_value,
@@ -63,11 +61,11 @@ pub fn instantiate(
     store_config(deps.storage, &config)?;
 
     let child_contracts_info = ChildContractsInfo {
-        nasset_token_code_id: msg.nasset_token_code_id,
-        nasset_token_rewards_code_id: msg.nasset_token_rewards_code_id,
-        psi_distributor_code_id: msg.psi_distributor_code_id,
-        collateral_token_symbol: msg.collateral_token_symbol,
-        community_pool_contract_addr: msg.community_pool_contract_addr,
+        nasset_token_code_id: msg.nasset_t_ci,
+        nasset_token_rewards_code_id: msg.nasset_t_r_ci,
+        psi_distributor_code_id: msg.psi_distr_ci,
+        collateral_token_symbol: msg.collateral_ts,
+        community_pool_contract_addr: msg.community_addr,
         manual_ltv: msg.manual_ltv,
         fee_rate: msg.fee_rate,
         tax_rate: msg.tax_rate,
@@ -78,9 +76,9 @@ pub fn instantiate(
         messages: vec![SubMsg {
             msg: WasmMsg::Instantiate {
                 admin: None,
-                code_id: msg.nasset_token_config_holder_code_id,
+                code_id: msg.nasset_t_ch_ci,
                 msg: to_binary(&NAssetTokenConfigHolderInstantiateMsg {
-                    governance_contract_addr: msg.governance_contract_addr,
+                    governance_contract_addr: msg.gov_addr,
                 })?,
                 funds: vec![],
                 label: "".to_string(),

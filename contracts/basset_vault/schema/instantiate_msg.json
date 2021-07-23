@@ -3,53 +3,53 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "anc_stable_swap_contract_addr",
-    "anchor_custody_basset_contract_addr",
-    "anchor_market_contract_addr",
-    "anchor_overseer_contract_addr",
-    "anchor_token_addr",
-    "aterra_token_addr",
-    "basset_token_addr",
-    "basset_vault_strategy_contract_addr",
+    "a_custody_basset_addr",
+    "a_market_addr",
+    "a_overseer_addr",
+    "anc_stable_swap_addr",
+    "anchor_addr",
+    "aterra_addr",
+    "basset_addr",
+    "basset_vs_addr",
     "claiming_rewards_delay",
-    "collateral_token_symbol",
-    "community_pool_contract_addr",
+    "collateral_ts",
+    "community_addr",
     "fee_rate",
-    "governance_contract_addr",
+    "gov_addr",
     "manual_ltv",
-    "nasset_token_code_id",
-    "nasset_token_config_holder_code_id",
-    "nasset_token_rewards_code_id",
+    "nasset_t_ch_ci",
+    "nasset_t_ci",
+    "nasset_t_r_ci",
     "over_loan_balance_value",
-    "psi_distributor_code_id",
-    "psi_stable_swap_contract_addr",
-    "psi_token_addr",
+    "psi_addr",
+    "psi_distr_ci",
+    "psi_stable_swap_addr",
     "stable_denom",
     "tax_rate"
   ],
   "properties": {
-    "anc_stable_swap_contract_addr": {
+    "a_custody_basset_addr": {
       "type": "string"
     },
-    "anchor_custody_basset_contract_addr": {
+    "a_market_addr": {
       "type": "string"
     },
-    "anchor_market_contract_addr": {
+    "a_overseer_addr": {
       "type": "string"
     },
-    "anchor_overseer_contract_addr": {
+    "anc_stable_swap_addr": {
       "type": "string"
     },
-    "anchor_token_addr": {
+    "anchor_addr": {
       "type": "string"
     },
-    "aterra_token_addr": {
+    "aterra_addr": {
       "type": "string"
     },
-    "basset_token_addr": {
+    "basset_addr": {
       "type": "string"
     },
-    "basset_vault_strategy_contract_addr": {
+    "basset_vs_addr": {
       "type": "string"
     },
     "claiming_rewards_delay": {
@@ -57,10 +57,10 @@
       "format": "uint64",
       "minimum": 0.0
     },
-    "collateral_token_symbol": {
+    "collateral_ts": {
       "type": "string"
     },
-    "community_pool_contract_addr": {
+    "community_addr": {
       "type": "string"
     },
     "fee_rate": {
@@ -71,7 +71,7 @@
         }
       ]
     },
-    "governance_contract_addr": {
+    "gov_addr": {
       "type": "string"
     },
     "manual_ltv": {
@@ -82,17 +82,17 @@
         }
       ]
     },
-    "nasset_token_code_id": {
+    "nasset_t_ch_ci": {
       "type": "integer",
       "format": "uint64",
       "minimum": 0.0
     },
-    "nasset_token_config_holder_code_id": {
+    "nasset_t_ci": {
       "type": "integer",
       "format": "uint64",
       "minimum": 0.0
     },
-    "nasset_token_rewards_code_id": {
+    "nasset_t_r_ci": {
       "type": "integer",
       "format": "uint64",
       "minimum": 0.0
@@ -105,15 +105,15 @@
         }
       ]
     },
-    "psi_distributor_code_id": {
+    "psi_addr": {
+      "type": "string"
+    },
+    "psi_distr_ci": {
       "type": "integer",
       "format": "uint64",
       "minimum": 0.0
     },
-    "psi_stable_swap_contract_addr": {
-      "type": "string"
-    },
-    "psi_token_addr": {
+    "psi_stable_swap_addr": {
       "type": "string"
     },
     "stable_denom": {

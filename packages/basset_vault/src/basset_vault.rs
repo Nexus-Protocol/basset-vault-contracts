@@ -6,23 +6,40 @@ use cw20::Cw20ReceiveMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub governance_contract_addr: String,
-    pub community_pool_contract_addr: String,
-    pub nasset_token_code_id: u64,
-    pub nasset_token_config_holder_code_id: u64,
-    pub nasset_token_rewards_code_id: u64,
-    pub psi_distributor_code_id: u64,
-    pub collateral_token_symbol: String,
-    pub basset_token_addr: String,
-    pub anchor_token_addr: String,
-    pub anchor_market_contract_addr: String,
-    pub anchor_overseer_contract_addr: String,
-    pub anchor_custody_basset_contract_addr: String,
-    pub anc_stable_swap_contract_addr: String,
-    pub psi_stable_swap_contract_addr: String,
-    pub aterra_token_addr: String,
-    pub psi_token_addr: String,
-    pub basset_vault_strategy_contract_addr: String,
+    // governance_contract_addr
+    pub gov_addr: String,
+    // community_pool_contract_addr
+    pub community_addr: String,
+    // nasset_token_code_id
+    pub nasset_t_ci: u64,
+    // nasset_token_config_holder_code_id
+    pub nasset_t_ch_ci: u64,
+    // nasset_token_rewards_code_id
+    pub nasset_t_r_ci: u64,
+    // psi_distributor_code_id
+    pub psi_distr_ci: u64,
+    // collateral_token_symbol
+    pub collateral_ts: String,
+    // basset_token_addr: String,
+    pub basset_addr: String,
+    // anchor_token_addr
+    pub anchor_addr: String,
+    // anchor_market_contract_addr
+    pub a_market_addr: String,
+    // anchor_overseer_contract_addr
+    pub a_overseer_addr: String,
+    // anchor_custody_basset_contract_addr
+    pub a_custody_basset_addr: String,
+    // anc_stable_swap_contract_addr
+    pub anc_stable_swap_addr: String,
+    // psi_stable_swap_contract_addr
+    pub psi_stable_swap_addr: String,
+    // aterra_token_addr
+    pub aterra_addr: String,
+    // psi_token_addr
+    pub psi_addr: String,
+    // basset_vault_strategy_contract_addr
+    pub basset_vs_addr: String,
     pub stable_denom: String,
     pub claiming_rewards_delay: u64,
     ///UST value in balance should be more than loan
