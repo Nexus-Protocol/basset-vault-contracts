@@ -1,12 +1,11 @@
 ## Contracts
 
 1. [bAsset vault](#basset-vault)
-2. [bAsset vault config holder](#basset-vault-config-holder)
-3. [bAsset vault strategy](#basset-vault-strategy)
-4. [psi distributor](#psi-distributor)
-5. [nAsset token](#nasset-token)
-6. [nAsset token config holder](#nasset-token-config-holder)
-7. [nAsset token rewards](#nasset-token-rewards)
+2. [bAsset vault strategy](#basset-vault-strategy)
+3. [psi distributor](#psi-distributor)
+4. [nAsset token](#nasset-token)
+5. [nAsset token config holder](#nasset-token-config-holder)
+6. [nAsset token rewards](#nasset-token-rewards)
 
 ## bAsset vault
 
@@ -67,10 +66,6 @@ Worth to mention that in case of borrowing error on deposit - we return error to
 
 Borrow UST from Anchor and use it in a sophisticated Mirror strategies.
 Will be available in the future.
-
-## bAsset vault config holder
-
-Compiled `basset_vault` contract weighted > 500K (limit for smart contract in Terra blockchain). To shrink it we moved fat `Config` structure to another contract.
 
 ## bAsset vault strategy
 

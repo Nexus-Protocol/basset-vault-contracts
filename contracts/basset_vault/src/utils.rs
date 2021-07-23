@@ -6,7 +6,6 @@ use cosmwasm_std::{
 use crate::state::Config;
 use crate::tax_querier::TaxInfo;
 use crate::SubmsgIds;
-use basset_vault::basset_vault_config_holder::Config as ExternalConfig;
 use basset_vault::{
     psi_distributor::{
         AnyoneMsg as PsiDistributorAnyoneMsg, ExecuteMsg as PsiDistributorExecuteMsg,
@@ -44,13 +43,13 @@ impl RepayLoanAction {
         }
     }
 
-    pub fn to_response(&self, external_config: &ExternalConfig) -> StdResult<Response> {
+    pub fn to_response(&self, config: &Config) -> StdResult<Response> {
         match self {
             RepayLoanAction::Nothing => Ok(Response::default()),
 
             &RepayLoanAction::RepayLoan { amount } => {
                 let repay_stable_coin = Coin {
-                    denom: external_config.stable_denom.clone(),
+                    denom: config.stable_denom.clone(),
                     amount: amount.into(),
                 };
 
@@ -58,7 +57,7 @@ impl RepayLoanAction {
                     events: vec![],
                     messages: vec![SubMsg {
                         msg: WasmMsg::Execute {
-                            contract_addr: external_config.anchor_market_contract.to_string(),
+                            contract_addr: config.anchor_market_contract.to_string(),
                             msg: to_binary(&AnchorMarketMsg::RepayStable {})?,
                             funds: vec![repay_stable_coin],
                         }
@@ -76,9 +75,9 @@ impl RepayLoanAction {
                 events: vec![],
                 messages: vec![SubMsg {
                     msg: WasmMsg::Execute {
-                        contract_addr: external_config.aterra_token.to_string(),
+                        contract_addr: config.aterra_token.to_string(),
                         msg: to_binary(&Cw20ExecuteMsg::Send {
-                            contract: external_config.anchor_market_contract.to_string(),
+                            contract: config.anchor_market_contract.to_string(),
                             amount: amount.into(),
                             msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
                         })?,
@@ -100,7 +99,7 @@ impl RepayLoanAction {
                 aterra_amount_to_sell,
             } => {
                 let repay_stable_coin = Coin {
-                    denom: external_config.stable_denom.to_string(),
+                    denom: config.stable_denom.to_string(),
                     amount: repay_loan_amount.into(),
                 };
 
@@ -110,7 +109,7 @@ impl RepayLoanAction {
                         SubMsg {
                             //first message is to repay loan
                             msg: WasmMsg::Execute {
-                                contract_addr: external_config.anchor_market_contract.to_string(),
+                                contract_addr: config.anchor_market_contract.to_string(),
                                 msg: to_binary(&AnchorMarketMsg::RepayStable {})?,
                                 funds: vec![repay_stable_coin],
                             }
@@ -121,9 +120,9 @@ impl RepayLoanAction {
                         },
                         SubMsg {
                             msg: WasmMsg::Execute {
-                                contract_addr: external_config.aterra_token.to_string(),
+                                contract_addr: config.aterra_token.to_string(),
                                 msg: to_binary(&Cw20ExecuteMsg::Send {
-                                    contract: external_config.anchor_market_contract.to_string(),
+                                    contract: config.anchor_market_contract.to_string(),
                                     amount: aterra_amount_to_sell.into(),
                                     msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
                                 })?,
@@ -267,7 +266,7 @@ pub enum AfterBorrowAction {
 }
 
 impl AfterBorrowAction {
-    pub fn to_response(&self, config: &ExternalConfig) -> StdResult<Response> {
+    pub fn to_response(&self, config: &Config) -> StdResult<Response> {
         match self {
             AfterBorrowAction::Nothing => Ok(Response::default()),
 
@@ -319,12 +318,7 @@ pub enum ActionWithProfit {
 }
 
 impl ActionWithProfit {
-    pub fn to_response(
-        &self,
-        config: &Config,
-        external_config: &ExternalConfig,
-        tax_info: &TaxInfo,
-    ) -> StdResult<Response> {
+    pub fn to_response(&self, config: &Config, tax_info: &TaxInfo) -> StdResult<Response> {
         match self {
             ActionWithProfit::Nothing => Ok(Response {
                 messages: vec![],
@@ -341,10 +335,10 @@ impl ActionWithProfit {
 
                 Ok(Response {
                     messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-                        contract_addr: external_config.anchor_market_contract.to_string(),
+                        contract_addr: config.anchor_market_contract.to_string(),
                         msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
                         funds: vec![Coin {
-                            denom: external_config.stable_denom.clone(),
+                            denom: config.stable_denom.clone(),
                             amount: stable_coin_to_lending,
                         }],
                     }))],
@@ -361,7 +355,7 @@ impl ActionWithProfit {
                 let stable_coin_to_buy_psi: Uint128 = tax_info.subtract_tax(amount).into();
                 let swap_asset = Asset {
                     info: AssetInfo::NativeToken {
-                        denom: external_config.stable_denom.clone(),
+                        denom: config.stable_denom.clone(),
                     },
                     amount: stable_coin_to_buy_psi,
                 };
@@ -369,7 +363,7 @@ impl ActionWithProfit {
                 Ok(Response {
                     messages: vec![
                         SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-                            contract_addr: external_config.psi_stable_swap_contract.to_string(),
+                            contract_addr: config.psi_stable_swap_contract.to_string(),
                             msg: to_binary(&TerraswapExecuteMsg::Swap {
                                 offer_asset: swap_asset,
                                 max_spread: None,
@@ -377,7 +371,7 @@ impl ActionWithProfit {
                                 to: Some(config.psi_distributor.to_string()),
                             })?,
                             funds: vec![Coin {
-                                denom: external_config.stable_denom.clone(),
+                                denom: config.stable_denom.clone(),
                                 amount: stable_coin_to_buy_psi,
                             }],
                         })),
@@ -406,7 +400,7 @@ impl ActionWithProfit {
                 let stable_coin_to_buy_psi: Uint128 = tax_info.subtract_tax(buy_psi).into();
                 let swap_asset = Asset {
                     info: AssetInfo::NativeToken {
-                        denom: external_config.stable_denom.clone(),
+                        denom: config.stable_denom.clone(),
                     },
                     amount: stable_coin_to_buy_psi,
                 };
@@ -414,15 +408,15 @@ impl ActionWithProfit {
                 Ok(Response {
                     messages: vec![
                         SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-                            contract_addr: external_config.anchor_market_contract.to_string(),
+                            contract_addr: config.anchor_market_contract.to_string(),
                             msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
                             funds: vec![Coin {
-                                denom: external_config.stable_denom.clone(),
+                                denom: config.stable_denom.clone(),
                                 amount: stable_coin_to_lending,
                             }],
                         })),
                         SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-                            contract_addr: external_config.psi_stable_swap_contract.to_string(),
+                            contract_addr: config.psi_stable_swap_contract.to_string(),
                             msg: to_binary(&TerraswapExecuteMsg::Swap {
                                 offer_asset: swap_asset,
                                 max_spread: None,
@@ -430,7 +424,7 @@ impl ActionWithProfit {
                                 to: Some(config.psi_distributor.to_string()),
                             })?,
                             funds: vec![Coin {
-                                denom: external_config.stable_denom.clone(),
+                                denom: config.stable_denom.clone(),
                                 amount: stable_coin_to_buy_psi,
                             }],
                         })),

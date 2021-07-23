@@ -9,6 +9,7 @@ mod repay_loan_action;
 mod sdk;
 mod withdraw_basset;
 
+use basset_vault::querier::{BorrowerInfoResponse, BorrowerResponse};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
@@ -18,20 +19,9 @@ use cosmwasm_std::{
 use cosmwasm_storage::to_length_prefixed;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::str::FromStr;
 use terra_cosmwasm::{TaxCapResponse, TaxRateResponse, TerraQuery, TerraQueryWrapper, TerraRoute};
-use basset_vault::basset_vault_config_holder::Config as ExternalConfig;
-use basset_vault::querier::{BorrowerInfoResponse, BorrowerResponse};
 
 use cw20::TokenInfoResponse;
-
-use self::sdk::{
-    ANCHOR_CUSTODY_BASSET_CONTRACT, ANCHOR_MARKET_CONTRACT, ANCHOR_OVERSEER_CONTRACT, ANCHOR_TOKEN,
-    ANC_STABLE_SWAP_CONTRACT, ATERRA_TOKEN, BASSET_FARMER_CONFIG_HOLDER_CONTRACT,
-    BASSET_FARMER_STRATEGY_CONTRACT, BASSET_TOKEN_ADDR, CLAIMING_REWARDS_DELAY,
-    GOVERNANCE_CONTRACT, OVER_LOAN_BALANCE_VALUE, PSI_STABLE_SWAP_CONTRACT, PSI_TOKEN,
-    STABLE_DENOM,
-};
 
 /// copypasted from TerraSwap
 /// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies
@@ -155,9 +145,6 @@ impl WasmMockQuerier {
             QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
                 let key: &[u8] = key.as_slice();
 
-                if let Some(config_res) = self.try_get_external_config(key, contract_addr) {
-                    return config_res;
-                }
                 if let Some(borrower_res) = self.try_get_borrower(key, contract_addr) {
                     return borrower_res;
                 }
@@ -250,37 +237,6 @@ impl WasmMockQuerier {
             }
             _ => self.base.handle_query(request),
         }
-    }
-
-    fn try_get_external_config(&self, key: &[u8], contract_addr: &String) -> Option<QuerierResult> {
-        let prefix_config = to_length_prefixed(b"config").to_vec();
-        if key[..prefix_config.len()].to_vec() == prefix_config {
-            if contract_addr == BASSET_FARMER_CONFIG_HOLDER_CONTRACT {
-                let external_config = ExternalConfig {
-                    governance_contract: Addr::unchecked(GOVERNANCE_CONTRACT),
-                    anchor_token: Addr::unchecked(ANCHOR_TOKEN),
-                    anchor_overseer_contract: Addr::unchecked(ANCHOR_OVERSEER_CONTRACT),
-                    anchor_market_contract: Addr::unchecked(ANCHOR_MARKET_CONTRACT),
-                    anchor_custody_basset_contract: Addr::unchecked(ANCHOR_CUSTODY_BASSET_CONTRACT),
-                    anc_stable_swap_contract: Addr::unchecked(ANC_STABLE_SWAP_CONTRACT),
-                    psi_stable_swap_contract: Addr::unchecked(PSI_STABLE_SWAP_CONTRACT),
-                    basset_token: Addr::unchecked(BASSET_TOKEN_ADDR),
-                    aterra_token: Addr::unchecked(ATERRA_TOKEN),
-                    psi_token: Addr::unchecked(PSI_TOKEN),
-                    basset_vault_strategy_contract: Addr::unchecked(
-                        BASSET_FARMER_STRATEGY_CONTRACT,
-                    ),
-                    stable_denom: STABLE_DENOM.to_string(),
-                    claiming_rewards_delay: CLAIMING_REWARDS_DELAY,
-                    over_loan_balance_value: Decimal256::from_str(OVER_LOAN_BALANCE_VALUE).unwrap(),
-                };
-
-                return Some(SystemResult::Ok(ContractResult::from(to_binary(
-                    &external_config,
-                ))));
-            }
-        }
-        return None;
     }
 
     fn try_get_borrower(&self, key: &[u8], contract_addr: &String) -> Option<QuerierResult> {

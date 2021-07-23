@@ -1,13 +1,25 @@
-use cosmwasm_storage::{singleton, singleton_read, to_length_prefixed};
+use cosmwasm_storage::{singleton, singleton_read};
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_bignumber::Uint256;
-use cosmwasm_std::{Addr, Binary, Deps, QueryRequest, StdResult, Storage, Uint128, WasmQuery};
-use basset_vault::basset_vault_config_holder::Config as ExternalConfig;
+use cosmwasm_bignumber::{Decimal256, Uint256};
+use cosmwasm_std::{Addr, StdResult, Storage, Uint128};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Config {
-    pub config_holder: Addr,
+    pub governance_contract: Addr,
+    pub anchor_token: Addr,
+    pub anchor_overseer_contract: Addr,
+    pub anchor_market_contract: Addr,
+    pub anchor_custody_basset_contract: Addr,
+    pub anc_stable_swap_contract: Addr,
+    pub psi_stable_swap_contract: Addr,
+    pub basset_token: Addr,
+    pub aterra_token: Addr,
+    pub psi_token: Addr,
+    pub basset_vault_strategy_contract: Addr,
+    pub stable_denom: String,
+    pub claiming_rewards_delay: u64,
+    pub over_loan_balance_value: Decimal256,
     pub nasset_token: Addr,
     pub psi_distributor: Addr,
 }
@@ -27,8 +39,10 @@ pub struct ChildContractsInfo {
     pub nasset_token_rewards_code_id: u64,
     pub psi_distributor_code_id: u64,
     pub collateral_token_symbol: String,
-    pub nasset_token_holders_psi_rewards_share: u64,
-    pub governance_contract_psi_rewards_share: u64,
+    pub community_pool_contract_addr: String,
+    pub manual_ltv: Decimal256,
+    pub fee_rate: Decimal256,
+    pub tax_rate: Decimal256,
 }
 
 static KEY_CONFIG: &[u8] = b"config";
@@ -140,18 +154,4 @@ pub fn store_last_rewards_claiming_height(
     height: &u64,
 ) -> StdResult<()> {
     singleton(storage, KEY_LAST_REWARDS_CLAIMING_HEIGHT).save(height)
-}
-
-pub fn query_external_config(deps: Deps) -> StdResult<ExternalConfig> {
-    let config_holder_contract = load_config(deps.storage)?;
-    query_external_config_light(deps, &config_holder_contract)
-}
-
-pub fn query_external_config_light(deps: Deps, config: &Config) -> StdResult<ExternalConfig> {
-    let config: ExternalConfig = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
-        contract_addr: config.config_holder.to_string(),
-        key: Binary::from(to_length_prefixed(b"config")),
-    }))?;
-
-    Ok(config)
 }

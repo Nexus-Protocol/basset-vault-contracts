@@ -1,5 +1,4 @@
 pub mod basset_vault;
-pub mod basset_vault_config_holder;
 pub mod basset_vault_strategy;
 pub mod common;
 pub mod nasset_token;
