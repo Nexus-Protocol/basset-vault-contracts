@@ -37,22 +37,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "basset-vault-basset-vault-config-holder"
-version = "1.0.0"
-dependencies = [
- "basset-vault",
- "cosmwasm-bignumber",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw20",
- "protobuf",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "basset-vault-basset-vault-strategy"
 version = "1.0.0"
 dependencies = [

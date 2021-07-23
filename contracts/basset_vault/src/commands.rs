@@ -10,9 +10,9 @@ use crate::{
     commands,
     state::{
         load_aim_buffer_size, load_config, load_repaying_loan_state,
-        load_stable_balance_before_selling_anc, query_external_config, query_external_config_light,
-        store_aim_buffer_size, store_config, store_last_rewards_claiming_height,
-        store_repaying_loan_state, store_stable_balance_before_selling_anc, RepayingLoanState,
+        load_stable_balance_before_selling_anc, store_aim_buffer_size, store_config,
+        store_last_rewards_claiming_height, store_repaying_loan_state,
+        store_stable_balance_before_selling_anc, RepayingLoanState,
     },
     tax_querier::get_tax_info,
     utils::{
@@ -21,7 +21,6 @@ use crate::{
     },
     SubmsgIds,
 };
-use basset_vault::basset_vault_config_holder::Config as ExternalConfig;
 use basset_vault::{
     basset_vault::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, YourselfMsg},
     basset_vault_strategy::{query_borrower_action, BorrowerActionResponse},
@@ -70,29 +69,20 @@ pub fn receive_cw20_deposit(
     let basset_addr = info.sender;
     // only bAsset contract can execute this message
     let config: Config = load_config(deps.storage)?;
-    let external_config: ExternalConfig = query_external_config_light(deps.as_ref(), &config)?;
-    if basset_addr != external_config.basset_token {
+    if basset_addr != config.basset_token {
         return Err(StdError::generic_err("unauthorized"));
     }
 
     //we trust cw20 contract
     let farmer_addr: Addr = Addr::unchecked(cw20_msg.sender);
 
-    deposit_basset(
-        deps,
-        env,
-        config,
-        external_config,
-        farmer_addr,
-        cw20_msg.amount.into(),
-    )
+    deposit_basset(deps, env, config, farmer_addr, cw20_msg.amount.into())
 }
 
 pub fn deposit_basset(
     deps: DepsMut,
     env: Env,
     config: Config,
-    external_config: ExternalConfig,
     farmer: Addr,
     deposit_amount: Uint256,
 ) -> StdResult<Response> {
@@ -100,7 +90,7 @@ pub fn deposit_basset(
 
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
-        &external_config.anchor_custody_basset_contract,
+        &config.anchor_custody_basset_contract,
         &env.contract.address,
     )?;
 
@@ -112,11 +102,8 @@ pub fn deposit_basset(
     }
 
     // basset balance in cw20 contract
-    let basset_in_contract_address = query_token_balance(
-        deps.as_ref(),
-        &external_config.basset_token,
-        &env.contract.address,
-    )?;
+    let basset_in_contract_address =
+        query_token_balance(deps.as_ref(), &config.basset_token, &env.contract.address)?;
 
     let basset_balance: Uint256 = basset_in_custody + basset_in_contract_address.into();
     if basset_balance == Uint256::zero() {
@@ -144,9 +131,9 @@ pub fn deposit_basset(
     Ok(Response {
         messages: vec![
             SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: external_config.anchor_overseer_contract.to_string(),
+                contract_addr: config.anchor_overseer_contract.to_string(),
                 msg: to_binary(&AnchorOverseerMsg::LockCollateral {
-                    collaterals: vec![(external_config.basset_token.to_string(), deposit_amount)],
+                    collaterals: vec![(config.basset_token.to_string(), deposit_amount)],
                 })?,
                 funds: vec![],
             })),
@@ -204,11 +191,10 @@ pub fn withdraw_basset(
 ) -> StdResult<Response> {
     //nasset_to_withdraw_amount is not zero here, cw20 contract check it
 
-    let external_config = query_external_config_light(deps.as_ref(), &config)?;
     //basset_in_contract_address is always zero (except Deposit stage)
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
-        &external_config.anchor_custody_basset_contract,
+        &config.anchor_custody_basset_contract,
         &env.contract.address,
     )?;
 
@@ -243,7 +229,7 @@ pub fn withdraw_basset(
     let mut rebalance_response = rebalance(
         deps,
         env,
-        &external_config,
+        &config,
         basset_in_custody,
         Some(basset_to_withdraw),
     )?;
@@ -251,9 +237,9 @@ pub fn withdraw_basset(
     rebalance_response
         .messages
         .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: external_config.anchor_overseer_contract.to_string(),
+            contract_addr: config.anchor_overseer_contract.to_string(),
             msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
-                collaterals: vec![(external_config.basset_token.to_string(), basset_to_withdraw)],
+                collaterals: vec![(config.basset_token.to_string(), basset_to_withdraw)],
             })?,
             funds: vec![],
         })));
@@ -261,7 +247,7 @@ pub fn withdraw_basset(
     rebalance_response
         .messages
         .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: external_config.basset_token.to_string(),
+            contract_addr: config.basset_token.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: farmer.to_string(),
                 amount: basset_to_withdraw.into(),
@@ -293,7 +279,7 @@ pub fn withdraw_basset(
 pub fn rebalance(
     deps: DepsMut,
     env: Env,
-    external_config: &ExternalConfig,
+    config: &Config,
     basset_in_custody: Uint256,
     basset_to_withdraw: Option<Uint256>,
 ) -> StdResult<Response> {
@@ -301,14 +287,14 @@ pub fn rebalance(
 
     let borrower_info: BorrowerInfoResponse = query_borrower_info(
         deps.as_ref(),
-        &external_config.anchor_market_contract,
+        &config.anchor_market_contract,
         &env.contract.address,
     )?;
     let borrowed_ust = borrower_info.loan_amount;
 
     let borrower_action = query_borrower_action(
         deps.as_ref(),
-        &external_config.basset_vault_strategy_contract,
+        &config.basset_vault_strategy_contract,
         borrowed_ust,
         basset_in_custody,
     )?;
@@ -330,7 +316,7 @@ pub fn rebalance(
             advised_buffer_size,
         } => {
             store_aim_buffer_size(deps.storage, &advised_buffer_size)?;
-            borrow_logic(external_config, amount, advised_buffer_size)
+            borrow_logic(config, amount, advised_buffer_size)
         }
 
         BorrowerActionResponse::Repay {
@@ -341,13 +327,13 @@ pub fn rebalance(
             let mut repaying_loan_state = load_repaying_loan_state(deps.as_ref().storage)?;
             repaying_loan_state.to_repay_amount = amount;
             repaying_loan_state.aim_buffer_size = advised_buffer_size;
-            repay_logic(deps, env, external_config, repaying_loan_state)
+            repay_logic(deps, env, config, repaying_loan_state)
         }
     }
 }
 
 fn borrow_logic(
-    external_config: &ExternalConfig,
+    config: &Config,
     borrow_amount: Uint256,
     aim_buffer_size: Uint256,
 ) -> StdResult<Response> {
@@ -355,7 +341,7 @@ fn borrow_logic(
         events: vec![],
         messages: vec![SubMsg {
             msg: WasmMsg::Execute {
-                contract_addr: external_config.anchor_market_contract.to_string(),
+                contract_addr: config.anchor_market_contract.to_string(),
                 msg: to_binary(&AnchorMarketMsg::BorrowStable {
                     borrow_amount,
                     to: None,
@@ -380,39 +366,36 @@ fn borrow_logic(
 }
 
 pub(crate) fn borrow_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Response> {
-    let external_config = query_external_config(deps.as_ref())?;
-    let tax_info = get_tax_info(deps.as_ref(), &external_config.stable_denom)?;
+    let config = load_config(deps.storage)?;
+    let tax_info = get_tax_info(deps.as_ref(), &config.stable_denom)?;
     let aim_buf_size = load_aim_buffer_size(deps.as_ref().storage)?;
     let stable_coin_balance = query_balance(
         &deps.querier,
         &env.contract.address,
-        external_config.stable_denom.clone(),
+        config.stable_denom.clone(),
     )?;
     let after_borrow_action =
         calc_after_borrow_action(stable_coin_balance.into(), aim_buf_size, &tax_info);
-    after_borrow_action.to_response(&external_config)
+    after_borrow_action.to_response(&config)
 }
 
 pub(crate) fn repay_logic(
     deps: DepsMut,
     env: Env,
-    external_config: &ExternalConfig,
+    config: &Config,
     mut repaying_loan_state: RepayingLoanState,
 ) -> StdResult<Response> {
-    let aterra_balance = query_token_balance(
-        deps.as_ref(),
-        &external_config.aterra_token,
-        &env.contract.address,
-    )?;
+    let aterra_balance =
+        query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address)?;
     let aterra_exchange_rate: Decimal256 =
-        query_aterra_state(deps.as_ref(), &external_config.anchor_market_contract)?.exchange_rate;
+        query_aterra_state(deps.as_ref(), &config.anchor_market_contract)?.exchange_rate;
     let stable_coin_balance = query_balance(
         &deps.querier,
         &env.contract.address,
-        external_config.stable_denom.clone(),
+        config.stable_denom.clone(),
     )?;
 
-    let tax_info = get_tax_info(deps.as_ref(), &external_config.stable_denom)?;
+    let tax_info = get_tax_info(deps.as_ref(), &config.stable_denom)?;
     let repay_action = get_repay_loan_action(
         stable_coin_balance.into(),
         aterra_balance.into(),
@@ -426,7 +409,7 @@ pub(crate) fn repay_logic(
     repaying_loan_state.repaying_amount = repay_action.repaying_loan_amount();
     store_repaying_loan_state(deps.storage, &repaying_loan_state)?;
 
-    repay_action.to_response(&external_config)
+    repay_action.to_response(&config)
 }
 
 pub(crate) const LOAN_REPAYMENT_MAX_RECURSION_DEEP: u8 = 10;
@@ -441,8 +424,8 @@ pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Respons
             return Err(StdError::generic_err("fail to repay loan").into());
         }
     }
-    let external_config = query_external_config(deps.as_ref())?;
-    repay_logic(deps, env, &external_config, repaying_loan_state)
+    let config = load_config(deps.storage)?;
+    repay_logic(deps, env, &config, repaying_loan_state)
 }
 
 /// Anyone can execute claim_anc_rewards function to claim
@@ -450,14 +433,14 @@ pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Respons
 /// part of UST => PSI token and distribute
 /// result PSI token to gov contract
 pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
-    let external_config: ExternalConfig = query_external_config(deps.as_ref())?;
+    let config: Config = load_config(deps.storage)?;
     let last_rewards_claiming_height = load_last_rewards_claiming_height(deps.as_ref().storage)?;
     let current_height = env.block.height;
 
     if !is_anc_rewards_claimable(
         current_height,
         last_rewards_claiming_height,
-        external_config.claiming_rewards_delay,
+        config.claiming_rewards_delay,
     ) {
         return Err(StdError::generic_err("claiming too often"));
     }
@@ -467,7 +450,7 @@ pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
     Ok(Response {
         messages: vec![
             SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: external_config.anchor_market_contract.to_string(),
+                contract_addr: config.anchor_market_contract.to_string(),
                 msg: to_binary(&AnchorMarketMsg::ClaimRewards { to: None })?,
                 funds: vec![],
             })),
@@ -486,20 +469,17 @@ pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
 }
 
 pub fn swap_anc(deps: DepsMut, env: Env) -> StdResult<Response> {
-    let external_config: ExternalConfig = query_external_config(deps.as_ref())?;
+    let config: Config = load_config(deps.storage)?;
 
     let stable_coin_balance = query_balance(
         &deps.querier,
         &env.contract.address,
-        external_config.stable_denom.clone(),
+        config.stable_denom.clone(),
     )?;
     store_stable_balance_before_selling_anc(deps.storage, &stable_coin_balance)?;
 
-    let anc_amount = query_token_balance(
-        deps.as_ref(),
-        &external_config.anchor_token,
-        &env.contract.address,
-    )?;
+    let anc_amount =
+        query_token_balance(deps.as_ref(), &config.anchor_token, &env.contract.address)?;
 
     if anc_amount.is_zero() {
         return Err(StdError::generic_err("ANC amount is zero").into());
@@ -508,10 +488,10 @@ pub fn swap_anc(deps: DepsMut, env: Env) -> StdResult<Response> {
     Ok(Response {
         messages: vec![
             SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: external_config.anchor_token.to_string(),
+                contract_addr: config.anchor_token.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Send {
                     amount: anc_amount,
-                    contract: external_config.anc_stable_swap_contract.to_string(),
+                    contract: config.anc_stable_swap_contract.to_string(),
                     msg: to_binary(&TerraswapCw20HookMsg::Swap {
                         belief_price: None,
                         max_spread: None,
@@ -536,25 +516,21 @@ pub fn swap_anc(deps: DepsMut, env: Env) -> StdResult<Response> {
 
 pub fn distribute_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
     let config: Config = load_config(deps.storage)?;
-    let external_config: ExternalConfig = query_external_config_light(deps.as_ref(), &config)?;
     let stable_coin_balance_before_sell_anc =
         load_stable_balance_before_selling_anc(deps.as_ref().storage)?;
 
     let stable_coin_balance = query_balance(
         &deps.querier,
         &env.contract.address,
-        external_config.stable_denom.clone(),
+        config.stable_denom.clone(),
     )?;
-    let aterra_balance = query_token_balance(
-        deps.as_ref(),
-        &external_config.aterra_token,
-        &env.contract.address,
-    )?;
+    let aterra_balance =
+        query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address)?;
 
-    let aterra_state = query_aterra_state(deps.as_ref(), &external_config.anchor_market_contract)?;
+    let aterra_state = query_aterra_state(deps.as_ref(), &config.anchor_market_contract)?;
     let borrower_info: BorrowerInfoResponse = query_borrower_info(
         deps.as_ref(),
-        &external_config.anchor_market_contract,
+        &config.anchor_market_contract,
         &env.contract.address,
     )?;
     let borrowed_amount = borrower_info.loan_amount;
@@ -565,21 +541,18 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
         aterra_state.exchange_rate,
         stable_coin_balance.into(),
         stable_coin_balance_before_sell_anc.into(),
-        external_config.over_loan_balance_value,
+        config.over_loan_balance_value,
     );
 
-    let tax_info = get_tax_info(deps.as_ref(), &external_config.stable_denom)?;
+    let tax_info = get_tax_info(deps.as_ref(), &config.stable_denom)?;
 
-    action_with_profit.to_response(&config, &external_config, &tax_info)
+    action_with_profit.to_response(&config, &tax_info)
 }
 
 pub fn claim_remainded_stables(deps: Deps, env: Env) -> StdResult<Response> {
-    let external_config: ExternalConfig = query_external_config(deps)?;
-    let borrower_info: BorrowerInfoResponse = query_borrower_info(
-        deps,
-        &external_config.anchor_market_contract,
-        &env.contract.address,
-    )?;
+    let config: Config = load_config(deps.storage)?;
+    let borrower_info: BorrowerInfoResponse =
+        query_borrower_info(deps, &config.anchor_market_contract, &env.contract.address)?;
     let borrowed_amount = borrower_info.loan_amount;
 
     if !borrowed_amount.is_zero() {
@@ -589,18 +562,18 @@ pub fn claim_remainded_stables(deps: Deps, env: Env) -> StdResult<Response> {
         )))
     } else {
         let aterra_balance =
-            query_token_balance(deps, &external_config.aterra_token, &env.contract.address)?;
+            query_token_balance(deps, &config.aterra_token, &env.contract.address)?;
 
         if aterra_balance.is_zero() {
-            buy_psi_on_remainded_stable_coins(deps, env, external_config)
+            buy_psi_on_remainded_stable_coins(deps, env, config)
         } else {
             Ok(Response {
                 events: vec![],
                 messages: vec![SubMsg {
                     msg: WasmMsg::Execute {
-                        contract_addr: external_config.aterra_token.to_string(),
+                        contract_addr: config.aterra_token.to_string(),
                         msg: to_binary(&Cw20ExecuteMsg::Send {
-                            contract: external_config.anchor_market_contract.to_string(),
+                            contract: config.anchor_market_contract.to_string(),
                             amount: aterra_balance,
                             msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
                         })?,
@@ -629,38 +602,38 @@ pub fn claim_remainded_stables(deps: Deps, env: Env) -> StdResult<Response> {
 pub fn buy_psi_on_remainded_stable_coins(
     deps: Deps,
     env: Env,
-    external_config: ExternalConfig,
+    config: Config,
 ) -> StdResult<Response> {
     let stable_coin_balance = query_balance(
         &deps.querier,
         &env.contract.address,
-        external_config.stable_denom.clone(),
+        config.stable_denom.clone(),
     )?;
 
     if stable_coin_balance.is_zero() {
         Ok(Response::default())
     } else {
-        let tax_info = get_tax_info(deps, &external_config.stable_denom)?;
+        let tax_info = get_tax_info(deps, &config.stable_denom)?;
         let stable_coin_to_buy_psi: Uint128 =
             tax_info.subtract_tax(stable_coin_balance.into()).into();
         let swap_asset = Asset {
             info: AssetInfo::NativeToken {
-                denom: external_config.stable_denom.clone(),
+                denom: config.stable_denom.clone(),
             },
             amount: stable_coin_to_buy_psi,
         };
 
         Ok(Response {
             messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: external_config.psi_stable_swap_contract.to_string(),
+                contract_addr: config.psi_stable_swap_contract.to_string(),
                 msg: to_binary(&TerraswapExecuteMsg::Swap {
                     offer_asset: swap_asset,
                     max_spread: None,
                     belief_price: None,
-                    to: Some(external_config.governance_contract.to_string()),
+                    to: Some(config.governance_contract.to_string()),
                 })?,
                 funds: vec![Coin {
-                    denom: external_config.stable_denom.clone(),
+                    denom: config.stable_denom.clone(),
                     amount: stable_coin_to_buy_psi,
                 }],
             }))],

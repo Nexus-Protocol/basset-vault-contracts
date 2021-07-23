@@ -9,8 +9,7 @@ use crate::{
     commands, queries,
     state::{
         config_set_nasset_token, config_set_psi_distributor, load_child_contracts_info,
-        load_config, load_nasset_token_config_holder, query_external_config,
-        query_external_config_light, store_child_contracts_info, store_config,
+        load_config, load_nasset_token_config_holder, store_child_contracts_info, store_config,
         store_nasset_token_config_holder, update_loan_state_part_of_loan_repaid,
         ChildContractsInfo,
     },
@@ -40,7 +39,24 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> StdResult<Response> {
     let config = Config {
-        config_holder: deps.api.addr_validate(&msg.config_holder_addr)?,
+        governance_contract: deps.api.addr_validate(&msg.governance_contract_addr)?,
+        anchor_token: deps.api.addr_validate(&msg.anchor_token_addr)?,
+        anchor_overseer_contract: deps.api.addr_validate(&msg.anchor_overseer_contract_addr)?,
+        anchor_market_contract: deps.api.addr_validate(&msg.anchor_market_contract_addr)?,
+        anchor_custody_basset_contract: deps
+            .api
+            .addr_validate(&msg.anchor_custody_basset_contract_addr)?,
+        anc_stable_swap_contract: deps.api.addr_validate(&msg.anc_stable_swap_contract_addr)?,
+        psi_stable_swap_contract: deps.api.addr_validate(&msg.psi_stable_swap_contract_addr)?,
+        basset_token: deps.api.addr_validate(&msg.basset_token_addr)?,
+        aterra_token: deps.api.addr_validate(&msg.aterra_token_addr)?,
+        psi_token: deps.api.addr_validate(&msg.psi_token_addr)?,
+        basset_vault_strategy_contract: deps
+            .api
+            .addr_validate(&msg.basset_vault_strategy_contract_addr)?,
+        stable_denom: msg.stable_denom,
+        claiming_rewards_delay: msg.claiming_rewards_delay,
+        over_loan_balance_value: msg.over_loan_balance_value,
         nasset_token: Addr::unchecked(""),
         psi_distributor: Addr::unchecked(""),
     };
@@ -51,8 +67,10 @@ pub fn instantiate(
         nasset_token_rewards_code_id: msg.nasset_token_rewards_code_id,
         psi_distributor_code_id: msg.psi_distributor_code_id,
         collateral_token_symbol: msg.collateral_token_symbol,
-        nasset_token_holders_psi_rewards_share: msg.nasset_token_holders_psi_rewards_share,
-        governance_contract_psi_rewards_share: msg.governance_contract_psi_rewards_share,
+        community_pool_contract_addr: msg.community_pool_contract_addr,
+        manual_ltv: msg.manual_ltv,
+        fee_rate: msg.fee_rate,
+        tax_rate: msg.tax_rate,
     };
     store_child_contracts_info(deps.storage, &child_contracts_info)?;
 
@@ -143,7 +161,6 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
             let config =
                 config_set_nasset_token(deps.storage, deps.api.addr_validate(nasset_token)?)?;
             let child_contracts_info = load_child_contracts_info(deps.as_ref().storage)?;
-            let external_config = query_external_config_light(deps.as_ref(), &config)?;
 
             Ok(Response {
                 events: vec![],
@@ -152,11 +169,9 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                         admin: None,
                         code_id: child_contracts_info.nasset_token_rewards_code_id,
                         msg: to_binary(&NAssetTokenRewardsInstantiateMsg {
-                            psi_token_addr: external_config.psi_token.to_string(),
+                            psi_token_addr: config.psi_token.to_string(),
                             nasset_token_addr: nasset_token.to_string(),
-                            governance_contract_addr: external_config
-                                .governance_contract
-                                .to_string(),
+                            governance_contract_addr: config.governance_contract.to_string(),
                         })?,
                         funds: vec![],
                         label: "".to_string(),
@@ -185,7 +200,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
             let nasset_token_rewards = res.get_contract_address();
             let child_contracts_info = load_child_contracts_info(deps.as_ref().storage)?;
             let nasset_token_config_holder = load_nasset_token_config_holder(deps.storage)?;
-            let external_config = query_external_config(deps.as_ref())?;
+            let config = load_config(deps.storage)?;
 
             Ok(Response {
                 events: vec![],
@@ -195,16 +210,18 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                             admin: None,
                             code_id: child_contracts_info.psi_distributor_code_id,
                             msg: to_binary(&PsiDistributorInstantiateMsg {
-                                psi_token_addr: external_config.psi_token.to_string(),
+                                psi_token_addr: config.psi_token.to_string(),
                                 nasset_token_rewards_contract_addr: nasset_token_rewards
                                     .to_string(),
-                                nasset_token_rewards_share: child_contracts_info
-                                    .nasset_token_holders_psi_rewards_share,
-                                governance_contract_addr: external_config
-                                    .governance_contract
+                                governance_contract_addr: config.governance_contract.to_string(),
+                                basset_vault_strategy_contract_addr: config
+                                    .basset_vault_strategy_contract
                                     .to_string(),
-                                governance_contract_share: child_contracts_info
-                                    .governance_contract_psi_rewards_share,
+                                community_pool_contract_addr: child_contracts_info
+                                    .community_pool_contract_addr,
+                                manual_ltv: child_contracts_info.manual_ltv,
+                                fee_rate: child_contracts_info.fee_rate,
+                                tax_rate: child_contracts_info.tax_rate,
                             })?,
                             funds: vec![],
                             label: "".to_string(),
@@ -282,10 +299,10 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
         SubmsgIds::Borrowing => commands::borrow_logic_on_reply(deps, env),
 
         SubmsgIds::RedeemStableOnRemainder => {
-            let external_config = query_external_config(deps.as_ref())?;
+            let config = load_config(deps.storage)?;
             //we can't repay loan to unlock aTerra (cause we have 0 loan here),
             //so try to use stable balance in any case (error or not)
-            commands::buy_psi_on_remainded_stable_coins(deps.as_ref(), env, external_config)
+            commands::buy_psi_on_remainded_stable_coins(deps.as_ref(), env, config)
         }
     }
 }
@@ -297,16 +314,16 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
             AnyoneMsg::Rebalance {} => {
-                let external_config = query_external_config(deps.as_ref())?;
+                let config = load_config(deps.storage)?;
 
                 // basset balance in custody contract
                 let basset_in_custody = get_basset_in_custody(
                     deps.as_ref(),
-                    &external_config.anchor_custody_basset_contract,
+                    &config.anchor_custody_basset_contract,
                     &env.contract.address.clone(),
                 )?;
 
-                commands::rebalance(deps, env, &external_config, basset_in_custody, None)
+                commands::rebalance(deps, env, &config, basset_in_custody, None)
             }
 
             AnyoneMsg::HonestWork {} => commands::claim_anc_rewards(deps, env),
@@ -327,8 +344,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 
         ExecuteMsg::Governance { governance_msg } => {
             let config: Config = load_config(deps.storage)?;
-            let external_config = query_external_config_light(deps.as_ref(), &config)?;
-            if info.sender != external_config.governance_contract {
+            if info.sender != config.governance_contract {
                 return Err(StdError::generic_err("unauthorized"));
             }
 

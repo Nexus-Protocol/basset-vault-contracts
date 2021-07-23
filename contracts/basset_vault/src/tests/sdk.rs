@@ -17,6 +17,7 @@ use basset_vault::basset_vault::YourselfMsg;
 use protobuf::Message;
 use std::collections::HashMap;
 use std::iter::FromIterator;
+use std::str::FromStr;
 
 use basset_vault::basset_vault::Cw20HookMsg;
 use basset_vault::basset_vault_strategy::BorrowerActionResponse;
@@ -39,14 +40,13 @@ use super::WasmMockQuerier;
 
 pub const NASSET_TOKEN_ADDR: &str = "addr0001";
 pub const ATERRA_TOKEN: &str = "addr0010";
-pub const STABLE_DENOM: &str = "uust";
+pub const STABLE_DENOM: &str = "uusd";
 pub const ANCHOR_MARKET_CONTRACT: &str = "addr0007";
 pub const PSI_DISTRIBUTOR_CONTRACT: &str = "addr0015";
 pub const GOVERNANCE_CONTRACT: &str = "addr0016";
 pub const PSI_TOKEN: &str = "addr0011";
 pub const NASSET_TOKEN_CONFIG_HOLDER_CONTRACT: &str = "addr0017";
 pub const NASSET_TOKEN_REWARDS_CONTRACT: &str = "addr0018";
-pub const OVER_LOAN_BALANCE_VALUE: &str = "1.01";
 pub const COLLATERAL_TOKEN_SYMBOL: &str = "Luna";
 pub const BASSET_TOKEN_ADDR: &str = "addr0002";
 pub const ANCHOR_CUSTODY_BASSET_CONTRACT: &str = "addr0003";
@@ -54,15 +54,17 @@ pub const ANCHOR_OVERSEER_CONTRACT: &str = "addr0004";
 pub const ANCHOR_TOKEN: &str = "addr0006";
 pub const ANC_STABLE_SWAP_CONTRACT: &str = "addr0008";
 pub const PSI_STABLE_SWAP_CONTRACT: &str = "addr0009";
-pub const BASSET_FARMER_STRATEGY_CONTRACT: &str = "addr0012";
-pub const BASSET_FARMER_CONFIG_HOLDER_CONTRACT: &str = "addr0013";
+pub const BASSET_VAULT_STRATEGY_CONTRACT: &str = "addr0012";
+pub const COMMUNITY_POOL_CONTRACT_ADDR: &str = "addr0013";
 pub const CLAIMING_REWARDS_DELAY: u64 = 1000;
 pub const NASSET_TOKEN_CODE_ID: u64 = 10u64;
 pub const NASSET_TOKEN_CONFIG_HOLDER_CODE_ID: u64 = 11u64;
 pub const NASSET_TOKEN_REWARDS_CODE_ID: u64 = 12u64;
 pub const PSI_DISTRIBUTOR_CODE_ID: u64 = 13u64;
-pub const NASSET_TOKEN_HOLDERS_REWARDS_SHARE: u64 = 70;
-pub const GOVERNANCE_STAKER_REWARDS_SHARE: u64 = 30;
+pub const OVER_LOAN_BALANCE_VALUE: &str = "1.01";
+pub const MANUAL_LTV: &str = "0.6";
+pub const FEE_RATE: &str = "0.5";
+pub const TAX_RATE: &str = "0.25";
 
 pub struct Sdk {
     pub deps: OwnedDeps<MockStorage, MockApi, WasmMockQuerier>,
@@ -77,22 +79,36 @@ pub struct Sdk {
 impl Sdk {
     pub fn init() -> Self {
         let msg = basset_vault::basset_vault::InstantiateMsg {
+            governance_contract_addr: GOVERNANCE_CONTRACT.to_string(),
+            community_pool_contract_addr: COMMUNITY_POOL_CONTRACT_ADDR.to_string(),
             nasset_token_code_id: NASSET_TOKEN_CODE_ID,
             nasset_token_config_holder_code_id: NASSET_TOKEN_CONFIG_HOLDER_CODE_ID,
             nasset_token_rewards_code_id: NASSET_TOKEN_REWARDS_CODE_ID,
             psi_distributor_code_id: PSI_DISTRIBUTOR_CODE_ID,
-            governance_contract_addr: GOVERNANCE_CONTRACT.to_string(),
-            config_holder_addr: BASSET_FARMER_CONFIG_HOLDER_CONTRACT.to_string(),
             collateral_token_symbol: COLLATERAL_TOKEN_SYMBOL.to_string(),
-            nasset_token_holders_psi_rewards_share: NASSET_TOKEN_HOLDERS_REWARDS_SHARE,
-            governance_contract_psi_rewards_share: GOVERNANCE_STAKER_REWARDS_SHARE,
+            basset_token_addr: BASSET_TOKEN_ADDR.to_string(),
+            anchor_token_addr: ANCHOR_TOKEN.to_string(),
+            anchor_market_contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
+            anchor_overseer_contract_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
+            anchor_custody_basset_contract_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+            anc_stable_swap_contract_addr: ANC_STABLE_SWAP_CONTRACT.to_string(),
+            psi_stable_swap_contract_addr: PSI_STABLE_SWAP_CONTRACT.to_string(),
+            aterra_token_addr: ATERRA_TOKEN.to_string(),
+            psi_token_addr: PSI_TOKEN.to_string(),
+            basset_vault_strategy_contract_addr: BASSET_VAULT_STRATEGY_CONTRACT.to_string(),
+            stable_denom: STABLE_DENOM.to_string(),
+            claiming_rewards_delay: CLAIMING_REWARDS_DELAY,
+            over_loan_balance_value: Decimal256::from_str(&OVER_LOAN_BALANCE_VALUE.to_string())
+                .unwrap(),
+            manual_ltv: Decimal256::from_str(&MANUAL_LTV.to_string()).unwrap(),
+            fee_rate: Decimal256::from_str(&FEE_RATE.to_string()).unwrap(),
+            tax_rate: Decimal256::from_str(&TAX_RATE.to_string()).unwrap(),
         };
 
         let mut deps = mock_dependencies(&[]);
         Self::instantiate_basset_vault(
             &mut deps,
             msg.clone(),
-            &PSI_TOKEN,
             &NASSET_TOKEN_CONFIG_HOLDER_CONTRACT,
             &NASSET_TOKEN_ADDR,
             &NASSET_TOKEN_REWARDS_CONTRACT,
@@ -113,7 +129,6 @@ impl Sdk {
     pub fn instantiate_basset_vault<A: Storage, B: Api, C: Querier>(
         deps: &mut OwnedDeps<A, B, C>,
         init_msg: basset_vault::basset_vault::InstantiateMsg,
-        psi_token: &str,
         nasset_token_config_holder_contract: &str,
         nasset_contract_addr: &str,
         nasset_token_rewards_contract: &str,
@@ -295,12 +310,19 @@ impl Sdk {
                         msg: WasmMsg::Instantiate {
                             code_id: init_msg.psi_distributor_code_id,
                             msg: to_binary(&PsiDistributorInstantiateMsg {
-                                psi_token_addr: psi_token.to_string(),
+                                psi_token_addr: PSI_TOKEN.to_string(),
                                 nasset_token_rewards_contract_addr: nasset_token_rewards_contract
                                     .to_string(),
-                                nasset_token_rewards_share: NASSET_TOKEN_HOLDERS_REWARDS_SHARE,
                                 governance_contract_addr: init_msg.governance_contract_addr.clone(),
-                                governance_contract_share: GOVERNANCE_STAKER_REWARDS_SHARE,
+                                community_pool_contract_addr: init_msg
+                                    .community_pool_contract_addr
+                                    .clone(),
+                                basset_vault_strategy_contract_addr: init_msg
+                                    .basset_vault_strategy_contract_addr
+                                    .clone(),
+                                manual_ltv: init_msg.manual_ltv,
+                                fee_rate: init_msg.fee_rate,
+                                tax_rate: init_msg.tax_rate
                             })
                             .unwrap(),
                             funds: vec![],
@@ -402,7 +424,7 @@ impl Sdk {
     fn set_wasm_query_respones(&mut self) {
         self.deps.querier.with_wasm_query_response(&[
             (
-                &BASSET_FARMER_STRATEGY_CONTRACT.to_string(),
+                &BASSET_VAULT_STRATEGY_CONTRACT.to_string(),
                 &to_binary(&self.borrower_action).unwrap(),
             ),
             (

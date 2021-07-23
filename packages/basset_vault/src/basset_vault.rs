@@ -7,14 +7,33 @@ use cw20::Cw20ReceiveMsg;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub governance_contract_addr: String,
-    pub config_holder_addr: String,
+    pub community_pool_contract_addr: String,
     pub nasset_token_code_id: u64,
     pub nasset_token_config_holder_code_id: u64,
     pub nasset_token_rewards_code_id: u64,
     pub psi_distributor_code_id: u64,
     pub collateral_token_symbol: String,
-    pub nasset_token_holders_psi_rewards_share: u64,
-    pub governance_contract_psi_rewards_share: u64,
+    pub basset_token_addr: String,
+    pub anchor_token_addr: String,
+    pub anchor_market_contract_addr: String,
+    pub anchor_overseer_contract_addr: String,
+    pub anchor_custody_basset_contract_addr: String,
+    pub anc_stable_swap_contract_addr: String,
+    pub psi_stable_swap_contract_addr: String,
+    pub aterra_token_addr: String,
+    pub psi_token_addr: String,
+    pub basset_vault_strategy_contract_addr: String,
+    pub stable_denom: String,
+    pub claiming_rewards_delay: u64,
+    ///UST value in balance should be more than loan
+    ///on what portion.
+    ///for example: 1.01 means 1% more than loan
+    pub over_loan_balance_value: Decimal256,
+    ///mean ltv that user manage by himself (advise: 60%)
+    pub manual_ltv: Decimal256,
+    ///fees, need to calc how much send to governance and community pools
+    pub fee_rate: Decimal256,
+    pub tax_rate: Decimal256,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -71,19 +90,20 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ConfigResponse {
     pub governance_contract: String,
-    pub anchor_token: String,
-    pub anchor_overseer_contract: String,
-    pub anchor_market_contract: String,
-    pub custody_basset_contract: String,
-    pub anc_stable_swap_contract: String,
-    pub psi_stable_swap_contract: String,
-    pub nasset_token: String,
-    pub basset_token: String,
-    pub aterra_token: String,
-    pub psi_token: String,
-    pub basset_vault_strategy_contract: String,
+    pub nasset_token_addr: String,
+    pub anchor_token_addr: String,
+    pub anchor_overseer_contract_addr: String,
+    pub anchor_market_contract_addr: String,
+    pub anchor_custody_basset_contract_addr: String,
+    pub anc_stable_swap_contract_addr: String,
+    pub psi_stable_swap_contract_addr: String,
+    pub basset_token_addr: String,
+    pub aterra_token_addr: String,
+    pub psi_token_addr: String,
+    pub basset_vault_strategy_contract_addr: String,
     pub stable_denom: String,
     pub claiming_rewards_delay: u64,
+    pub over_loan_balance_value: Decimal256,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -106,8 +126,10 @@ pub struct ChildContractsInfoResponse {
     pub nasset_token_rewards_code_id: u64,
     pub psi_distributor_code_id: u64,
     pub collateral_token_symbol: String,
-    pub nasset_token_holders_psi_rewards_share: u64,
-    pub governance_contract_psi_rewards_share: u64,
+    pub community_pool_contract_addr: String,
+    pub manual_ltv: Decimal256,
+    pub fee_rate: Decimal256,
+    pub tax_rate: Decimal256,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

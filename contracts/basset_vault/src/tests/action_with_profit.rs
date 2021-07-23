@@ -1,4 +1,4 @@
-use crate::{state::query_external_config_light, tax_querier::TaxInfo, utils::ActionWithProfit};
+use crate::{tax_querier::TaxInfo, utils::ActionWithProfit};
 
 use super::sdk::Sdk;
 use crate::{
@@ -28,12 +28,9 @@ fn action_with_profit_nothing() {
         rate: Decimal256::zero(),
         cap: Uint256::zero(),
     };
-    let external_config = query_external_config_light(sdk.deps.as_ref(), &config).unwrap();
 
     let action_with_profit = ActionWithProfit::Nothing;
-    let response = action_with_profit
-        .to_response(&config, &external_config, &tax_info)
-        .unwrap();
+    let response = action_with_profit.to_response(&config, &tax_info).unwrap();
     assert_eq!(
         response,
         Response {
@@ -52,7 +49,6 @@ fn action_with_profit_nothing() {
 fn action_with_profit_buy_psi() {
     let sdk = Sdk::init();
     let config = load_config(sdk.deps.as_ref().storage).unwrap();
-    let external_config = query_external_config_light(sdk.deps.as_ref(), &config).unwrap();
     let tax_info = TaxInfo {
         rate: Decimal256::zero(),
         cap: Uint256::zero(),
@@ -62,9 +58,7 @@ fn action_with_profit_buy_psi() {
     let action_with_profit = ActionWithProfit::BuyPsi {
         amount: buy_psi_amount,
     };
-    let response = action_with_profit
-        .to_response(&config, &external_config, &tax_info)
-        .unwrap();
+    let response = action_with_profit.to_response(&config, &tax_info).unwrap();
 
     let swap_asset = Asset {
         info: AssetInfo::NativeToken {
@@ -111,7 +105,6 @@ fn action_with_profit_buy_psi() {
 fn action_with_profit_deposit_to_anc() {
     let sdk = Sdk::init();
     let config = load_config(sdk.deps.as_ref().storage).unwrap();
-    let external_config = query_external_config_light(sdk.deps.as_ref(), &config).unwrap();
     let tax_info = TaxInfo {
         rate: Decimal256::zero(),
         cap: Uint256::zero(),
@@ -121,9 +114,7 @@ fn action_with_profit_deposit_to_anc() {
     let action_with_profit = ActionWithProfit::DepositToAnc {
         amount: deposit_amount,
     };
-    let response = action_with_profit
-        .to_response(&config, &external_config, &tax_info)
-        .unwrap();
+    let response = action_with_profit.to_response(&config, &tax_info).unwrap();
 
     let stable_coin_to_lending: Uint128 = tax_info.subtract_tax(deposit_amount).into();
     let expected_response = Response {
@@ -149,7 +140,6 @@ fn action_with_profit_deposit_to_anc() {
 fn action_with_profit_split() {
     let sdk = Sdk::init();
     let config = load_config(sdk.deps.as_ref().storage).unwrap();
-    let external_config = query_external_config_light(sdk.deps.as_ref(), &config).unwrap();
     let tax_info = TaxInfo {
         rate: Decimal256::zero(),
         cap: Uint256::zero(),
@@ -161,9 +151,7 @@ fn action_with_profit_split() {
         buy_psi: buy_psi_amount,
         deposit_to_anc: lending_amount,
     };
-    let response = action_with_profit
-        .to_response(&config, &external_config, &tax_info)
-        .unwrap();
+    let response = action_with_profit.to_response(&config, &tax_info).unwrap();
 
     let stable_coin_to_lending: Uint128 = tax_info.subtract_tax(lending_amount).into();
     let stable_coin_to_buy_psi: Uint128 = tax_info.subtract_tax(buy_psi_amount).into();

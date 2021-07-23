@@ -1,4 +1,5 @@
-use crate::{state::query_external_config, utils::RepayLoanAction, SubmsgIds};
+use crate::state::load_config;
+use crate::{utils::RepayLoanAction, SubmsgIds};
 
 use super::sdk::Sdk;
 use crate::tests::sdk::{ANCHOR_MARKET_CONTRACT, ATERRA_TOKEN, STABLE_DENOM};
@@ -12,23 +13,23 @@ use basset_vault::querier::{AnchorMarketCw20Msg, AnchorMarketMsg};
 #[test]
 fn repay_loan_action_to_response_nothing() {
     let sdk = Sdk::init();
-    let external_config = query_external_config(sdk.deps.as_ref()).unwrap();
+    let config = load_config(&sdk.deps.storage).unwrap();
 
     let repay_loan_action = RepayLoanAction::Nothing;
-    let response = repay_loan_action.to_response(&external_config).unwrap();
+    let response = repay_loan_action.to_response(&config).unwrap();
     assert_eq!(response, Response::default());
 }
 
 #[test]
 fn repay_loan_action_to_response_repay_loan() {
     let sdk = Sdk::init();
-    let external_config = query_external_config(sdk.deps.as_ref()).unwrap();
+    let config = load_config(&sdk.deps.storage).unwrap();
 
     let repay_amount = Uint256::from(2_000u64);
     let repay_loan_action = RepayLoanAction::RepayLoan {
         amount: repay_amount,
     };
-    let response = repay_loan_action.to_response(&external_config).unwrap();
+    let response = repay_loan_action.to_response(&config).unwrap();
 
     let repay_stable_coin = Coin {
         denom: STABLE_DENOM.to_string(),
@@ -56,13 +57,13 @@ fn repay_loan_action_to_response_repay_loan() {
 #[test]
 fn repay_loan_action_to_response_sell_aterra() {
     let sdk = Sdk::init();
-    let external_config = query_external_config(sdk.deps.as_ref()).unwrap();
+    let config = load_config(&sdk.deps.storage).unwrap();
 
     let sell_amount = Uint256::from(2_000u64);
     let repay_loan_action = RepayLoanAction::SellAterra {
         amount: sell_amount,
     };
-    let response = repay_loan_action.to_response(&external_config).unwrap();
+    let response = repay_loan_action.to_response(&config).unwrap();
 
     let expected_response = Response {
         events: vec![],
@@ -91,7 +92,7 @@ fn repay_loan_action_to_response_sell_aterra() {
 #[test]
 fn repay_loan_action_to_response_repay_loan_and_sell_aterra() {
     let sdk = Sdk::init();
-    let external_config = query_external_config(sdk.deps.as_ref()).unwrap();
+    let config = load_config(&sdk.deps.storage).unwrap();
 
     let repay_loan_amount = Uint256::from(5_000u64);
     let aterra_amount_to_sell = Uint256::from(2_000u64);
@@ -99,7 +100,7 @@ fn repay_loan_action_to_response_repay_loan_and_sell_aterra() {
         aterra_amount_to_sell,
         repay_loan_amount,
     };
-    let response = repay_loan_action.to_response(&external_config).unwrap();
+    let response = repay_loan_action.to_response(&config).unwrap();
 
     let repay_stable_coin = Coin {
         denom: STABLE_DENOM.to_string(),

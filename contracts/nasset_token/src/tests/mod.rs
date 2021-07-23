@@ -8,11 +8,10 @@ pub const MOCK_OWNER_ADDR: &str = "owner";
 use basset_vault::nasset_token_config_holder::Config;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_slice, to_binary, Addr, Coin, ContractResult, Decimal, Empty, OwnedDeps, Querier,
-    QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
+    from_slice, to_binary, Addr, Coin, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
+    QueryRequest, SystemError, SystemResult, WasmQuery,
 };
 use cosmwasm_storage::to_length_prefixed;
-use std::collections::HashMap;
 
 /// copypasted from TerraSwap
 /// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies
