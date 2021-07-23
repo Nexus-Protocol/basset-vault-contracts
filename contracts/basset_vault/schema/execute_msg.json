@@ -140,6 +140,10 @@
         }
       }
     },
+    "Decimal256": {
+      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal256(1_000_000_000_000_000_000) == 1.0 The greatest possible value that can be represented is 115792089237316195423570985008687907853269984665640564039457.584007913129639935 (which is (2^128 - 1) / 10^18)",
+      "type": "string"
+    },
     "GovernanceMsg": {
       "anyOf": [
         {
@@ -151,7 +155,67 @@
             "update_config": {
               "type": "object",
               "properties": {
+                "anc_stable_swap_contract_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "anchor_custody_basset_contract_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "anchor_market_contract_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "anchor_overseer_contract_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "basset_vault_strategy_contract_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "claiming_rewards_delay": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "gov_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "over_loan_balance_value": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/Decimal256"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "psi_distributor_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "psi_stable_swap_contract_addr": {
                   "type": [
                     "string",
                     "null"

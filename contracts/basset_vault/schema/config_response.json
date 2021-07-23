@@ -15,6 +15,7 @@
     "governance_contract",
     "nasset_token_addr",
     "over_loan_balance_value",
+    "psi_distributor_addr",
     "psi_stable_swap_contract_addr",
     "psi_token_addr",
     "stable_denom"
@@ -57,6 +58,9 @@
     },
     "over_loan_balance_value": {
       "$ref": "#/definitions/Decimal256"
+    },
+    "psi_distributor_addr": {
+      "type": "string"
     },
     "psi_stable_swap_contract_addr": {
       "type": "string"
