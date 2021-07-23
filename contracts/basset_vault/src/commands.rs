@@ -38,10 +38,63 @@ use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 pub fn update_config(
     deps: DepsMut,
     mut current_config: Config,
+    gov_addr: Option<String>,
     psi_distributor_addr: Option<String>,
+    anchor_overseer_contract_addr: Option<String>,
+    anchor_market_contract_addr: Option<String>,
+    anchor_custody_basset_contract_addr: Option<String>,
+    anc_stable_swap_contract_addr: Option<String>,
+    psi_stable_swap_contract_addr: Option<String>,
+    basset_vault_strategy_contract_addr: Option<String>,
+    claiming_rewards_delay: Option<u64>,
+    over_loan_balance_value: Option<Decimal256>,
 ) -> StdResult<Response> {
+    if let Some(ref gov_addr) = gov_addr {
+        current_config.governance_contract = deps.api.addr_validate(gov_addr)?;
+    }
+
     if let Some(ref psi_distributor_addr) = psi_distributor_addr {
         current_config.psi_distributor = deps.api.addr_validate(psi_distributor_addr)?;
+    }
+
+    if let Some(ref anchor_overseer_contract_addr) = anchor_overseer_contract_addr {
+        current_config.anchor_overseer_contract =
+            deps.api.addr_validate(anchor_overseer_contract_addr)?;
+    }
+
+    if let Some(ref anchor_market_contract_addr) = anchor_market_contract_addr {
+        current_config.anchor_market_contract =
+            deps.api.addr_validate(anchor_market_contract_addr)?;
+    }
+
+    if let Some(ref anchor_custody_basset_contract_addr) = anchor_custody_basset_contract_addr {
+        current_config.anchor_custody_basset_contract = deps
+            .api
+            .addr_validate(anchor_custody_basset_contract_addr)?;
+    }
+
+    if let Some(ref anc_stable_swap_contract_addr) = anc_stable_swap_contract_addr {
+        current_config.anc_stable_swap_contract =
+            deps.api.addr_validate(anc_stable_swap_contract_addr)?;
+    }
+
+    if let Some(ref psi_stable_swap_contract_addr) = psi_stable_swap_contract_addr {
+        current_config.psi_stable_swap_contract =
+            deps.api.addr_validate(psi_stable_swap_contract_addr)?;
+    }
+
+    if let Some(ref basset_vault_strategy_contract_addr) = basset_vault_strategy_contract_addr {
+        current_config.basset_vault_strategy_contract = deps
+            .api
+            .addr_validate(basset_vault_strategy_contract_addr)?;
+    }
+
+    if let Some(claiming_rewards_delay) = claiming_rewards_delay {
+        current_config.claiming_rewards_delay = claiming_rewards_delay;
+    }
+
+    if let Some(over_loan_balance_value) = over_loan_balance_value {
+        current_config.over_loan_balance_value = over_loan_balance_value;
     }
 
     store_config(deps.storage, &current_config)?;

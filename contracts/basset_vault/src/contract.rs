@@ -31,8 +31,6 @@ use cw20::MinterResponse;
 use protobuf::Message;
 use std::convert::TryFrom;
 
-//TODO: разделить CONFIG на несколько составляющих чтобы не читать всю эту байду каждый раз
-
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
@@ -348,8 +346,30 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 
             match governance_msg {
                 GovernanceMsg::UpdateConfig {
+                    gov_addr,
                     psi_distributor_addr,
-                } => commands::update_config(deps, config, psi_distributor_addr),
+                    anchor_overseer_contract_addr,
+                    anchor_market_contract_addr,
+                    anchor_custody_basset_contract_addr,
+                    anc_stable_swap_contract_addr,
+                    psi_stable_swap_contract_addr,
+                    basset_vault_strategy_contract_addr,
+                    claiming_rewards_delay,
+                    over_loan_balance_value,
+                } => commands::update_config(
+                    deps,
+                    config,
+                    gov_addr,
+                    psi_distributor_addr,
+                    anchor_overseer_contract_addr,
+                    anchor_market_contract_addr,
+                    anchor_custody_basset_contract_addr,
+                    anc_stable_swap_contract_addr,
+                    psi_stable_swap_contract_addr,
+                    basset_vault_strategy_contract_addr,
+                    claiming_rewards_delay,
+                    over_loan_balance_value,
+                ),
             }
         }
     }

@@ -6,6 +6,9 @@ use cw20::Cw20ReceiveMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
+    // message was too big and error returned on initialisation
+    // so I cutted variables names
+
     // governance_contract_addr
     pub gov_addr: String,
     // community_pool_contract_addr
@@ -84,7 +87,16 @@ pub enum AnyoneMsg {
 #[serde(rename_all = "snake_case")]
 pub enum GovernanceMsg {
     UpdateConfig {
+        gov_addr: Option<String>,
         psi_distributor_addr: Option<String>,
+        anchor_overseer_contract_addr: Option<String>,
+        anchor_market_contract_addr: Option<String>,
+        anchor_custody_basset_contract_addr: Option<String>,
+        anc_stable_swap_contract_addr: Option<String>,
+        psi_stable_swap_contract_addr: Option<String>,
+        basset_vault_strategy_contract_addr: Option<String>,
+        claiming_rewards_delay: Option<u64>,
+        over_loan_balance_value: Option<Decimal256>,
     },
 }
 
@@ -121,6 +133,7 @@ pub struct ConfigResponse {
     pub stable_denom: String,
     pub claiming_rewards_delay: u64,
     pub over_loan_balance_value: Decimal256,
+    pub psi_distributor_addr: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

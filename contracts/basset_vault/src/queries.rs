@@ -36,6 +36,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         stable_denom: config.stable_denom,
         claiming_rewards_delay: config.claiming_rewards_delay,
         over_loan_balance_value: config.over_loan_balance_value,
+        psi_distributor_addr: config.psi_distributor.to_string(),
     })
 }
 
