@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::{Addr, Binary, Deps, QueryRequest, StdResult, Storage, WasmQuery};
-use schemars::JsonSchema;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Config {
@@ -27,7 +26,7 @@ pub fn store_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()>
     singleton(storage, KEY_CONFIG).save(config)
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub(crate) struct BassetStrategyConfig {
     pub borrow_ltv_aim: Decimal256,
 }
