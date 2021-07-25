@@ -296,8 +296,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
 
         SubmsgIds::RedeemStableOnRemainder => {
             let config = load_config(deps.storage)?;
-            //we can't repay loan to unlock aTerra (cause we have 0 loan here),
-            //so try to use stable balance in any case (error or not)
+            //we do not care about errors here, just send all your stables to governance
             commands::buy_psi_on_remainded_stable_coins(deps.as_ref(), env, config)
         }
     }
