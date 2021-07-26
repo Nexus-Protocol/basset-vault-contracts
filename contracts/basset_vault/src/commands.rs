@@ -524,19 +524,19 @@ pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
 pub fn swap_anc(deps: DepsMut, env: Env) -> StdResult<Response> {
     let config: Config = load_config(deps.storage)?;
 
-    let stable_coin_balance = query_balance(
-        &deps.querier,
-        &env.contract.address,
-        config.stable_denom.clone(),
-    )?;
-    store_stable_balance_before_selling_anc(deps.storage, &stable_coin_balance)?;
-
     let anc_amount =
         query_token_balance(deps.as_ref(), &config.anchor_token, &env.contract.address)?;
 
     if anc_amount.is_zero() {
         return Err(StdError::generic_err("ANC amount is zero").into());
     }
+
+    let stable_coin_balance = query_balance(
+        &deps.querier,
+        &env.contract.address,
+        config.stable_denom.clone(),
+    )?;
+    store_stable_balance_before_selling_anc(deps.storage, &stable_coin_balance)?;
 
     Ok(Response {
         messages: vec![
