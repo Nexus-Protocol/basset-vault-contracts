@@ -1,5 +1,8 @@
 use super::sdk::Sdk;
-use crate::tests::sdk::{ANCHOR_OVERSEER_CONTRACT, BASSET_TOKEN_ADDR, NASSET_TOKEN_ADDR};
+use crate::tests::sdk::{
+    ANCHOR_CUSTODY_BASSET_CONTRACT, ANCHOR_OVERSEER_CONTRACT, BASSET_TOKEN_ADDR, NASSET_TOKEN_ADDR,
+};
+use basset_vault::querier::AnchorCustodyCw20Msg;
 use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::{testing::MOCK_CONTRACT_ADDR, CosmosMsg};
 use cosmwasm_std::{to_binary, SubMsg, Uint128, WasmMsg};
@@ -29,6 +32,16 @@ fn deposit_basset() {
         assert_eq!(
             response.messages,
             vec![
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: BASSET_TOKEN_ADDR.to_string(),
+                    msg: to_binary(&Cw20ExecuteMsg::Send {
+                        contract: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+                        amount: deposit_1_amount.into(),
+                        msg: to_binary(&AnchorCustodyCw20Msg::DepositCollateral {}).unwrap()
+                    })
+                    .unwrap(),
+                    funds: vec![],
+                })),
                 SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
                     msg: to_binary(&AnchorOverseerMsg::LockCollateral {
@@ -72,6 +85,16 @@ fn deposit_basset() {
         assert_eq!(
             response.messages,
             vec![
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: BASSET_TOKEN_ADDR.to_string(),
+                    msg: to_binary(&Cw20ExecuteMsg::Send {
+                        contract: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+                        amount: deposit_2_amount.into(),
+                        msg: to_binary(&AnchorCustodyCw20Msg::DepositCollateral {}).unwrap()
+                    })
+                    .unwrap(),
+                    funds: vec![],
+                })),
                 SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
                     msg: to_binary(&AnchorOverseerMsg::LockCollateral {
