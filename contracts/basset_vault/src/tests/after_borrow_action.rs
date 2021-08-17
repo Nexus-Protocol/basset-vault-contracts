@@ -6,7 +6,6 @@ use crate::{
     tests::sdk::{ANCHOR_MARKET_CONTRACT, STABLE_DENOM},
 };
 use cosmwasm_bignumber::Uint256;
-use cosmwasm_std::{attr, CosmosMsg, SubMsg};
 use cosmwasm_std::{to_binary, Coin, Response, WasmMsg};
 
 use basset_vault::querier::AnchorMarketMsg;
@@ -32,18 +31,18 @@ fn after_borrow_action_to_response_deposit() {
     };
     let response = after_borrow_action.to_response(&config).unwrap();
 
-    let expected_response = Response {
-        messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+    let expected_response = Response::new()
+        .add_message(WasmMsg::Execute {
             contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
             msg: to_binary(&AnchorMarketMsg::DepositStable {}).unwrap(),
             funds: vec![Coin {
                 denom: STABLE_DENOM.to_string(),
                 amount: deposit_amount.into(),
             }],
-        }))],
-        events: vec![],
-        attributes: vec![attr("action", "deposit"), attr("amount", deposit_amount)],
-        data: None,
-    };
+        })
+        .add_attributes(vec![
+            ("action", "deposit"),
+            ("amount", &deposit_amount.to_string()),
+        ]);
     assert_eq!(response, expected_response);
 }

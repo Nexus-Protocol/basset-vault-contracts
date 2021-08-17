@@ -2,11 +2,12 @@ use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Respons
 
 use crate::ContractResult;
 use crate::{commands, state::save_config_holder_contract};
+use basset_vault::nasset_token::InstantiateMsg;
 use cw20_base::allowances::{execute_decrease_allowance, execute_increase_allowance};
 use cw20_base::contract::instantiate as cw20_instantiate;
 use cw20_base::contract::query as cw20_query;
+use cw20_base::contract::{execute_update_marketing, execute_upload_logo};
 use cw20_base::msg::{ExecuteMsg, InstantiateMsg as TokenInstantiateMsg, QueryMsg};
-use basset_vault::nasset_token::InstantiateMsg;
 
 #[entry_point]
 pub fn instantiate(
@@ -28,6 +29,7 @@ pub fn instantiate(
             decimals: msg.decimals,
             initial_balances: msg.initial_balances,
             mint: msg.mint,
+            marketing: msg.marketing,
         },
     )?;
 
@@ -90,6 +92,21 @@ pub fn execute(
             amount,
             msg,
         } => commands::send_from(deps, env, info, owner, contract, amount, msg),
+
+        ExecuteMsg::UpdateMarketing {
+            project,
+            description,
+            marketing,
+        } => Ok(execute_update_marketing(
+            deps,
+            env,
+            info,
+            project,
+            description,
+            marketing,
+        )?),
+
+        ExecuteMsg::UploadLogo(logo) => Ok(execute_upload_logo(deps, env, info, logo)?),
     }
 }
 

@@ -1,7 +1,5 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{
-    attr, to_binary, Coin, CosmosMsg, ReplyOn, Response, StdResult, SubMsg, Uint128, WasmMsg,
-};
+use cosmwasm_std::{to_binary, Coin, CosmosMsg, Response, StdResult, SubMsg, Uint128, WasmMsg};
 
 use crate::state::Config;
 use crate::tax_querier::TaxInfo;
@@ -53,46 +51,44 @@ impl RepayLoanAction {
                     amount: amount.into(),
                 };
 
-                Ok(Response {
-                    events: vec![],
-                    messages: vec![SubMsg {
-                        msg: WasmMsg::Execute {
+                Ok(Response::new()
+                    .add_submessage(SubMsg::reply_on_success(
+                        CosmosMsg::Wasm(WasmMsg::Execute {
                             contract_addr: config.anchor_market_contract.to_string(),
                             msg: to_binary(&AnchorMarketMsg::RepayStable {})?,
                             funds: vec![repay_stable_coin],
-                        }
-                        .into(),
-                        gas_limit: None,
-                        id: SubmsgIds::RepayLoan.id(),
-                        reply_on: ReplyOn::Success,
-                    }],
-                    attributes: vec![attr("action", "repay_loan"), attr("amount", amount)],
-                    data: None,
-                })
+                        }),
+                        SubmsgIds::RepayLoan.id(),
+                    ))
+                    .add_attributes(vec![
+                        ("action", "repay_loan"),
+                        ("amount", &amount.to_string()),
+                    ]))
             }
 
-            &RepayLoanAction::SellAterra { amount } => Ok(Response {
-                events: vec![],
-                messages: vec![SubMsg {
-                    msg: WasmMsg::Execute {
-                        contract_addr: config.aterra_token.to_string(),
-                        msg: to_binary(&Cw20ExecuteMsg::Send {
-                            contract: config.anchor_market_contract.to_string(),
-                            amount: amount.into(),
-                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
-                        })?,
-                        funds: vec![],
-                    }
-                    .into(),
-                    gas_limit: None,
-                    id: SubmsgIds::RedeemStableOnRepayLoan.id(),
-                    //Always because Anchor can block withdrawing
-                    //if there are too many borrowers
-                    reply_on: ReplyOn::Always,
-                }],
-                attributes: vec![attr("action", "sell_aterra"), attr("amount", amount)],
-                data: None,
-            }),
+            &RepayLoanAction::SellAterra { amount } => {
+                Ok(Response::new()
+                    .add_submessage(
+                        //Always because Anchor can block withdrawing
+                        //if there are too many borrowers
+                        SubMsg::reply_always(
+                            CosmosMsg::Wasm(WasmMsg::Execute {
+                                contract_addr: config.aterra_token.to_string(),
+                                msg: to_binary(&Cw20ExecuteMsg::Send {
+                                    contract: config.anchor_market_contract.to_string(),
+                                    amount: amount.into(),
+                                    msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
+                                })?,
+                                funds: vec![],
+                            }),
+                            SubmsgIds::RedeemStableOnRepayLoan.id(),
+                        ),
+                    )
+                    .add_attributes(vec![
+                        ("action", "sell_aterra"),
+                        ("amount", &amount.to_string()),
+                    ]))
+            }
 
             &RepayLoanAction::RepayLoanAndSellAterra {
                 repay_loan_amount,
@@ -103,23 +99,19 @@ impl RepayLoanAction {
                     amount: repay_loan_amount.into(),
                 };
 
-                Ok(Response {
-                    events: vec![],
-                    messages: vec![
-                        SubMsg {
-                            //first message is to repay loan
-                            msg: WasmMsg::Execute {
+                Ok(Response::new()
+                    .add_submessages(vec![
+                        //first message is to repay loan
+                        SubMsg::reply_on_success(
+                            CosmosMsg::Wasm(WasmMsg::Execute {
                                 contract_addr: config.anchor_market_contract.to_string(),
                                 msg: to_binary(&AnchorMarketMsg::RepayStable {})?,
                                 funds: vec![repay_stable_coin],
-                            }
-                            .into(),
-                            gas_limit: None,
-                            id: SubmsgIds::RepayLoan.id(),
-                            reply_on: ReplyOn::Success,
-                        },
-                        SubMsg {
-                            msg: WasmMsg::Execute {
+                            }),
+                            SubmsgIds::RepayLoan.id(),
+                        ),
+                        SubMsg::reply_on_success(
+                            CosmosMsg::Wasm(WasmMsg::Execute {
                                 contract_addr: config.aterra_token.to_string(),
                                 msg: to_binary(&Cw20ExecuteMsg::Send {
                                     contract: config.anchor_market_contract.to_string(),
@@ -127,21 +119,16 @@ impl RepayLoanAction {
                                     msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
                                 })?,
                                 funds: vec![],
-                            }
-                            .into(),
-                            gas_limit: None,
-                            id: SubmsgIds::RedeemStableOnRepayLoan.id(),
-                            reply_on: ReplyOn::Success,
-                        },
-                    ],
-                    attributes: vec![
-                        attr("action_1", "repay_loan"),
-                        attr("loan_amount", repay_loan_amount),
-                        attr("action_2", "sell_aterra"),
-                        attr("aterra_amount", aterra_amount_to_sell),
-                    ],
-                    data: None,
-                })
+                            }),
+                            SubmsgIds::RedeemStableOnRepayLoan.id(),
+                        ),
+                    ])
+                    .add_attributes(vec![
+                        ("action_1", "repay_loan"),
+                        ("loan_amount", &repay_loan_amount.to_string()),
+                        ("action_2", "sell_aterra"),
+                        ("aterra_amount", &aterra_amount_to_sell.to_string()),
+                    ]))
             }
         }
     }
@@ -270,19 +257,16 @@ impl AfterBorrowAction {
         match self {
             AfterBorrowAction::Nothing => Ok(Response::default()),
 
-            &AfterBorrowAction::Deposit { amount } => Ok(Response {
-                messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+            &AfterBorrowAction::Deposit { amount } => Ok(Response::new()
+                .add_message(WasmMsg::Execute {
                     contract_addr: config.anchor_market_contract.to_string(),
                     msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
                     funds: vec![Coin {
                         denom: config.stable_denom.clone(),
                         amount: amount.into(),
                     }],
-                }))],
-                events: vec![],
-                attributes: vec![attr("action", "deposit"), attr("amount", amount)],
-                data: None,
-            }),
+                })
+                .add_attributes(vec![("action", "deposit"), ("amount", &amount.to_string())])),
         }
     }
 }
@@ -320,35 +304,27 @@ pub enum ActionWithProfit {
 impl ActionWithProfit {
     pub fn to_response(&self, config: &Config, tax_info: &TaxInfo) -> StdResult<Response> {
         match self {
-            ActionWithProfit::Nothing => Ok(Response {
-                messages: vec![],
-                events: vec![],
-                attributes: vec![
-                    attr("action", "distribute_rewards"),
-                    attr("rewards_profit", "zero"),
-                ],
-                data: None,
-            }),
+            ActionWithProfit::Nothing => Ok(Response::new().add_attributes(vec![
+                ("action", "distribute_rewards"),
+                ("rewards_profit", "zero"),
+            ])),
 
             &ActionWithProfit::DepositToAnc { amount } => {
                 let stable_coin_to_lending: Uint128 = tax_info.subtract_tax(amount).into();
 
-                Ok(Response {
-                    messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                Ok(Response::new()
+                    .add_message(WasmMsg::Execute {
                         contract_addr: config.anchor_market_contract.to_string(),
                         msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
                         funds: vec![Coin {
                             denom: config.stable_denom.clone(),
                             amount: stable_coin_to_lending,
                         }],
-                    }))],
-                    events: vec![],
-                    attributes: vec![
-                        attr("action", "distribute_rewards"),
-                        attr("deposit_to_anc", stable_coin_to_lending),
-                    ],
-                    data: None,
-                })
+                    })
+                    .add_attributes(vec![
+                        ("action", "distribute_rewards"),
+                        ("deposit_to_anc", &stable_coin_to_lending.to_string()),
+                    ]))
             }
 
             &ActionWithProfit::BuyPsi { amount } => {
@@ -360,9 +336,9 @@ impl ActionWithProfit {
                     amount: stable_coin_to_buy_psi,
                 };
 
-                Ok(Response {
-                    messages: vec![
-                        SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                Ok(Response::new()
+                    .add_messages(vec![
+                        WasmMsg::Execute {
                             contract_addr: config.psi_stable_swap_contract.to_string(),
                             msg: to_binary(&TerraswapExecuteMsg::Swap {
                                 offer_asset: swap_asset,
@@ -374,22 +350,19 @@ impl ActionWithProfit {
                                 denom: config.stable_denom.clone(),
                                 amount: stable_coin_to_buy_psi,
                             }],
-                        })),
-                        SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                        },
+                        WasmMsg::Execute {
                             contract_addr: config.psi_distributor.to_string(),
                             msg: to_binary(&PsiDistributorExecuteMsg::Anyone {
                                 anyone_msg: PsiDistributorAnyoneMsg::DistributeRewards {},
                             })?,
                             funds: vec![],
-                        })),
-                    ],
-                    events: vec![],
-                    attributes: vec![
-                        attr("action", "distribute_rewards"),
-                        attr("bying_psi", stable_coin_to_buy_psi),
-                    ],
-                    data: None,
-                })
+                        },
+                    ])
+                    .add_attributes(vec![
+                        ("action", "distribute_rewards"),
+                        ("bying_psi", &stable_coin_to_buy_psi.to_string()),
+                    ]))
             }
 
             &ActionWithProfit::Split {
@@ -405,17 +378,17 @@ impl ActionWithProfit {
                     amount: stable_coin_to_buy_psi,
                 };
 
-                Ok(Response {
-                    messages: vec![
-                        SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                Ok(Response::new()
+                    .add_messages(vec![
+                        WasmMsg::Execute {
                             contract_addr: config.anchor_market_contract.to_string(),
                             msg: to_binary(&AnchorMarketMsg::DepositStable {})?,
                             funds: vec![Coin {
                                 denom: config.stable_denom.clone(),
                                 amount: stable_coin_to_lending,
                             }],
-                        })),
-                        SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                        },
+                        WasmMsg::Execute {
                             contract_addr: config.psi_stable_swap_contract.to_string(),
                             msg: to_binary(&TerraswapExecuteMsg::Swap {
                                 offer_asset: swap_asset,
@@ -427,23 +400,20 @@ impl ActionWithProfit {
                                 denom: config.stable_denom.clone(),
                                 amount: stable_coin_to_buy_psi,
                             }],
-                        })),
-                        SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                        },
+                        WasmMsg::Execute {
                             contract_addr: config.psi_distributor.to_string(),
                             msg: to_binary(&PsiDistributorExecuteMsg::Anyone {
                                 anyone_msg: PsiDistributorAnyoneMsg::DistributeRewards {},
                             })?,
                             funds: vec![],
-                        })),
-                    ],
-                    events: vec![],
-                    attributes: vec![
-                        attr("action", "distribute_rewards"),
-                        attr("bying_psi", stable_coin_to_buy_psi),
-                        attr("deposit_to_anc", stable_coin_to_lending),
-                    ],
-                    data: None,
-                })
+                        },
+                    ])
+                    .add_attributes(vec![
+                        ("action", "distribute_rewards"),
+                        ("bying_psi", &stable_coin_to_buy_psi.to_string()),
+                        ("deposit_to_anc", &stable_coin_to_lending.to_string()),
+                    ]))
             }
         }
     }

@@ -1,13 +1,13 @@
 use cosmwasm_std::{to_binary, Api, CosmosMsg, Querier, Storage, SubMsg, Uint128, WasmMsg};
 use cosmwasm_std::{DepsMut, OwnedDeps};
 
-use cw20::{Cw20ReceiveMsg, MinterResponse, TokenInfoResponse};
-use cw20_base::contract::{query_minter, query_token_info};
-use cw20_base::msg::ExecuteMsg;
 use basset_vault::nasset_token::InstantiateMsg as TokenInstantiateMsg;
 use basset_vault::nasset_token_rewards::{
     ExecuteMsg as NAssetRewardsExecuteMsg, TokenMsg as NassetRewardsTokenMsg,
 };
+use cw20::{Cw20ReceiveMsg, MinterResponse, TokenInfoResponse};
+use cw20_base::contract::{query_minter, query_token_info};
+use cw20_base::msg::ExecuteMsg;
 
 use super::mock_dependencies;
 use super::{MOCK_CONFIG_HOLDER_CONTRACT_ADDR, MOCK_OWNER_ADDR, MOCK_REWARDS_CONTRACT_ADDR};
@@ -40,6 +40,7 @@ fn _do_init<A: Storage, B: Api, C: Querier>(
         initial_balances: vec![],
         mint: mint.clone(),
         config_holder_contract: MOCK_CONFIG_HOLDER_CONTRACT_ADDR.to_string(),
+        marketing: None,
     };
 
     let info = mock_info(MOCK_OWNER_ADDR, &[]);
@@ -84,6 +85,7 @@ fn proper_initialization() {
             cap: None,
         }),
         config_holder_contract: MOCK_REWARDS_CONTRACT_ADDR.to_string(),
+        marketing: None,
     };
     let info = mock_info(MOCK_OWNER_ADDR, &[]);
     let res = instantiate(deps.as_mut(), mock_env(), info, instantiate_msg).unwrap();
