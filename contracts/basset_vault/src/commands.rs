@@ -1,6 +1,6 @@
 use cosmwasm_std::StdResult;
 use cosmwasm_std::{
-    attr, from_binary, to_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
+    from_binary, to_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
     StdError, SubMsg, Uint128, WasmMsg,
 };
 
@@ -336,14 +336,10 @@ pub fn withdraw_basset(
             funds: vec![],
         })));
 
-    rebalance_response
-        .attributes
-        .push(attr("action", "withdraw"));
-    rebalance_response
-        .attributes
-        .push(attr("nasset_amount", nasset_to_withdraw_amount));
-
-    Ok(rebalance_response)
+    Ok(rebalance_response.add_attributes(vec![
+        ("action", "withdraw"),
+        ("nasset_amount", &nasset_to_withdraw_amount.to_string()),
+    ]))
 }
 
 /// Executor: anyone
@@ -689,8 +685,8 @@ pub fn buy_psi_on_remainded_stable_coins(
                 }],
             })
             .add_attributes(vec![
-                attr("action", "distribute_remainded_rewards"),
-                attr("bying_psi", stable_coin_to_buy_psi),
+                ("action", "distribute_remainded_rewards"),
+                ("bying_psi", &stable_coin_to_buy_psi.to_string()),
             ]))
     }
 }
