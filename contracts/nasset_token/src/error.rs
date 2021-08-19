@@ -24,6 +24,15 @@ pub enum ContractError {
 
     #[error("Minting cannot exceed the cap")]
     CannotExceedCap,
+
+    #[error("Logo too big")]
+    LogoTooBig,
+
+    #[error("Invalid xml preamble for SVG")]
+    InvalidXmlPreamble,
+
+    #[error("Invalid png header")]
+    InvalidPngHeader,
 }
 
 impl From<Cw20ContractError> for ContractError {
@@ -36,6 +45,9 @@ impl From<Cw20ContractError> for ContractError {
             Cw20ContractError::Expired {} => ContractError::Expired,
             Cw20ContractError::NoAllowance {} => ContractError::NoAllowance,
             Cw20ContractError::CannotExceedCap {} => ContractError::CannotExceedCap,
+            Cw20ContractError::LogoTooBig {} => ContractError::LogoTooBig,
+            Cw20ContractError::InvalidXmlPreamble {} => ContractError::InvalidXmlPreamble,
+            Cw20ContractError::InvalidPngHeader {} => ContractError::InvalidPngHeader,
         }
     }
 }

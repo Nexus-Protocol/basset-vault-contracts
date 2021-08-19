@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    attr, entry_point, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
-    ReplyOn, Response, StdError, StdResult, SubMsg, WasmMsg,
+    entry_point, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
+    Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 
 use crate::reply_response::MsgInstantiateContractResponse;
@@ -70,26 +70,18 @@ pub fn instantiate(
     };
     store_child_contracts_info(deps.storage, &child_contracts_info)?;
 
-    Ok(Response {
-        messages: vec![SubMsg {
-            msg: WasmMsg::Instantiate {
-                admin: None,
-                code_id: msg.nasset_t_ch_ci,
-                msg: to_binary(&NAssetTokenConfigHolderInstantiateMsg {
-                    governance_contract_addr: msg.gov_addr,
-                })?,
-                funds: vec![],
-                label: "".to_string(),
-            }
-            .into(),
-            gas_limit: None,
-            id: SubmsgIds::InitNAssetConfigHolder.id(),
-            reply_on: ReplyOn::Success,
-        }],
-        attributes: vec![],
-        data: None,
-        events: vec![],
-    })
+    Ok(Response::new().add_submessage(SubMsg::reply_on_success(
+        CosmosMsg::Wasm(WasmMsg::Instantiate {
+            admin: None,
+            code_id: msg.nasset_t_ch_ci,
+            msg: to_binary(&NAssetTokenConfigHolderInstantiateMsg {
+                governance_contract_addr: msg.gov_addr,
+            })?,
+            funds: vec![],
+            label: "".to_string(),
+        }),
+        SubmsgIds::InitNAssetConfigHolder.id(),
+    )))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -110,10 +102,9 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
             )?;
             let child_contracts_info = load_child_contracts_info(deps.as_ref().storage)?;
 
-            Ok(Response {
-                events: vec![],
-                messages: vec![SubMsg {
-                    msg: WasmMsg::Instantiate {
+            Ok(Response::new()
+                .add_submessage(SubMsg::reply_on_success(
+                    CosmosMsg::Wasm(WasmMsg::Instantiate {
                         admin: None,
                         code_id: child_contracts_info.nasset_token_code_id,
                         msg: to_binary(&NAssetTokenInstantiateMsg {
@@ -125,25 +116,21 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                                 minter: env.contract.address.to_string(),
                                 cap: None,
                             }),
+                            marketing: None,
                             config_holder_contract: nasset_token_config_holder.to_string(),
                         })?,
                         funds: vec![],
                         label: "".to_string(),
-                    }
-                    .into(),
-                    gas_limit: None,
-                    id: SubmsgIds::InitNAsset.id(),
-                    reply_on: ReplyOn::Success,
-                }],
-                attributes: vec![
-                    attr("action", "nasset_token_config_holder_initialized"),
-                    attr(
+                    }),
+                    SubmsgIds::InitNAsset.id(),
+                ))
+                .add_attributes(vec![
+                    ("action", "nasset_token_config_holder_initialized"),
+                    (
                         "nasset_token_config_holder_addr",
                         nasset_token_config_holder,
                     ),
-                ],
-                data: None,
-            })
+                ]))
         }
 
         SubmsgIds::InitNAsset => {
@@ -158,10 +145,9 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                 config_set_nasset_token(deps.storage, deps.api.addr_validate(nasset_token)?)?;
             let child_contracts_info = load_child_contracts_info(deps.as_ref().storage)?;
 
-            Ok(Response {
-                events: vec![],
-                messages: vec![SubMsg {
-                    msg: WasmMsg::Instantiate {
+            Ok(Response::new()
+                .add_submessage(SubMsg::reply_on_success(
+                    CosmosMsg::Wasm(WasmMsg::Instantiate {
                         admin: None,
                         code_id: child_contracts_info.nasset_token_rewards_code_id,
                         msg: to_binary(&NAssetTokenRewardsInstantiateMsg {
@@ -171,18 +157,13 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                         })?,
                         funds: vec![],
                         label: "".to_string(),
-                    }
-                    .into(),
-                    gas_limit: None,
-                    id: SubmsgIds::InitNAssetRewards.id(),
-                    reply_on: ReplyOn::Success,
-                }],
-                attributes: vec![
-                    attr("action", "nasset_token_initialized"),
-                    attr("nasset_token_addr", nasset_token),
-                ],
-                data: None,
-            })
+                    }),
+                    SubmsgIds::InitNAssetRewards.id(),
+                ))
+                .add_attributes(vec![
+                    ("action", "nasset_token_initialized"),
+                    ("nasset_token_addr", nasset_token),
+                ]))
         }
 
         SubmsgIds::InitNAssetRewards => {
@@ -198,53 +179,42 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
             let nasset_token_config_holder = load_nasset_token_config_holder(deps.storage)?;
             let config = load_config(deps.storage)?;
 
-            Ok(Response {
-                events: vec![],
-                messages: vec![
-                    SubMsg {
-                        msg: WasmMsg::Instantiate {
-                            admin: None,
-                            code_id: child_contracts_info.psi_distributor_code_id,
-                            msg: to_binary(&PsiDistributorInstantiateMsg {
-                                psi_token_addr: config.psi_token.to_string(),
-                                nasset_token_rewards_contract_addr: nasset_token_rewards
-                                    .to_string(),
-                                governance_contract_addr: config.governance_contract.to_string(),
-                                basset_vault_strategy_contract_addr: config
-                                    .basset_vault_strategy_contract
-                                    .to_string(),
-                                community_pool_contract_addr: child_contracts_info
-                                    .community_pool_contract_addr,
-                                manual_ltv: child_contracts_info.manual_ltv,
-                                fee_rate: child_contracts_info.fee_rate,
-                                tax_rate: child_contracts_info.tax_rate,
-                            })?,
-                            funds: vec![],
-                            label: "".to_string(),
-                        }
-                        .into(),
-                        gas_limit: None,
-                        id: SubmsgIds::InitPsiDistributor.id(),
-                        reply_on: ReplyOn::Success,
-                    },
-                    SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-                        contract_addr: nasset_token_config_holder.to_string(),
+            Ok(Response::new()
+                .add_submessage(SubMsg::reply_on_success(
+                    CosmosMsg::Wasm(WasmMsg::Instantiate {
+                        admin: None,
+                        code_id: child_contracts_info.psi_distributor_code_id,
+                        msg: to_binary(&PsiDistributorInstantiateMsg {
+                            psi_token_addr: config.psi_token.to_string(),
+                            nasset_token_rewards_contract_addr: nasset_token_rewards.to_string(),
+                            governance_contract_addr: config.governance_contract.to_string(),
+                            basset_vault_strategy_contract_addr: config
+                                .basset_vault_strategy_contract
+                                .to_string(),
+                            community_pool_contract_addr: child_contracts_info
+                                .community_pool_contract_addr,
+                            manual_ltv: child_contracts_info.manual_ltv,
+                            fee_rate: child_contracts_info.fee_rate,
+                            tax_rate: child_contracts_info.tax_rate,
+                        })?,
                         funds: vec![],
-                        msg: to_binary(&NAssetTokenConfigHolderExecuteMsg::Anyone {
-                            anyone_msg: NAssetTokenConfigHolderAnyoneMsg::SetTokenRewardsContract {
-                                nasset_token_rewards_contract_addr: nasset_token_rewards
-                                    .to_string(),
-                            },
-                        })
-                        .unwrap(),
-                    })),
-                ],
-                attributes: vec![
-                    attr("action", "nasset_token_rewards_initialized"),
-                    attr("nasset_token_rewards_addr", nasset_token_rewards),
-                ],
-                data: None,
-            })
+                        label: "".to_string(),
+                    }),
+                    SubmsgIds::InitPsiDistributor.id(),
+                ))
+                .add_message(WasmMsg::Execute {
+                    contract_addr: nasset_token_config_holder.to_string(),
+                    funds: vec![],
+                    msg: to_binary(&NAssetTokenConfigHolderExecuteMsg::Anyone {
+                        anyone_msg: NAssetTokenConfigHolderAnyoneMsg::SetTokenRewardsContract {
+                            nasset_token_rewards_contract_addr: nasset_token_rewards.to_string(),
+                        },
+                    })?,
+                })
+                .add_attributes(vec![
+                    ("action", "nasset_token_rewards_initialized"),
+                    ("nasset_token_rewards_addr", nasset_token_rewards),
+                ]))
         }
 
         SubmsgIds::InitPsiDistributor => {
@@ -257,15 +227,10 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
             let psi_distributor = res.get_contract_address();
             config_set_psi_distributor(deps.storage, deps.api.addr_validate(psi_distributor)?)?;
 
-            Ok(Response {
-                events: vec![],
-                messages: vec![],
-                attributes: vec![
-                    attr("action", "psi_distributor_initialized"),
-                    attr("psi_distributor_addr", psi_distributor),
-                ],
-                data: None,
-            })
+            Ok(Response::new().add_attributes(vec![
+                ("action", "psi_distributor_initialized"),
+                ("psi_distributor_addr", psi_distributor),
+            ]))
         }
 
         SubmsgIds::RedeemStableOnRepayLoan => match msg.result {

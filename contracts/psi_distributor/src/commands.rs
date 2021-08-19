@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    attr, to_binary, CosmosMsg, DepsMut, Empty, Env, Response, StdError, SubMsg, WasmMsg,
+    to_binary, CosmosMsg, DepsMut, Empty, Env, Response, StdError, SubMsg, WasmMsg,
 };
 
 use crate::state::{load_aim_ltv, load_config, store_config};
@@ -72,17 +72,23 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
         })));
     }
 
-    Ok(Response {
-        messages,
-        attributes: vec![
-            attr("action", "rewards_distribution"),
-            attr("nassest_holder_rewards", rewards_distribution.nasset_holder),
-            attr("governance_rewars", rewards_distribution.governance),
-            attr("community_pool_rewars", rewards_distribution.community_pool),
-        ],
-        data: None,
-        events: vec![],
-    })
+    Ok(Response::new()
+        .add_submessages(messages)
+        .add_attributes(vec![
+            ("action", "rewards_distribution"),
+            (
+                "nassest_holder_rewards",
+                &rewards_distribution.nasset_holder.to_string(),
+            ),
+            (
+                "governance_rewars",
+                &rewards_distribution.governance.to_string(),
+            ),
+            (
+                "community_pool_rewars",
+                &rewards_distribution.community_pool.to_string(),
+            ),
+        ]))
 }
 
 struct RewardsDistribution {

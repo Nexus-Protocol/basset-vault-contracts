@@ -1,8 +1,7 @@
-use cosmwasm_std::{
-    attr, to_binary, Addr, CosmosMsg, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdError,
-    SubMsg, Uint128, WasmMsg,
-};
 use basset_vault::querier::query_token_balance;
+use cosmwasm_std::{
+    to_binary, Addr, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdError, Uint128, WasmMsg,
+};
 
 use crate::{
     math::decimal_summation_in_256,
@@ -55,15 +54,10 @@ pub fn update_global_index(deps: DepsMut, env: Env) -> ContractResult<Response> 
 
     save_state(deps.storage, &state)?;
 
-    Ok(Response {
-        messages: vec![],
-        events: vec![],
-        attributes: vec![
-            attr("action", "update_global_index"),
-            attr("claimed_rewards", claimed_rewards),
-        ],
-        data: None,
-    })
+    Ok(Response::new().add_attributes(vec![
+        ("action", "update_global_index"),
+        ("claimed_rewards", &claimed_rewards.to_string()),
+    ]))
 }
 
 fn calculate_global_index(
@@ -152,25 +146,21 @@ fn claim_rewards_logic(
     holder.index = state.global_index;
     save_holder(deps.storage, holder_addr, &holder)?;
 
-    Ok(Response {
-        messages: vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+    Ok(Response::new()
+        .add_message(WasmMsg::Execute {
             contract_addr: config.psi_token.to_string(),
             funds: vec![],
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: recipient.to_string(),
                 amount: rewards,
-            })
-            .unwrap(),
-        }))],
-        attributes: vec![
-            attr("action", "claim_reward"),
-            attr("holder_address", holder_addr),
-            attr("recipient_address", recipient),
-            attr("rewards", rewards),
-        ],
-        data: None,
-        events: vec![],
-    })
+            })?,
+        })
+        .add_attributes(vec![
+            ("action", "claim_reward"),
+            ("holder_address", &holder_addr.to_string()),
+            ("recipient_address", &recipient.to_string()),
+            ("rewards", &rewards.to_string()),
+        ]))
 }
 
 pub fn increase_balance(
@@ -197,16 +187,11 @@ pub fn increase_balance(
     save_holder(deps.storage, &address, &holder)?;
     save_state(deps.storage, &state)?;
 
-    Ok(Response {
-        events: vec![],
-        messages: vec![],
-        attributes: vec![
-            attr("action", "increase_balance"),
-            attr("holder_address", address),
-            attr("amount", amount),
-        ],
-        data: None,
-    })
+    Ok(Response::new().add_attributes(vec![
+        ("action", "increase_balance"),
+        ("holder_address", &address.to_string()),
+        ("amount", &amount.to_string()),
+    ]))
 }
 
 pub fn decrease_balance(
@@ -236,20 +221,15 @@ pub fn decrease_balance(
 
     holder.index = state.global_index;
     holder.pending_rewards = decimal_summation_in_256(rewards, holder.pending_rewards);
-    holder.balance = holder.balance.checked_sub(amount).unwrap();
-    state.total_balance = state.total_balance.checked_sub(amount).unwrap();
+    holder.balance = holder.balance.checked_sub(amount)?;
+    state.total_balance = state.total_balance.checked_sub(amount)?;
 
     save_holder(deps.storage, &address, &holder)?;
     save_state(deps.storage, &state)?;
 
-    Ok(Response {
-        events: vec![],
-        messages: vec![],
-        attributes: vec![
-            attr("action", "decrease_balance"),
-            attr("holder_address", address),
-            attr("amount", amount),
-        ],
-        data: None,
-    })
+    Ok(Response::new().add_attributes(vec![
+        ("action", "decrease_balance"),
+        ("holder_address", &address.to_string()),
+        ("amount", &amount.to_string()),
+    ]))
 }

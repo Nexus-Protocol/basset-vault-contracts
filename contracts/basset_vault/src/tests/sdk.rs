@@ -202,6 +202,7 @@ impl Sdk {
                                 minter: MOCK_CONTRACT_ADDR.to_string(),
                                 cap: None,
                             }),
+                            marketing: None,
                             config_holder_contract: nasset_token_config_holder_contract.to_string()
                         })
                         .unwrap(),
