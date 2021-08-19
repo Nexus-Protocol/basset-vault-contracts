@@ -247,3 +247,15 @@ pub enum AnchorOverseerMsg {
     LockCollateral { collaterals: Vec<(String, Uint256)> },
     UnlockCollateral { collaterals: Vec<(String, Uint256)> },
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AnchorCustodyMsg {
+    WithdrawCollateral { amount: Option<Uint256> },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AnchorCustodyCw20Msg {
+    DepositCollateral {},
+}

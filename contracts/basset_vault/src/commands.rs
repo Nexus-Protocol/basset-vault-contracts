@@ -26,8 +26,8 @@ use basset_vault::{
     basset_vault_strategy::{query_borrower_action, BorrowerActionResponse},
     querier::{
         get_basset_in_custody, query_aterra_state, query_balance, query_borrower_info,
-        query_supply, query_token_balance, AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg,
-        BorrowerInfoResponse,
+        query_supply, query_token_balance, AnchorCustodyCw20Msg, AnchorCustodyMsg,
+        AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg, BorrowerInfoResponse,
     },
     terraswap::{Asset, AssetInfo},
     terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
@@ -178,11 +178,21 @@ pub fn deposit_basset(
         nasset_supply * farmer_basset_share / (Decimal256::one() - farmer_basset_share)
     };
 
+    //0. send basset to anchor_custody contract
     //1. lock basset
     //2. mint nasset
     //3. rebalance
     Ok(Response {
         messages: vec![
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: config.basset_token.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Send {
+                    contract: config.anchor_custody_basset_contract.to_string(),
+                    amount: deposit_amount.into(),
+                    msg: to_binary(&AnchorCustodyCw20Msg::DepositCollateral {})?,
+                })?,
+                funds: vec![],
+            })),
             SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.anchor_overseer_contract.to_string(),
                 msg: to_binary(&AnchorOverseerMsg::LockCollateral {
@@ -276,9 +286,10 @@ pub fn withdraw_basset(
     let basset_to_withdraw: Uint256 = basset_in_custody * share_to_withdraw;
 
     //1. rebalance in a way you don't have basset_to_withdraw
-    //2. unlock basset from custody
-    //3. send basset to farmer
-    //4. burn nasset
+    //2. unlock basset from anchor_overseer
+    //3. withdraw basset from anchor_custody
+    //4. send basset to farmer
+    //5. burn nasset
     let mut rebalance_response = rebalance(
         deps,
         env,
@@ -293,6 +304,16 @@ pub fn withdraw_basset(
             contract_addr: config.anchor_overseer_contract.to_string(),
             msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
                 collaterals: vec![(config.basset_token.to_string(), basset_to_withdraw)],
+            })?,
+            funds: vec![],
+        })));
+
+    rebalance_response
+        .messages
+        .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: config.anchor_custody_basset_contract.to_string(),
+            msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
+                amount: Some(basset_to_withdraw),
             })?,
             funds: vec![],
         })));

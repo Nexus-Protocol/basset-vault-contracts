@@ -1,5 +1,8 @@
 use super::sdk::Sdk;
-use crate::tests::sdk::{ANCHOR_OVERSEER_CONTRACT, BASSET_TOKEN_ADDR, NASSET_TOKEN_ADDR};
+use crate::tests::sdk::{
+    ANCHOR_CUSTODY_BASSET_CONTRACT, ANCHOR_OVERSEER_CONTRACT, BASSET_TOKEN_ADDR, NASSET_TOKEN_ADDR,
+};
+use basset_vault::querier::AnchorCustodyMsg;
 use basset_vault::{basset_vault_strategy::BorrowerActionResponse, querier::AnchorOverseerMsg};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{to_binary, WasmMsg};
@@ -50,6 +53,14 @@ fn withdraw_good_case() {
                 funds: vec![],
             })),
             SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+                msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
+                    amount: Some(deposit_1_amount),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: BASSET_TOKEN_ADDR.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_1_address.clone(),
@@ -85,6 +96,14 @@ fn withdraw_good_case() {
                 contract_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
                 msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
                     collaterals: vec![(BASSET_TOKEN_ADDR.to_string(), deposit_2_amount)],
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+                msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
+                    amount: Some(deposit_2_amount),
                 })
                 .unwrap(),
                 funds: vec![],
@@ -159,6 +178,14 @@ fn withdraw_bad_case() {
                 funds: vec![],
             })),
             SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+                msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
+                    amount: Some(deposit_1_amount / decimal_two),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: BASSET_TOKEN_ADDR.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_1_address.clone(),
@@ -197,6 +224,14 @@ fn withdraw_bad_case() {
                         BASSET_TOKEN_ADDR.to_string(),
                         deposit_2_amount / decimal_two
                     )],
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+                msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
+                    amount: Some(deposit_2_amount / decimal_two),
                 })
                 .unwrap(),
                 funds: vec![],
