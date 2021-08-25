@@ -2,6 +2,7 @@ use cosmwasm_std::{
     to_binary, CosmosMsg, DepsMut, Empty, Env, Response, StdError, SubMsg, WasmMsg,
 };
 
+use crate::error::ContractError;
 use crate::state::{load_aim_ltv, load_config, store_config};
 use crate::{state::Config, ContractResult};
 use basset_vault::nasset_token_rewards::{
@@ -159,20 +160,40 @@ pub fn update_config(
             .addr_validate(basset_vault_strategy_contract_addr)?;
     }
 
+    let one = Decimal256::one();
     if let Some(manual_ltv) = manual_ltv {
+        validate_field_to_one(&manual_ltv, "manual_ltv", &one)?;
         current_config.manual_ltv = manual_ltv;
     }
 
     if let Some(fee_rate) = fee_rate {
+        validate_field_to_one(&fee_rate, "fee_rate", &one)?;
         current_config.fee_rate = fee_rate;
     }
 
     if let Some(tax_rate) = tax_rate {
+        validate_field_to_one(&tax_rate, "tax_rate", &one)?;
         current_config.tax_rate = tax_rate;
     }
 
     store_config(deps.storage, &current_config)?;
     Ok(Response::default())
+}
+
+fn validate_field_to_one(
+    field_value: &Decimal256,
+    field_name: &str,
+    one: &Decimal256,
+) -> Result<(), ContractError> {
+    if field_value >= one {
+        return Err(StdError::generic_err(format!(
+            "'{}' should be lesser or equal to one",
+            field_name
+        ))
+        .into());
+    }
+
+    return Ok(());
 }
 
 #[cfg(test)]
