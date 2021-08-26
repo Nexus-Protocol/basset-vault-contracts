@@ -23,10 +23,9 @@ pub fn instantiate(
 ) -> ContractResult<Response> {
     let one = Decimal256::one();
     if msg.manual_ltv >= one || msg.fee_rate >= one || msg.tax_rate >= one {
-        return Err(StdError::generic_err(
-            "none of decimal numbers can be bigger or equal to zero",
-        )
-        .into());
+        return Err(
+            StdError::generic_err("none of decimal numbers can be bigger or equal to one").into(),
+        );
     }
 
     let config = Config {
