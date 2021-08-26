@@ -20,13 +20,11 @@ fn repay_loan_without_problems() {
 
     let stable_coin_balance = Uint128::from(200u64);
     let loan_to_repay = Uint256::from(10_000u64);
-    // let basset_vault_loan_amount = Uint256::from(10_000u64);
     let advised_buffer_size = Uint256::from(50u64);
     let aterra_balance = Uint256::from(200u64);
     let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
 
     sdk.set_aterra_balance(aterra_balance);
-    // sdk.set_loan(basset_vault_loan_amount);
     sdk.set_borrower_action(BorrowerActionResponse::Repay {
         amount: loan_to_repay,
         advised_buffer_size,
@@ -286,7 +284,7 @@ fn limited_recursion_depth_all_errors() {
 
     // -= ANCHOR REDEEM FAILED =-
     let start_from = 1;
-    for _ in start_from..LOAN_REPAYMENT_MAX_RECURSION_DEEP {
+    for repaying_index in start_from..LOAN_REPAYMENT_MAX_RECURSION_DEEP {
         let response = sdk.aterra_redeed_failed().unwrap();
         //now contract should repay loan with buffer and try to redeem aterra for that amount
         assert_eq!(
@@ -325,6 +323,8 @@ fn limited_recursion_depth_all_errors() {
                 }
             ]
         );
+        let rapaying_state = load_repaying_loan_state(&sdk.deps.storage).unwrap();
+        assert_eq!(rapaying_state.iteration_index, repaying_index);
     }
 
     let response = sdk.aterra_redeed_failed();
@@ -356,7 +356,7 @@ fn limited_recursion_depth_repayed_something() {
 
     // -= ANCHOR REDEEM FAILED =-
     let start_from = 2;
-    for _ in start_from..LOAN_REPAYMENT_MAX_RECURSION_DEEP {
+    for repaying_index in start_from..LOAN_REPAYMENT_MAX_RECURSION_DEEP {
         let response = sdk.aterra_redeed_failed().unwrap();
         //now contract should repay loan with buffer and try to redeem aterra for that amount
         assert_eq!(
@@ -395,10 +395,56 @@ fn limited_recursion_depth_repayed_something() {
                 }
             ]
         );
+        let rapaying_state = load_repaying_loan_state(&sdk.deps.storage).unwrap();
+        assert_eq!(rapaying_state.iteration_index, repaying_index - 1);
     }
     //one repaying is OK!
     sdk.continue_repay_loan().unwrap();
 
     let response = sdk.aterra_redeed_failed();
     assert!(response.is_ok());
+}
+
+#[test]
+fn reset_iteration_index() {
+    let mut sdk = Sdk::init();
+
+    let stable_coin_initial_balance = Uint128::new(5_000);
+    sdk.set_stable_balance(stable_coin_initial_balance);
+    sdk.set_aterra_exchange_rate(Decimal256::from_str("1.25").unwrap());
+    let aterra_balance = Uint256::from(7_000u64);
+    sdk.set_aterra_balance(aterra_balance);
+
+    //no tax
+    sdk.set_tax(0, 99999999999u128);
+
+    let to_repay_amount = Uint256::from(10_000u64);
+    let aim_buffer_size = Uint256::from(5_000u64);
+    sdk.set_borrower_action(BorrowerActionResponse::Repay {
+        amount: to_repay_amount,
+        advised_buffer_size: aim_buffer_size,
+    });
+
+    // -= REPAY =-
+    sdk.rebalance().unwrap();
+
+    // -= ANCHOR REDEEM FAILED =-
+    let start_from = 1;
+    for _ in start_from..LOAN_REPAYMENT_MAX_RECURSION_DEEP {
+        let response = sdk.aterra_redeed_failed();
+        assert!(response.is_ok());
+    }
+
+    let response = sdk.aterra_redeed_failed();
+    assert!(response.is_err());
+    let rapaying_state = load_repaying_loan_state(&sdk.deps.storage).unwrap();
+    assert_eq!(
+        rapaying_state.iteration_index,
+        LOAN_REPAYMENT_MAX_RECURSION_DEEP - 1
+    );
+
+    // -= SECOND REPAY =-
+    sdk.rebalance().unwrap();
+    let rapaying_state = load_repaying_loan_state(&sdk.deps.storage).unwrap();
+    assert_eq!(rapaying_state.iteration_index, 0);
 }

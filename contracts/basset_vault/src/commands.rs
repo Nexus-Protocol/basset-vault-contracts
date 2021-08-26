@@ -386,9 +386,11 @@ pub fn rebalance(
             advised_buffer_size,
         } => {
             store_aim_buffer_size(deps.storage, &advised_buffer_size)?;
-            let mut repaying_loan_state = load_repaying_loan_state(deps.as_ref().storage)?;
-            repaying_loan_state.to_repay_amount = amount;
-            repaying_loan_state.aim_buffer_size = advised_buffer_size;
+            let repaying_loan_state = RepayingLoanState {
+                to_repay_amount: amount,
+                aim_buffer_size: advised_buffer_size,
+                ..RepayingLoanState::default()
+            };
             repay_logic(deps, env, config, repaying_loan_state)
         }
     }
