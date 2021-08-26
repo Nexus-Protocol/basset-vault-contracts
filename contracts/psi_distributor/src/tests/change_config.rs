@@ -119,7 +119,7 @@ fn wrong_value_in_change_config() {
         assert!(response.is_err());
         let error = response.err().unwrap();
         if let ContractError::Std(StdError::GenericErr { msg }) = error {
-            assert_eq!("'manual_ltv' should be lesser or equal to one", msg);
+            assert_eq!("'manual_ltv' should be lesser than one", msg);
         } else {
             panic!("wrong error");
         }
@@ -147,7 +147,7 @@ fn wrong_value_in_change_config() {
         assert!(response.is_err());
         let error = response.err().unwrap();
         if let ContractError::Std(StdError::GenericErr { msg }) = error {
-            assert_eq!("'fee_rate' should be lesser or equal to one", msg);
+            assert_eq!("'fee_rate' should be lesser than one", msg);
         } else {
             panic!("wrong error");
         }
@@ -175,7 +175,7 @@ fn wrong_value_in_change_config() {
         assert!(response.is_err());
         let error = response.err().unwrap();
         if let ContractError::Std(StdError::GenericErr { msg }) = error {
-            assert_eq!("'tax_rate' should be lesser or equal to one", msg);
+            assert_eq!("'tax_rate' should be lesser than one", msg);
         } else {
             panic!("wrong error");
         }

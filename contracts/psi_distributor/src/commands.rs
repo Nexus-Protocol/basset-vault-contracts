@@ -186,11 +186,9 @@ fn validate_field_to_one(
     one: &Decimal256,
 ) -> Result<(), ContractError> {
     if field_value >= one {
-        return Err(StdError::generic_err(format!(
-            "'{}' should be lesser or equal to one",
-            field_name
-        ))
-        .into());
+        return Err(
+            StdError::generic_err(format!("'{}' should be lesser than one", field_name)).into(),
+        );
     }
 
     return Ok(());
