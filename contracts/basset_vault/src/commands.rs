@@ -129,7 +129,7 @@ pub fn receive_cw20_deposit(
     //we trust cw20 contract
     let farmer_addr: Addr = Addr::unchecked(cw20_msg.sender);
 
-    deposit_basset(deps, env, config, farmer_addr, cw20_msg.amount.into())
+    deposit_basset(deps, env, config, farmer_addr)
 }
 
 pub fn deposit_basset(
@@ -137,7 +137,6 @@ pub fn deposit_basset(
     env: Env,
     config: Config,
     farmer: Addr,
-    deposit_amount: Uint256,
 ) -> StdResult<Response> {
     let nasset_supply: Uint256 = query_supply(&deps.querier, &config.nasset_token.clone())?.into();
 
@@ -155,6 +154,8 @@ pub fn deposit_basset(
     }
 
     // basset balance in cw20 contract
+    // it should be equal to 'deposit_amout',
+    // unless someone directly transfer cw20 tokens to this contract without calling 'Deposit'
     let basset_in_contract_address =
         query_token_balance(deps.as_ref(), &config.basset_token, &env.contract.address)?;
 
@@ -165,6 +166,8 @@ pub fn deposit_basset(
             "basset balance is zero (impossible case)".to_string(),
         ));
     }
+
+    let deposit_amount: Uint256 = basset_in_contract_address.into();
     let farmer_basset_share: Decimal256 =
         Decimal256::from_ratio(deposit_amount.0, basset_balance.0);
 
