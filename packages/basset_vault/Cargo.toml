@@ -15,7 +15,7 @@ documentation = "todo"
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-cw20 = { version = "0.8" }
+cw20 = { version = "0.8.1" }
 cw20-base = { version = "0.8", features = ["library"] }
 cosmwasm-std = { version = "0.16", features = ["iterator"] }
 cosmwasm-storage = { version = "0.16", features = ["iterator"] }

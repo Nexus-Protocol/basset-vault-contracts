@@ -28,10 +28,10 @@ backtraces = ["cosmwasm-std/backtraces"]
 basset-vault = { path = "../../packages/basset_vault", default-features = false, version = "1.0.0"}
 thiserror = { version = "1.0.24" }
 protobuf = { version = "2", features = ["with-bytes"] }
-cw20 = { version = "0.8" }
+cw20 = { version = "0.8.1" }
 cw20-base = { version = "0.8", features = ["library"] }
 cosmwasm-std = { version = "0.16", features = ["iterator"] }
-cosmwasm-storage = { version = "0.16", features = ["iterator"] }
+cw-storage-plus = { version = "0.8.1" }
 schemars = "0.8.3"
 serde = { version = "1.0.126", default-features = false, features = ["derive"] }
 cosmwasm-bignumber = "2.2.0"

@@ -9,7 +9,6 @@ use cosmwasm_std::{
     from_slice, to_binary, Addr, Api, CanonicalAddr, Coin, ContractResult, Empty, OwnedDeps,
     Querier, QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
 };
-use cosmwasm_storage::to_length_prefixed;
 use cw20::TokenInfoResponse;
 use std::collections::HashMap;
 
@@ -89,7 +88,7 @@ impl WasmMockQuerier {
             QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
                 let key: &[u8] = key.as_slice();
 
-                let prefix_config = to_length_prefixed(b"config").to_vec();
+                let prefix_config = b"config";
 
                 if key.to_vec() == prefix_config {
                     if contract_addr != BASSET_VAULT_STRATEGY_CONTRACT_ADDR {
@@ -120,8 +119,8 @@ impl WasmMockQuerier {
                         }
                     };
 
-                let prefix_token_info = to_length_prefixed(b"token_info").to_vec();
-                let prefix_balance = to_length_prefixed(b"balance").to_vec();
+                let prefix_token_info = b"token_info";
+                let prefix_balance = b"balance";
 
                 if key.to_vec() == prefix_token_info {
                     let mut total_supply = Uint128::zero();

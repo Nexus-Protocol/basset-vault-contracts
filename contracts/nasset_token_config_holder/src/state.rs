@@ -1,22 +1,22 @@
-use cosmwasm_std::{Addr, StdResult, Storage};
-use cosmwasm_storage::{singleton, singleton_read};
 use basset_vault::nasset_token_config_holder::Config;
+use cosmwasm_std::{Addr, StdResult, Storage};
+use cw_storage_plus::Item;
 
-static KEY_CONFIG: &[u8] = b"config";
+static KEY_CONFIG: Item<Config> = Item::new("config");
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
-    singleton_read(storage, KEY_CONFIG).load()
+    KEY_CONFIG.load(storage)
 }
 
 pub fn save_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()> {
-    singleton(storage, KEY_CONFIG).save(config)
+    KEY_CONFIG.save(storage, config)
 }
 
 pub fn set_nasset_token_rewards_contract(
     storage: &mut dyn Storage,
     addr: Addr,
 ) -> StdResult<Config> {
-    singleton(storage, KEY_CONFIG).update(|mut cfg: Config| -> StdResult<_> {
+    KEY_CONFIG.update(storage, |mut cfg: Config| -> StdResult<_> {
         cfg.nasset_token_rewards_contract = addr;
         Ok(cfg)
     })

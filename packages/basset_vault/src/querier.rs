@@ -41,7 +41,7 @@ pub fn query_token_balance(
         .query(&QueryRequest::Wasm(WasmQuery::Raw {
             contract_addr: contract_addr.to_string(),
             key: Binary::from(concat(
-                &to_length_prefixed(b"balance").to_vec(),
+                b"balance",
                 (deps.api.addr_canonicalize(account_addr.as_str())?).as_slice(),
             )),
         }))
@@ -51,7 +51,7 @@ pub fn query_token_balance(
 pub fn query_supply(querier: &QuerierWrapper, contract_addr: &Addr) -> StdResult<Uint128> {
     let token_info: TokenInfoResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
         contract_addr: contract_addr.to_string(),
-        key: Binary::from(to_length_prefixed(b"token_info")),
+        key: Binary::from(b"token_info"),
     }))?;
 
     Ok(token_info.total_supply)
@@ -95,6 +95,7 @@ pub fn query_borrower_info(
     let borrower_info: BorrowerInfo = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
         contract_addr: anchor_market_contract.to_string(),
         key: Binary::from(concat(
+            //Anchor use cosmwasm_storage::bucket which add length prefix
             &to_length_prefixed(b"liability").to_vec(),
             (deps.api.addr_canonicalize(borrower.as_str())?).as_slice(),
         )),
@@ -126,6 +127,7 @@ pub fn get_basset_in_custody(
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
             contract_addr: custody_basset_addr.to_string(),
             key: Binary::from(concat(
+                //Anchor use cosmwasm_storage::bucket which add length prefix
                 &to_length_prefixed(b"borrower").to_vec(),
                 (deps.api.addr_canonicalize(account_addr.as_str())?).as_slice(),
             )),
@@ -204,6 +206,7 @@ pub fn query_market_state(
     let market_state: AnchorMarketStateResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
             contract_addr: anchor_market_contract.to_string(),
+            //Anchor use cosmwasm_storage::Singleton which add length prefix
             key: Binary::from(to_length_prefixed(b"state").to_vec()),
         }))?;
 
@@ -235,6 +238,7 @@ pub fn query_market_config(
     let market_config: AnchorMarketConfigResponse =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
             contract_addr: anchor_market_contract.to_string(),
+            //Anchor use cosmwasm_storage::Singleton which add length prefix
             key: Binary::from(to_length_prefixed(b"config").to_vec()),
         }))?;
 

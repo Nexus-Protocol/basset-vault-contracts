@@ -152,8 +152,8 @@ impl WasmMockQuerier {
                     return borrower_info_res;
                 }
 
-                let prefix_token_info = to_length_prefixed(b"token_info").to_vec();
-                let prefix_balance = to_length_prefixed(b"balance").to_vec();
+                let prefix_token_info = b"token_info";
+                let prefix_balance = b"balance";
 
                 if key.to_vec() == prefix_token_info {
                     let token_supply = match self.token_querier.supplies.get(contract_addr) {
@@ -240,7 +240,11 @@ impl WasmMockQuerier {
     }
 
     fn try_get_borrower(&self, key: &[u8], contract_addr: &String) -> Option<QuerierResult> {
+        //Anchor use cosmwasm_storage::bucket which add length prefix
         let prefix_borrower_info = to_length_prefixed(b"borrower").to_vec();
+        if key.len() < prefix_borrower_info.len() {
+            return None;
+        }
         if key[..prefix_borrower_info.len()].to_vec() == prefix_borrower_info {
             let key_address: &[u8] = &key[prefix_borrower_info.len()..];
             let address_raw: CanonicalAddr = CanonicalAddr::from(key_address);
@@ -276,7 +280,12 @@ impl WasmMockQuerier {
     }
 
     fn try_get_borrower_info(&self, key: &[u8], contract_addr: &String) -> Option<QuerierResult> {
+        //Anchor use cosmwasm_storage::bucket which add length prefix
         let prefix_borrower_info = to_length_prefixed(b"liability").to_vec();
+        if key.len() < prefix_borrower_info.len() {
+            return None;
+        }
+
         if key[..prefix_borrower_info.len()].to_vec() == prefix_borrower_info {
             let key_address: &[u8] = &key[prefix_borrower_info.len()..];
             let address_raw: CanonicalAddr = CanonicalAddr::from(key_address);

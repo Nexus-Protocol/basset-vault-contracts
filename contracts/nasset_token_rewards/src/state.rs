@@ -1,4 +1,4 @@
-use cosmwasm_storage::{singleton, singleton_read, Bucket, ReadonlyBucket};
+use cw_storage_plus::{Item, Map};
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::{Addr, Decimal, StdResult, Storage, Uint128};
@@ -24,33 +24,32 @@ pub struct Holder {
     pub pending_rewards: Decimal,
 }
 
-static KEY_CONFIG: &[u8] = b"config";
-static KEY_STATE: &[u8] = b"state";
-
-pub(crate) static PREFIX_HOLDERS: &[u8] = b"holders";
+static KEY_CONFIG: Item<Config> = Item::new("config");
+static KEY_STATE: Item<State> = Item::new("state");
+pub(crate) static HOLDERS: Map<&Addr, Holder> = Map::new("state");
 
 pub fn load_state(storage: &dyn Storage) -> StdResult<State> {
-    singleton_read(storage, KEY_STATE).load()
+    KEY_STATE.load(storage)
 }
 
 pub fn save_state(storage: &mut dyn Storage, state: &State) -> StdResult<()> {
-    singleton(storage, KEY_STATE).save(state)
+    KEY_STATE.save(storage, state)
 }
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
-    singleton_read(storage, KEY_CONFIG).load()
+    KEY_CONFIG.load(storage)
 }
 
 pub fn save_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()> {
-    singleton(storage, KEY_CONFIG).save(config)
+    KEY_CONFIG.save(storage, config)
 }
 
 pub fn load_holder(storage: &dyn Storage, addr: &Addr) -> StdResult<Holder> {
-    ReadonlyBucket::<Holder>::new(storage, PREFIX_HOLDERS)
-        .may_load(addr.as_bytes())
+    HOLDERS
+        .may_load(storage, addr)
         .map(|res| res.unwrap_or_default())
 }
 
 pub fn save_holder(storage: &mut dyn Storage, addr: &Addr, holder: &Holder) -> StdResult<()> {
-    Bucket::new(storage, PREFIX_HOLDERS).save(addr.as_bytes(), holder)
+    HOLDERS.save(storage, addr, holder)
 }
