@@ -66,7 +66,7 @@ fn calculate_global_index(
     config: &Config,
     state: &mut State,
 ) -> ContractResult<Uint128> {
-    let balance = query_token_balance(deps, &config.psi_token, &env.contract.address)?;
+    let balance = query_token_balance(deps, &config.psi_token, &env.contract.address);
 
     let previous_balance = state.prev_reward_balance;
 

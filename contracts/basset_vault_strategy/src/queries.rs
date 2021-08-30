@@ -1,7 +1,7 @@
 use crate::price::{query_price, PriceResponse};
+use basset_vault::basset_vault_strategy::{BorrowerActionResponse, ConfigResponse};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Deps, Env, StdResult, Timestamp};
-use basset_vault::basset_vault_strategy::{BorrowerActionResponse, ConfigResponse};
 
 use crate::state::{load_config, Config};
 
@@ -37,7 +37,7 @@ impl LTVInfo {
         price: &PriceResponse,
         block_time: Timestamp,
     ) -> Self {
-        let valid_update_time = (block_time.nanos() / 1_000_000_000) - price_timeframe;
+        let valid_update_time = block_time.seconds() - price_timeframe;
         if price.last_updated_base < valid_update_time
             || price.last_updated_quote < valid_update_time
         {
@@ -130,10 +130,10 @@ fn calc_borrower_action(
 
 #[cfg(test)]
 mod test {
+    use basset_vault::basset_vault_strategy::BorrowerActionResponse;
     use cosmwasm_bignumber::{Decimal256, Uint256};
     use cosmwasm_std::Timestamp;
     use std::str::FromStr;
-    use basset_vault::basset_vault_strategy::BorrowerActionResponse;
 
     use crate::{price::PriceResponse, queries::LTVInfo};
 

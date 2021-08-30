@@ -6,12 +6,11 @@ mod update_index;
 
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_slice, to_binary, Addr, Api, CanonicalAddr, Coin, ContractResult, Empty, OwnedDeps,
-    Querier, QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
+    from_slice, to_binary, Addr, Coin, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
+    QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
 };
+use cosmwasm_storage::to_length_prefixed;
 use std::collections::HashMap;
-
-use cw20::TokenInfoResponse;
 
 /// copypasted from TerraSwap
 /// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies
@@ -98,36 +97,11 @@ impl WasmMockQuerier {
                         }
                     };
 
-                let prefix_token_info = b"token_info";
-                let prefix_balance = b"balance";
+                let prefix_balance = to_length_prefixed(b"balance");
 
-                if key.to_vec() == prefix_token_info {
-                    let mut total_supply = Uint128::zero();
-
-                    for balance in balances {
-                        total_supply += *balance.1;
-                    }
-
-                    SystemResult::Ok(ContractResult::from(to_binary(&TokenInfoResponse {
-                        name: "some_token_name".to_string(),
-                        symbol: "some_token_symbol".to_string(),
-                        decimals: 6,
-                        total_supply,
-                    })))
-                } else if key[..prefix_balance.len()].to_vec() == prefix_balance {
+                if key[..prefix_balance.len()].to_vec() == prefix_balance {
                     let key_address: &[u8] = &key[prefix_balance.len()..];
-                    let address_raw: CanonicalAddr = CanonicalAddr::from(key_address);
-
-                    let api: MockApi = MockApi::default();
-                    let address: Addr = match api.addr_humanize(&address_raw) {
-                        Ok(v) => v,
-                        Err(e) => {
-                            return SystemResult::Err(SystemError::InvalidRequest {
-                                error: format!("Parsing query request: {}", e),
-                                request: key.into(),
-                            })
-                        }
-                    };
+                    let address: Addr = Addr::unchecked(std::str::from_utf8(key_address).unwrap());
 
                     let balance = match balances.get(&address.to_string()) {
                         Some(v) => v,
