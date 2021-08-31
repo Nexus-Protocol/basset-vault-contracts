@@ -156,8 +156,13 @@ mod test {
                 Some(addr_from_i(j * LIMIT - 1))
             };
 
-            let holders =
-                load_holders(&deps.storage, start_after, None, Some(OrderBy::Asc)).unwrap();
+            let holders = load_holders(
+                &deps.storage,
+                start_after,
+                Some(LIMIT as u32),
+                Some(OrderBy::Asc),
+            )
+            .unwrap();
 
             for (i, holder) in holders.into_iter().enumerate() {
                 let global_index = j * LIMIT + i;
@@ -180,8 +185,13 @@ mod test {
         for j in 0..4 {
             let end_before = Some(addr_from_i(total_elements_count - j * LIMIT));
 
-            let holders =
-                load_holders(&deps.storage, end_before, None, Some(OrderBy::Desc)).unwrap();
+            let holders = load_holders(
+                &deps.storage,
+                end_before,
+                Some(LIMIT as u32),
+                Some(OrderBy::Desc),
+            )
+            .unwrap();
 
             for (i, holder) in holders.into_iter().enumerate() {
                 let global_index = total_elements_count - i - j * LIMIT - 1;
