@@ -5,7 +5,7 @@ use crate::tests::sdk::{
 use basset_vault::querier::AnchorCustodyCw20Msg;
 use cosmwasm_bignumber::Uint256;
 use cosmwasm_std::{testing::MOCK_CONTRACT_ADDR, CosmosMsg};
-use cosmwasm_std::{to_binary, SubMsg, Uint128, WasmMsg};
+use cosmwasm_std::{to_binary, StdError, SubMsg, Uint128, WasmMsg};
 use cw20::Cw20ExecuteMsg;
 
 use basset_vault::{
@@ -140,4 +140,73 @@ fn do_not_accept_deposit_if_nluna_supply_is_not_zero_but_bluna_in_custody_is_zer
 
     let response = sdk.user_deposit(&user_address, deposit_amount.into());
     assert!(response.is_err());
+    if let StdError::GenericErr { msg } = response.err().unwrap() {
+        assert_eq!(
+            "bAsset balance is zero, but nAsset supply is not! Freeze contract.",
+            msg
+        );
+    } else {
+        panic!("wrong error");
+    }
+}
+
+#[test]
+fn deposit_basset_after_someone_transfer_some_bassets_directly_to_contract() {
+    let mut sdk = Sdk::init();
+
+    //first farmer come
+    let user_address = "addr9999".to_string();
+    let deposit_amount: Uint256 = 2_000_000_000u128.into();
+    let basset_directly_tranfered_amount: Uint256 = 10_000_000_000u128.into();
+    let total_basset_amount = deposit_amount + basset_directly_tranfered_amount;
+    {
+        // -= USER SEND bAsset tokens to basset_vault =-
+        sdk.set_nasset_supply(Uint256::zero());
+        sdk.set_basset_balance(total_basset_amount);
+
+        let response = sdk
+            .user_deposit(&user_address, deposit_amount.into())
+            .unwrap();
+
+        assert_eq!(
+            response.messages,
+            vec![
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: BASSET_TOKEN_ADDR.to_string(),
+                    msg: to_binary(&Cw20ExecuteMsg::Send {
+                        contract: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+                        amount: total_basset_amount.into(),
+                        msg: to_binary(&AnchorCustodyCw20Msg::DepositCollateral {}).unwrap()
+                    })
+                    .unwrap(),
+                    funds: vec![],
+                })),
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
+                    msg: to_binary(&AnchorOverseerMsg::LockCollateral {
+                        collaterals: vec![(BASSET_TOKEN_ADDR.to_string(), total_basset_amount)],
+                    })
+                    .unwrap(),
+                    funds: vec![],
+                })),
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: NASSET_TOKEN_ADDR.to_string(),
+                    msg: to_binary(&Cw20ExecuteMsg::Mint {
+                        recipient: user_address.clone(),
+                        amount: total_basset_amount.into(), //first depositer have same amount
+                    })
+                    .unwrap(),
+                    funds: vec![],
+                })),
+                SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: MOCK_CONTRACT_ADDR.to_string(),
+                    msg: to_binary(&ExecuteMsg::Anyone {
+                        anyone_msg: AnyoneMsg::Rebalance {},
+                    })
+                    .unwrap(),
+                    funds: vec![],
+                })),
+            ]
+        );
+    }
 }
