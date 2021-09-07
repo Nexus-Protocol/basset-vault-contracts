@@ -115,12 +115,11 @@ fn calc_borrower_action(
         Decimal256::from_uint256(borrowed_amount) / Decimal256::from_uint256(max_borrow_amount);
 
     let buffer_size = max_borrow_amount * buffer_part;
+    let aim_borrow_amount = ltv_info.borrow_ltv_aim * max_borrow_amount;
     if current_ltv >= ltv_info.borrow_ltv_max {
-        let aim_borrow_amount = ltv_info.borrow_ltv_aim * max_borrow_amount;
         let repay_amount = borrowed_amount - aim_borrow_amount;
         BorrowerActionResponse::repay(repay_amount, buffer_size)
     } else if current_ltv <= ltv_info.borrow_ltv_min {
-        let aim_borrow_amount = ltv_info.borrow_ltv_aim * max_borrow_amount;
         let borrow_amount = aim_borrow_amount - borrowed_amount;
         BorrowerActionResponse::borrow(borrow_amount, buffer_size)
     } else {
