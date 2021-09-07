@@ -431,17 +431,18 @@ pub fn split_profit_to_handle_interest(
         return ActionWithProfit::Nothing;
     }
 
-    let total_stable_coin_balance = aterra_amount * aterra_exchange_rate + stable_coin_balance;
+    let total_stable_coin_balance_before_sell_anc =
+        aterra_amount * aterra_exchange_rate + stable_coin_balance_before_sell_anc;
     let selling_anc_profit = stable_coin_balance - stable_coin_balance_before_sell_anc;
 
     let aim_stable_balance = borrowed_amount * over_loan_balance_value;
-    if aim_stable_balance <= total_stable_coin_balance {
+    if aim_stable_balance <= total_stable_coin_balance_before_sell_anc {
         return ActionWithProfit::BuyPsi {
             amount: selling_anc_profit,
         };
     }
 
-    let amount_to_anc_deposit = aim_stable_balance - total_stable_coin_balance;
+    let amount_to_anc_deposit = aim_stable_balance - total_stable_coin_balance_before_sell_anc;
     if selling_anc_profit <= amount_to_anc_deposit {
         return ActionWithProfit::DepositToAnc {
             amount: selling_anc_profit,
@@ -1459,11 +1460,17 @@ mod test {
         //1500*1.2 = 1800
         let aterra_balance = Uint256::from(1_500u64);
         let aterra_state_exchange_rate = Decimal256::from_str("1.2").unwrap();
-        let stable_coin_balance = Uint256::from(200u64);
+        let stable_coin_balance = Uint256::from(300u64);
         let stable_coin_balance_before_sell_anc = Uint256::from(150u64);
         //so, aim is 2020
         let over_loan_balance_value = Decimal256::from_str("1.01").unwrap();
 
+        //balance before sell: 1800+150 = 1950
+        //aim: 2020
+        //profit: 300 - 150 = 150
+        //result:
+        //  deposit_to_anc: 2020 - 1950 = 70
+        //  buy_psi: profit - deposit_to_anc: 150 - 70 = 80
         let action_with_profit = split_profit_to_handle_interest(
             borrowed_amount,
             aterra_balance,
@@ -1475,8 +1482,8 @@ mod test {
 
         assert_eq!(
             ActionWithProfit::Split {
-                buy_psi: Uint256::from(30u64),
-                deposit_to_anc: Uint256::from(20u64),
+                buy_psi: Uint256::from(80u64),
+                deposit_to_anc: Uint256::from(70u64),
             },
             action_with_profit
         );
