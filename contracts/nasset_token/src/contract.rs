@@ -2,7 +2,7 @@ use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Respons
 
 use crate::ContractResult;
 use crate::{commands, state::save_config_holder_contract};
-use basset_vault::nasset_token::InstantiateMsg;
+use basset_vault::nasset_token::{InstantiateMsg, MigrateMsg};
 use cw20_base::allowances::{execute_decrease_allowance, execute_increase_allowance};
 use cw20_base::contract::instantiate as cw20_instantiate;
 use cw20_base::contract::query as cw20_query;
@@ -113,4 +113,9 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     cw20_query(deps, env, msg)
+}
+
+#[entry_point]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::default())
 }

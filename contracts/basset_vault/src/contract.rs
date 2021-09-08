@@ -17,7 +17,9 @@ use crate::{
 };
 use basset_vault::{
     anchor::basset_custody::get_basset_in_custody,
-    basset_vault::{AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg, YourselfMsg},
+    basset_vault::{
+        AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, MigrateMsg, QueryMsg, YourselfMsg,
+    },
     nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
     nasset_token_config_holder::{
         AnyoneMsg as NAssetTokenConfigHolderAnyoneMsg,
@@ -347,4 +349,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ChildContractsCodeId {} => to_binary(&queries::child_contracts_code_id(deps)?),
         QueryMsg::IsRewardsClaimable {} => to_binary(&queries::is_rewards_claimable(deps, env)?),
     }
+}
+
+#[entry_point]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::default())
 }

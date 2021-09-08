@@ -59,3 +59,6 @@ pub struct ConfigResponse {
     pub fee_rate: Decimal256,
     pub tax_rate: Decimal256,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct MigrateMsg {}

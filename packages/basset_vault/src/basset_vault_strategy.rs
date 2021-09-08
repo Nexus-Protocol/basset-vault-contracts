@@ -115,3 +115,6 @@ pub fn query_borrower_action(
 
     Ok(borrower_action)
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct MigrateMsg {}
