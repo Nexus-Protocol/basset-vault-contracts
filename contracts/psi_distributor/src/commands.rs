@@ -15,7 +15,7 @@ use cw20::Cw20ExecuteMsg;
 pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
     let config: Config = load_config(deps.storage)?;
     let psi_balance: Uint256 =
-        query_token_balance(deps.as_ref(), &config.psi_token, &env.contract.address)?.into();
+        query_token_balance(deps.as_ref(), &config.psi_token, &env.contract.address).into();
 
     if psi_balance.is_zero() {
         return Err(StdError::generic_err("psi balance is zero").into());

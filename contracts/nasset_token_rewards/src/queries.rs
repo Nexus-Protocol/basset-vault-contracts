@@ -1,16 +1,17 @@
 use crate::{
     math::decimal_summation_in_256,
-    state::{Holder, PREFIX_HOLDERS},
+    state::{Holder, HOLDERS},
     utils::calculate_decimal_rewards,
 };
-use cosmwasm_std::{Addr, Deps, StdResult, Storage, Uint128};
-use cosmwasm_storage::ReadonlyBucket;
 use basset_vault::{
     common::OrderBy,
     nasset_token_rewards::{
         AccruedRewardsResponse, ConfigResponse, HolderResponse, HoldersResponse, StateResponse,
     },
 };
+use cosmwasm_std::{Addr, Deps, StdResult, Storage, Uint128};
+use cw0::{calc_range_end, calc_range_start};
+use cw_storage_plus::Bound;
 
 use crate::state::{load_config, load_holder, load_state, Config};
 
@@ -86,29 +87,23 @@ pub fn load_holders(
 ) -> StdResult<Vec<HolderResponse>> {
     let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
     let (start, end, order_by) = match order_by {
-        Some(OrderBy::Asc) => (calc_range_start(start_after), None, OrderBy::Asc),
-        _ => (None, calc_range_end(start_after), OrderBy::Desc),
+        Some(OrderBy::Asc) => (
+            calc_range_start(start_after).map(Bound::exclusive),
+            None,
+            OrderBy::Asc,
+        ),
+        _ => (
+            None,
+            calc_range_end(start_after).map(Bound::exclusive),
+            OrderBy::Desc,
+        ),
     };
 
-    let holders: ReadonlyBucket<Holder> = ReadonlyBucket::new(storage, PREFIX_HOLDERS);
-    holders
-        .range(start.as_deref(), end.as_deref(), order_by.into())
+    HOLDERS
+        .range(storage, start, end, order_by.into())
         .map(holder_to_response)
         .take(limit)
         .collect()
-}
-
-pub fn calc_range_start(start_after: Option<Addr>) -> Option<Vec<u8>> {
-    start_after.map(|addr| {
-        let mut v: Vec<u8> = addr.as_bytes().to_vec();
-        v.push(0);
-        v
-    })
-}
-
-// this will set the first key after the provided key, by appending a 1 byte
-fn calc_range_end(start_after: Option<Addr>) -> Option<Vec<u8>> {
-    start_after.map(|addr| addr.as_bytes().to_vec())
 }
 
 pub fn holder_to_response(
@@ -123,4 +118,86 @@ pub fn holder_to_response(
         index: holder.index,
         pending_rewards: holder.pending_rewards,
     })
+}
+
+#[cfg(test)]
+mod test {
+    use crate::state::save_holder;
+    use cosmwasm_std::testing::mock_dependencies;
+
+    use super::*;
+    const LIMIT: usize = 30;
+
+    fn addr_from_i(i: usize) -> Addr {
+        Addr::unchecked(format!("addr{:0>8}", i))
+    }
+
+    fn holder_from_i(i: usize) -> Holder {
+        Holder {
+            balance: Uint128::from(i as u128),
+            ..Holder::default()
+        }
+    }
+
+    #[test]
+    fn load_holders_with_range_start_works_as_expected() {
+        let total_elements_count = 100;
+        let mut deps = mock_dependencies(&[]);
+        for i in 0..total_elements_count {
+            let holder_addr = addr_from_i(i);
+            let holder = holder_from_i(i);
+            save_holder(&mut deps.storage, &holder_addr, &holder).unwrap();
+        }
+
+        for j in 0..4 {
+            let start_after = if j == 0 {
+                None
+            } else {
+                Some(addr_from_i(j * LIMIT - 1))
+            };
+
+            let holders = load_holders(
+                &deps.storage,
+                start_after,
+                Some(LIMIT as u32),
+                Some(OrderBy::Asc),
+            )
+            .unwrap();
+
+            for (i, holder) in holders.into_iter().enumerate() {
+                let global_index = j * LIMIT + i;
+                assert_eq!(holder.address, addr_from_i(global_index));
+                assert_eq!(holder.balance, Uint128::from(global_index as u128));
+            }
+        }
+    }
+
+    #[test]
+    fn load_holders_with_range_end_works_as_expected() {
+        let total_elements_count = 100;
+        let mut deps = mock_dependencies(&[]);
+        for i in 0..total_elements_count {
+            let holder_addr = addr_from_i(i);
+            let holder = holder_from_i(i);
+            save_holder(&mut deps.storage, &holder_addr, &holder).unwrap();
+        }
+
+        for j in 0..4 {
+            let end_before = Some(addr_from_i(total_elements_count - j * LIMIT));
+
+            let holders = load_holders(
+                &deps.storage,
+                end_before,
+                Some(LIMIT as u32),
+                Some(OrderBy::Desc),
+            )
+            .unwrap();
+
+            for (i, holder) in holders.into_iter().enumerate() {
+                let global_index = total_elements_count - i - j * LIMIT - 1;
+                assert_eq!(holder.address, addr_from_i(global_index));
+                assert_eq!(holder.balance, Uint128::from(global_index as u128));
+            }
+        }
+    }
 }

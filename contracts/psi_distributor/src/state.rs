@@ -1,4 +1,4 @@
-use cosmwasm_storage::{singleton, singleton_read, to_length_prefixed};
+use cw_storage_plus::Item;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_bignumber::Decimal256;
@@ -16,14 +16,14 @@ pub struct Config {
     pub tax_rate: Decimal256,
 }
 
-static KEY_CONFIG: &[u8] = b"config";
+static KEY_CONFIG: Item<Config> = Item::new("config");
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
-    singleton_read(storage, KEY_CONFIG).load()
+    KEY_CONFIG.load(storage)
 }
 
 pub fn store_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()> {
-    singleton(storage, KEY_CONFIG).save(config)
+    KEY_CONFIG.save(storage, config)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -35,7 +35,7 @@ pub fn load_aim_ltv(deps: Deps, config: &Config) -> StdResult<Decimal256> {
     let basset_strategy_config: BassetStrategyConfig =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
             contract_addr: config.basset_vault_strategy_contract.to_string(),
-            key: Binary::from(to_length_prefixed(b"config").to_vec()),
+            key: Binary::from(b"config"),
         }))?;
 
     Ok(basset_strategy_config.borrow_ltv_aim)

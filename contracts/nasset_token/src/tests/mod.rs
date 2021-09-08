@@ -11,7 +11,6 @@ use cosmwasm_std::{
     from_slice, to_binary, Addr, Coin, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
     QueryRequest, SystemError, SystemResult, WasmQuery,
 };
-use cosmwasm_storage::to_length_prefixed;
 
 /// copypasted from TerraSwap
 /// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies
@@ -67,7 +66,7 @@ impl WasmMockQuerier {
                     });
                 }
 
-                let prefix_config = to_length_prefixed(b"config").to_vec();
+                let prefix_config = b"config";
 
                 if key.to_vec() == prefix_config {
                     if let Some(ref nasset_token_config) = self.nasset_token_config {

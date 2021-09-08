@@ -19,12 +19,12 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::str::FromStr;
 
+use basset_vault::anchor::basset_custody::BorrowerInfo as AnchorMarketBorrowerInfoResponse;
+use basset_vault::anchor::market::BorrowerInfoResponse as AnchorBassetCustodyBorrowerInfo;
 use basset_vault::basset_vault::Cw20HookMsg;
 use basset_vault::basset_vault_strategy::BorrowerActionResponse;
 use basset_vault::psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg;
-use basset_vault::querier::{
-    AnchorMarketEpochStateResponse, BorrowerInfoResponse, BorrowerResponse,
-};
+use basset_vault::querier::AnchorMarketEpochStateResponse;
 use basset_vault::{
     basset_vault::ExecuteMsg,
     nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
@@ -394,7 +394,7 @@ impl Sdk {
             &ANCHOR_MARKET_CONTRACT.to_string(),
             &[(
                 &MOCK_CONTRACT_ADDR.to_string(),
-                &BorrowerInfoResponse {
+                &AnchorBassetCustodyBorrowerInfo {
                     borrower: MOCK_CONTRACT_ADDR.to_string(),
                     loan_amount: value,
                     pending_rewards: Decimal256::zero(),
@@ -442,7 +442,7 @@ impl Sdk {
             &ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
             &[(
                 &MOCK_CONTRACT_ADDR.to_string(),
-                &BorrowerResponse { balance },
+                &AnchorMarketBorrowerInfoResponse { balance },
             )],
         )]);
     }

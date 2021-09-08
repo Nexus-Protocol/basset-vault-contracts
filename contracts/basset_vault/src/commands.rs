@@ -22,12 +22,13 @@ use crate::{
     SubmsgIds,
 };
 use basset_vault::{
+    anchor::basset_custody::get_basset_in_custody,
+    anchor::market::{query_borrower_info, BorrowerInfoResponse},
     basset_vault::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, YourselfMsg},
     basset_vault_strategy::{query_borrower_action, BorrowerActionResponse},
     querier::{
-        get_basset_in_custody, query_aterra_state, query_balance, query_borrower_info,
-        query_supply, query_token_balance, AnchorCustodyCw20Msg, AnchorCustodyMsg,
-        AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg, BorrowerInfoResponse,
+        query_aterra_state, query_balance, query_supply, query_token_balance, AnchorCustodyCw20Msg,
+        AnchorCustodyMsg, AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg,
     },
     terraswap::{Asset, AssetInfo},
     terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
@@ -157,7 +158,7 @@ pub fn deposit_basset(
     // it should be equal to 'deposit_amout',
     // unless someone directly transfer cw20 tokens to this contract without calling 'Deposit'
     let basset_in_contract_address =
-        query_token_balance(deps.as_ref(), &config.basset_token, &env.contract.address)?;
+        query_token_balance(deps.as_ref(), &config.basset_token, &env.contract.address);
 
     let basset_balance: Uint256 = basset_in_custody + basset_in_contract_address.into();
     if basset_balance == Uint256::zero() {
@@ -447,7 +448,7 @@ pub(crate) fn repay_logic(
     mut repaying_loan_state: RepayingLoanState,
 ) -> StdResult<Response> {
     let aterra_balance =
-        query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address)?;
+        query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address);
     let aterra_exchange_rate: Decimal256 =
         query_aterra_state(deps.as_ref(), &config.anchor_market_contract)?.exchange_rate;
     let stable_coin_balance = query_balance(
@@ -530,7 +531,7 @@ pub fn swap_anc(deps: DepsMut, env: Env) -> StdResult<Response> {
     let config: Config = load_config(deps.storage)?;
 
     let anc_amount =
-        query_token_balance(deps.as_ref(), &config.anchor_token, &env.contract.address)?;
+        query_token_balance(deps.as_ref(), &config.anchor_token, &env.contract.address);
 
     if anc_amount.is_zero() {
         return Err(StdError::generic_err("ANC amount is zero").into());
@@ -583,7 +584,7 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
         config.stable_denom.clone(),
     )?;
     let aterra_balance =
-        query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address)?;
+        query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address);
 
     let aterra_state = query_aterra_state(deps.as_ref(), &config.anchor_market_contract)?;
     let borrower_info: BorrowerInfoResponse = query_borrower_info(
@@ -619,8 +620,7 @@ pub fn claim_remainded_stables(deps: Deps, env: Env) -> StdResult<Response> {
             borrowed_amount
         )))
     } else {
-        let aterra_balance =
-            query_token_balance(deps, &config.aterra_token, &env.contract.address)?;
+        let aterra_balance = query_token_balance(deps, &config.aterra_token, &env.contract.address);
 
         if aterra_balance.is_zero() {
             buy_psi_on_remainded_stable_coins(deps, env, config)

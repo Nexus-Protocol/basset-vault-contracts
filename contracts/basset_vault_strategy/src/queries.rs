@@ -1,7 +1,7 @@
 use crate::price::{query_price, PriceResponse};
+use basset_vault::basset_vault_strategy::{BorrowerActionResponse, ConfigResponse};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Deps, Env, StdResult, Timestamp};
-use basset_vault::basset_vault_strategy::{BorrowerActionResponse, ConfigResponse};
 
 use crate::state::{load_config, Config};
 
@@ -37,7 +37,7 @@ impl LTVInfo {
         price: &PriceResponse,
         block_time: Timestamp,
     ) -> Self {
-        let valid_update_time = (block_time.nanos() / 1_000_000_000) - price_timeframe;
+        let valid_update_time = block_time.seconds() - price_timeframe;
         if price.last_updated_base < valid_update_time
             || price.last_updated_quote < valid_update_time
         {
@@ -115,12 +115,11 @@ fn calc_borrower_action(
         Decimal256::from_uint256(borrowed_amount) / Decimal256::from_uint256(max_borrow_amount);
 
     let buffer_size = max_borrow_amount * buffer_part;
+    let aim_borrow_amount = ltv_info.borrow_ltv_aim * max_borrow_amount;
     if current_ltv >= ltv_info.borrow_ltv_max {
-        let aim_borrow_amount = ltv_info.borrow_ltv_aim * max_borrow_amount;
         let repay_amount = borrowed_amount - aim_borrow_amount;
         BorrowerActionResponse::repay(repay_amount, buffer_size)
     } else if current_ltv <= ltv_info.borrow_ltv_min {
-        let aim_borrow_amount = ltv_info.borrow_ltv_aim * max_borrow_amount;
         let borrow_amount = aim_borrow_amount - borrowed_amount;
         BorrowerActionResponse::borrow(borrow_amount, buffer_size)
     } else {
@@ -130,10 +129,10 @@ fn calc_borrower_action(
 
 #[cfg(test)]
 mod test {
+    use basset_vault::basset_vault_strategy::BorrowerActionResponse;
     use cosmwasm_bignumber::{Decimal256, Uint256};
     use cosmwasm_std::Timestamp;
     use std::str::FromStr;
-    use basset_vault::basset_vault_strategy::BorrowerActionResponse;
 
     use crate::{price::PriceResponse, queries::LTVInfo};
 

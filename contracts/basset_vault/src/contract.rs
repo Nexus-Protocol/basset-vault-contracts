@@ -16,6 +16,7 @@ use crate::{
     SubmsgIds, TOO_HIGH_BORROW_DEMAND_ERR_MSG,
 };
 use basset_vault::{
+    anchor::basset_custody::get_basset_in_custody,
     basset_vault::{AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg, YourselfMsg},
     nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
     nasset_token_config_holder::{
@@ -25,7 +26,6 @@ use basset_vault::{
     },
     nasset_token_rewards::InstantiateMsg as NAssetTokenRewardsInstantiateMsg,
     psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg,
-    querier::get_basset_in_custody,
 };
 use cw20::MinterResponse;
 use protobuf::Message;

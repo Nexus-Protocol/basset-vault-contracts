@@ -6,11 +6,10 @@ mod sdk;
 use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_slice, to_binary, Addr, Api, CanonicalAddr, Coin, ContractResult, Empty, OwnedDeps,
-    Querier, QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
+    from_slice, to_binary, Addr, Coin, ContractResult, Empty, OwnedDeps, Querier, QuerierResult,
+    QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
 };
 use cosmwasm_storage::to_length_prefixed;
-use cw20::TokenInfoResponse;
 use std::collections::HashMap;
 
 use crate::state::BassetStrategyConfig;
@@ -89,7 +88,7 @@ impl WasmMockQuerier {
             QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
                 let key: &[u8] = key.as_slice();
 
-                let prefix_config = to_length_prefixed(b"config").to_vec();
+                let prefix_config = b"config";
 
                 if key.to_vec() == prefix_config {
                     if contract_addr != BASSET_VAULT_STRATEGY_CONTRACT_ADDR {
@@ -120,36 +119,11 @@ impl WasmMockQuerier {
                         }
                     };
 
-                let prefix_token_info = to_length_prefixed(b"token_info").to_vec();
-                let prefix_balance = to_length_prefixed(b"balance").to_vec();
+                let prefix_balance = to_length_prefixed(b"balance");
 
-                if key.to_vec() == prefix_token_info {
-                    let mut total_supply = Uint128::zero();
-
-                    for balance in balances {
-                        total_supply += *balance.1;
-                    }
-
-                    SystemResult::Ok(ContractResult::from(to_binary(&TokenInfoResponse {
-                        name: "some_token_name".to_string(),
-                        symbol: "some_token_symbol".to_string(),
-                        decimals: 6,
-                        total_supply,
-                    })))
-                } else if key[..prefix_balance.len()].to_vec() == prefix_balance {
+                if key[..prefix_balance.len()].to_vec() == prefix_balance {
                     let key_address: &[u8] = &key[prefix_balance.len()..];
-                    let address_raw: CanonicalAddr = CanonicalAddr::from(key_address);
-
-                    let api: MockApi = MockApi::default();
-                    let address: Addr = match api.addr_humanize(&address_raw) {
-                        Ok(v) => v,
-                        Err(e) => {
-                            return SystemResult::Err(SystemError::InvalidRequest {
-                                error: format!("Parsing query request: {}", e),
-                                request: key.into(),
-                            })
-                        }
-                    };
+                    let address: Addr = Addr::unchecked(std::str::from_utf8(key_address).unwrap());
 
                     let balance = match balances.get(&address.to_string()) {
                         Some(v) => v,

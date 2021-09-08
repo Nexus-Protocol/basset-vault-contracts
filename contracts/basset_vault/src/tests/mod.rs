@@ -9,7 +9,8 @@ mod repay_loan_action;
 mod sdk;
 mod withdraw_basset;
 
-use basset_vault::querier::{BorrowerInfoResponse, BorrowerResponse};
+use basset_vault::anchor::basset_custody::BorrowerInfo as AnchorMarketBorrowerInfoResponse;
+use basset_vault::anchor::market::BorrowerInfoResponse as AnchorBassetCustodyBorrowerInfo;
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
@@ -40,8 +41,8 @@ pub fn mock_dependencies(
 }
 
 pub struct WasmMockQuerier {
-    borrowers_info: HashMap<String, HashMap<String, BorrowerInfoResponse>>,
-    borrowers: HashMap<String, HashMap<String, BorrowerResponse>>,
+    borrowers_info: HashMap<String, HashMap<String, AnchorBassetCustodyBorrowerInfo>>,
+    borrowers: HashMap<String, HashMap<String, AnchorMarketBorrowerInfoResponse>>,
     base: MockQuerier<TerraQueryWrapper>,
     tax_querier: TaxQuerier,
     token_querier: TokenQuerier,
@@ -152,10 +153,11 @@ impl WasmMockQuerier {
                     return borrower_info_res;
                 }
 
-                let prefix_token_info = to_length_prefixed(b"token_info").to_vec();
-                let prefix_balance = to_length_prefixed(b"balance").to_vec();
+                let prefix_token_info = b"token_info";
+                let prefix_token_info_legacy = to_length_prefixed(b"token_info");
+                let prefix_balance = to_length_prefixed(b"balance");
 
-                if key.to_vec() == prefix_token_info {
+                if key.to_vec() == prefix_token_info || key.to_vec() == prefix_token_info_legacy {
                     let token_supply = match self.token_querier.supplies.get(contract_addr) {
                         Some(supply) => supply,
                         None => {
@@ -177,18 +179,7 @@ impl WasmMockQuerier {
                     })))
                 } else if key[..prefix_balance.len()].to_vec() == prefix_balance {
                     let key_address: &[u8] = &key[prefix_balance.len()..];
-                    let address_raw: CanonicalAddr = CanonicalAddr::from(key_address);
-
-                    let api: MockApi = MockApi::default();
-                    let address: Addr = match api.addr_humanize(&address_raw) {
-                        Ok(v) => v,
-                        Err(e) => {
-                            return SystemResult::Err(SystemError::InvalidRequest {
-                                error: format!("Parsing query request: {}", e),
-                                request: key.into(),
-                            })
-                        }
-                    };
+                    let address: Addr = Addr::unchecked(std::str::from_utf8(key_address).unwrap());
 
                     let balances: &HashMap<String, Uint128> =
                         match self.token_querier.balances.get(contract_addr) {
@@ -240,7 +231,11 @@ impl WasmMockQuerier {
     }
 
     fn try_get_borrower(&self, key: &[u8], contract_addr: &String) -> Option<QuerierResult> {
+        //Anchor use cosmwasm_storage::bucket which add length prefix
         let prefix_borrower_info = to_length_prefixed(b"borrower").to_vec();
+        if key.len() < prefix_borrower_info.len() {
+            return None;
+        }
         if key[..prefix_borrower_info.len()].to_vec() == prefix_borrower_info {
             let key_address: &[u8] = &key[prefix_borrower_info.len()..];
             let address_raw: CanonicalAddr = CanonicalAddr::from(key_address);
@@ -257,7 +252,7 @@ impl WasmMockQuerier {
             };
 
             let empty_borrowers = HashMap::new();
-            let default_borrower = BorrowerResponse {
+            let default_borrower = AnchorMarketBorrowerInfoResponse {
                 balance: Uint256::zero(),
             };
 
@@ -276,7 +271,12 @@ impl WasmMockQuerier {
     }
 
     fn try_get_borrower_info(&self, key: &[u8], contract_addr: &String) -> Option<QuerierResult> {
+        //Anchor use cosmwasm_storage::bucket which add length prefix
         let prefix_borrower_info = to_length_prefixed(b"liability").to_vec();
+        if key.len() < prefix_borrower_info.len() {
+            return None;
+        }
+
         if key[..prefix_borrower_info.len()].to_vec() == prefix_borrower_info {
             let key_address: &[u8] = &key[prefix_borrower_info.len()..];
             let address_raw: CanonicalAddr = CanonicalAddr::from(key_address);
@@ -293,7 +293,7 @@ impl WasmMockQuerier {
             };
 
             let empty_borrowers_info = HashMap::new();
-            let default_borrower_info = BorrowerInfoResponse {
+            let default_borrower_info = AnchorBassetCustodyBorrowerInfo {
                 borrower: address.to_string(),
                 loan_amount: Uint256::zero(),
                 pending_rewards: Decimal256::zero(),
@@ -336,7 +336,10 @@ impl WasmMockQuerier {
         self.token_querier.supplies = supplies;
     }
 
-    pub fn with_loan(&mut self, borrowers_info: &[(&String, &[(&String, &BorrowerInfoResponse)])]) {
+    pub fn with_loan(
+        &mut self,
+        borrowers_info: &[(&String, &[(&String, &AnchorBassetCustodyBorrowerInfo)])],
+    ) {
         self.borrowers_info = array_to_hashmap(borrowers_info);
     }
 
@@ -356,7 +359,10 @@ impl WasmMockQuerier {
         self.base.update_balance(addr, balance)
     }
 
-    pub fn with_locked_basset(&mut self, borrowers: &[(&String, &[(&String, &BorrowerResponse)])]) {
+    pub fn with_locked_basset(
+        &mut self,
+        borrowers: &[(&String, &[(&String, &AnchorMarketBorrowerInfoResponse)])],
+    ) {
         self.borrowers = array_to_hashmap(borrowers);
     }
 }

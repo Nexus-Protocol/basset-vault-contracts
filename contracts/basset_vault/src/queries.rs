@@ -1,13 +1,14 @@
 use basset_vault::{
+    anchor::basset_custody::get_basset_in_custody,
+    anchor::market::{
+        query_borrower_info, query_market_config, query_market_state, BorrowerInfoResponse,
+        ConfigResponse as AnchorMarketConfigResponse, StateResponse as AnchorMarketStateResponse,
+    },
     basset_vault::{
         ChildContractsInfoResponse, ConfigResponse, IsRewardsClaimableResponse, RebalanceResponse,
     },
     basset_vault_strategy::{query_borrower_action, BorrowerActionResponse},
-    querier::{
-        get_basset_in_custody, query_balance, query_borrower_info, query_market_config,
-        query_market_state, AnchorMarketConfigResponse, AnchorMarketStateResponse,
-        BorrowerInfoResponse,
-    },
+    querier::query_balance,
 };
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Deps, Env, StdResult};
