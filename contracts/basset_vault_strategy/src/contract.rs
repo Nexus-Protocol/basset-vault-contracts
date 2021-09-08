@@ -9,7 +9,9 @@ use crate::{
     state::{load_config, save_config},
 };
 use crate::{state::Config, ContractResult};
-use basset_vault::basset_vault_strategy::{ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg};
+use basset_vault::basset_vault_strategy::{
+    ExecuteMsg, GovernanceMsg, InstantiateMsg, MigrateMsg, QueryMsg,
+};
 
 #[entry_point]
 pub fn instantiate(
@@ -95,4 +97,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             locked_basset_amount,
         )?),
     }
+}
+
+#[entry_point]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::default())
 }

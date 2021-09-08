@@ -50,3 +50,6 @@ pub struct ConfigResponse {
     pub nasset_token_rewards_addr: String,
     pub governance_contract_addr: String,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct MigrateMsg {}

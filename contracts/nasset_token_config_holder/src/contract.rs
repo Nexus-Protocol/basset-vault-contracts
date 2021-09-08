@@ -6,7 +6,8 @@ use crate::error::ContractError;
 use crate::state::{load_config, save_config, set_nasset_token_rewards_contract};
 use crate::ContractResult;
 use basset_vault::nasset_token_config_holder::{
-    AnyoneMsg, Config, ConfigResponse, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg,
+    AnyoneMsg, Config, ConfigResponse, ExecuteMsg, GovernanceMsg, InstantiateMsg, MigrateMsg,
+    QueryMsg,
 };
 
 #[entry_point]
@@ -106,4 +107,9 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         nasset_token_rewards_addr: config.nasset_token_rewards_contract.to_string(),
         governance_contract_addr: config.governance_contract.to_string(),
     })
+}
+
+#[entry_point]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::default())
 }

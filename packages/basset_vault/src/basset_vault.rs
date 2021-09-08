@@ -169,3 +169,6 @@ pub struct IsRewardsClaimableResponse {
     pub last_claiming_height: u64,
     pub current_height: u64,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct MigrateMsg {}

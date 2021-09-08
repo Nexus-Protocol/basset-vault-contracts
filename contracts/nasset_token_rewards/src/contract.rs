@@ -11,7 +11,7 @@ use crate::{
 };
 use crate::{state::Config, ContractResult};
 use basset_vault::nasset_token_rewards::{
-    AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg, TokenMsg,
+    AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, MigrateMsg, QueryMsg, TokenMsg,
 };
 
 #[entry_point]
@@ -115,4 +115,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             order_by,
         } => to_binary(&queries::query_holders(deps, start_after, limit, order_by)?),
     }
+}
+
+#[entry_point]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::default())
 }

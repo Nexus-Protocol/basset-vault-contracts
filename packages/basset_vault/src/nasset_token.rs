@@ -14,3 +14,6 @@ pub struct InstantiateMsg {
     pub marketing: Option<InstantiateMarketingInfo>,
     pub config_holder_contract: String,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct MigrateMsg {}

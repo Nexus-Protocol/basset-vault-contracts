@@ -11,7 +11,7 @@ use crate::{
     ContractResult,
 };
 use basset_vault::psi_distributor::{
-    AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, QueryMsg,
+    AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, MigrateMsg, QueryMsg,
 };
 
 #[entry_point]
@@ -95,4 +95,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&queries::query_config(deps)?),
     }
+}
+
+#[entry_point]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::default())
 }

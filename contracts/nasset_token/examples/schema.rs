@@ -1,13 +1,13 @@
 use std::env::current_dir;
 use std::fs::create_dir_all;
 
+use basset_vault::nasset_token::{InstantiateMsg, MigrateMsg};
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 use cw20::{
     AllAccountsResponse, AllAllowancesResponse, AllowanceResponse, BalanceResponse,
     TokenInfoResponse,
 };
 use cw20_base::msg::{ExecuteMsg, QueryMsg};
-use basset_vault::nasset_token::InstantiateMsg;
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
@@ -23,4 +23,5 @@ fn main() {
     export_schema(&schema_for!(TokenInfoResponse), &out_dir);
     export_schema(&schema_for!(AllAllowancesResponse), &out_dir);
     export_schema(&schema_for!(AllAccountsResponse), &out_dir);
+    export_schema(&schema_for!(MigrateMsg), &out_dir);
 }
