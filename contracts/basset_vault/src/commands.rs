@@ -276,7 +276,7 @@ pub fn withdraw_basset(
         //
         //Second choice is best one in my opinion.
         return Err(StdError::generic_err(
-            "bAsset balance is zero, but nLuna supply is not! Freeze contract.",
+            "bAsset balance is zero, but nAsset supply is not! Freeze contract.",
         ));
     }
 
