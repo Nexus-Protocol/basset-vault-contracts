@@ -7,6 +7,7 @@ debug = false
 debug-assertions = false
 codegen-units = 1
 incremental = false
+overflow-checks = true
 
 [profile.release]
 opt-level = 3
