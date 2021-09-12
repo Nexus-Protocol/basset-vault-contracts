@@ -169,17 +169,16 @@ pub fn deposit_basset(
     }
 
     let deposit_amount: Uint256 = basset_in_contract_address.into();
-    let farmer_basset_share: Decimal256 =
-        Decimal256::from_ratio(deposit_amount.0, basset_balance.0);
+    let is_first_depositor = deposit_amount == basset_balance;
 
     // nAsset tokens to mint:
     // user_share = (deposited_basset / total_basset)
     // nAsset_to_mint = nAsset_supply * user_share / (1 - user_share)
-    let nasset_to_mint = if farmer_basset_share == Decimal256::one() {
+    let nasset_to_mint = if is_first_depositor {
         deposit_amount
     } else {
         // 'nasset_supply' can't be zero here, cause we already mint some for first farmer
-        nasset_supply * farmer_basset_share / (Decimal256::one() - farmer_basset_share)
+        nasset_supply * deposit_amount / Decimal256::from_uint256(basset_balance - deposit_amount)
     };
 
     //0. send basset to anchor_custody contract
@@ -280,11 +279,8 @@ pub fn withdraw_basset(
         ));
     }
 
-    let share_to_withdraw: Decimal256 = Decimal256::from_ratio(
-        nasset_to_withdraw_amount.0,
-        Uint256::from(nasset_token_supply).0,
-    );
-    let basset_to_withdraw: Uint256 = basset_in_custody * share_to_withdraw;
+    let basset_to_withdraw: Uint256 = basset_in_custody * nasset_to_withdraw_amount
+        / Decimal256::from_uint256(Uint256::from(nasset_token_supply));
 
     //1. rebalance in a way you don't have basset_to_withdraw
     //2. unlock basset from anchor_overseer
