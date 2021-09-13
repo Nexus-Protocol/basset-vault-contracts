@@ -15,7 +15,6 @@ fn fail_to_change_config_if_sender_is_not_governance() {
 
     let change_config_msg = ExecuteMsg::Governance {
         governance_msg: GovernanceMsg::UpdateConfig {
-            gov_addr: None,
             psi_distributor_addr: Some("addr9998".to_string()),
             anchor_overseer_contract_addr: None,
             anchor_market_contract_addr: None,
@@ -43,7 +42,6 @@ fn fail_to_change_config_if_sender_is_not_governance() {
 fn success_to_change_config_if_sender_governance() {
     let mut sdk = Sdk::init();
 
-    let new_gov_addr = "addr9995".to_string();
     let new_psi_distributor_addr = "addr9994".to_string();
     let new_anchor_overseer_contract_addr = "addr9993".to_string();
     let new_anchor_market_contract_addr = "addr9992".to_string();
@@ -56,7 +54,6 @@ fn success_to_change_config_if_sender_governance() {
 
     let change_config_msg = ExecuteMsg::Governance {
         governance_msg: GovernanceMsg::UpdateConfig {
-            gov_addr: Some(new_gov_addr.clone()),
             psi_distributor_addr: Some(new_psi_distributor_addr.clone()),
             anchor_overseer_contract_addr: Some(new_anchor_overseer_contract_addr.clone()),
             anchor_market_contract_addr: Some(new_anchor_market_contract_addr.clone()),
@@ -78,7 +75,6 @@ fn success_to_change_config_if_sender_governance() {
     crate::contract::execute(sdk.deps.as_mut(), env, info, change_config_msg).unwrap();
 
     let config = load_config(&sdk.deps.storage).unwrap();
-    assert_eq!(new_gov_addr, config.governance_contract);
     assert_eq!(new_psi_distributor_addr, config.psi_distributor);
     assert_eq!(
         new_anchor_overseer_contract_addr,

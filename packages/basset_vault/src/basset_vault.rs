@@ -81,13 +81,13 @@ pub enum AnyoneMsg {
     // then when last user will withdraw bAsset some UST remains in contract.
     // This command utilise it.
     ClaimRemainder {},
+    AcceptGovernance {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum GovernanceMsg {
     UpdateConfig {
-        gov_addr: Option<String>,
         psi_distributor_addr: Option<String>,
         anchor_overseer_contract_addr: Option<String>,
         anchor_market_contract_addr: Option<String>,
@@ -97,6 +97,11 @@ pub enum GovernanceMsg {
         basset_vault_strategy_contract_addr: Option<String>,
         claiming_rewards_delay: Option<u64>,
         over_loan_balance_value: Option<Decimal256>,
+    },
+    UpdateGovernanceContract {
+        gov_addr: String,
+        //how long to wait for 'AcceptGovernance' transaction
+        seconds_to_wait_for_accept_gov_tx: u64,
     },
 }
 
