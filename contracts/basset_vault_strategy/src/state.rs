@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use basset_vault::BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP;
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -68,7 +71,14 @@ impl Config {
     }
 
     pub fn set_buffer_part(&mut self, value: Decimal256) -> ContractResult<()> {
-        if value.is_zero() || value > Decimal256::one() {
+        if self.borrow_ltv_max <= self.borrow_ltv_aim {
+            return Err(ContractError::InappropriateValue);
+        }
+
+        let min_buffer_part = (self.borrow_ltv_max - self.borrow_ltv_aim)
+            / Decimal256::from_str(&BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP.to_string())?;
+
+        if value.is_zero() || value > Decimal256::one() || value < min_buffer_part {
             return Err(ContractError::InappropriateValue);
         }
 
@@ -143,6 +153,7 @@ pub fn save_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()> 
 #[cfg(test)]
 mod test {
     use super::Config;
+    use basset_vault::BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP;
     use cosmwasm_bignumber::Decimal256;
     use cosmwasm_std::Addr;
     use std::str::FromStr;
@@ -325,6 +336,54 @@ mod test {
             config.get_borrow_ltv_min(),
             Decimal256::from_str("0.5").unwrap(),
         );
+        assert!(update_res.is_err());
+    }
+
+    #[test]
+    pub fn successfully_update_buffer_part() {
+        let mut config = Config::new(
+            Addr::unchecked("addr0001"),
+            Addr::unchecked("addr0001"),
+            Addr::unchecked("addr0001"),
+            "uust".to_string(),
+            Decimal256::from_str("0.9").unwrap(),
+            Decimal256::from_str("0.6").unwrap(),
+            Decimal256::from_str("0.8").unwrap(),
+            Decimal256::from_str("0.5").unwrap(),
+            Decimal256::from_str("0.018").unwrap(),
+            PRICE_TIMEFRAME,
+        )
+        .unwrap();
+
+        let max_recursion_deep = BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP;
+        let buffer_part = (config.borrow_ltv_max - config.borrow_ltv_aim)
+            / Decimal256::from_str(&(max_recursion_deep).to_string()).unwrap();
+
+        let update_res = config.set_buffer_part(buffer_part);
+        assert!(update_res.is_ok());
+    }
+
+    #[test]
+    pub fn fail_to_update_buffer_part() {
+        let mut config = Config::new(
+            Addr::unchecked("addr0001"),
+            Addr::unchecked("addr0001"),
+            Addr::unchecked("addr0001"),
+            "uust".to_string(),
+            Decimal256::from_str("0.9").unwrap(),
+            Decimal256::from_str("0.6").unwrap(),
+            Decimal256::from_str("0.8").unwrap(),
+            Decimal256::from_str("0.5").unwrap(),
+            Decimal256::from_str("0.018").unwrap(),
+            PRICE_TIMEFRAME,
+        )
+        .unwrap();
+
+        let max_recursion_deep = BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP + 1;
+        let buffer_part = (config.borrow_ltv_max - config.borrow_ltv_aim)
+            / Decimal256::from_str(&(max_recursion_deep).to_string()).unwrap();
+
+        let update_res = config.set_buffer_part(buffer_part);
         assert!(update_res.is_err());
     }
 }

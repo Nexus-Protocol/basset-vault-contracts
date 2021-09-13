@@ -1,3 +1,4 @@
+use basset_vault::BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP;
 use cosmwasm_std::StdResult;
 use cosmwasm_std::{
     from_binary, to_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
@@ -474,12 +475,10 @@ pub(crate) fn repay_logic(
     repay_action.to_response(&config)
 }
 
-pub(crate) const LOAN_REPAYMENT_MAX_RECURSION_DEEP: u8 = 10;
-
 pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Response> {
     let mut repaying_loan_state = load_repaying_loan_state(deps.storage)?;
     repaying_loan_state.iteration_index += 1;
-    if repaying_loan_state.iteration_index >= LOAN_REPAYMENT_MAX_RECURSION_DEEP {
+    if repaying_loan_state.iteration_index >= BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP {
         if repaying_loan_state.repayed_something {
             return Ok(Response::default());
         } else {
