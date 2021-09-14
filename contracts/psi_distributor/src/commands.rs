@@ -1,9 +1,13 @@
 use cosmwasm_std::{
-    to_binary, CosmosMsg, DepsMut, Empty, Env, Response, StdError, SubMsg, WasmMsg,
+    to_binary, BlockInfo, CosmosMsg, DepsMut, Empty, Env, MessageInfo, Response, StdError, SubMsg,
+    WasmMsg,
 };
 
 use crate::error::ContractError;
-use crate::state::{load_aim_ltv, load_config, store_config};
+use crate::state::{
+    load_aim_ltv, load_config, load_gov_update, remove_gov_update, save_config, save_gov_update,
+    GovernanceUpdateState,
+};
 use crate::{state::Config, ContractResult};
 use basset_vault::nasset_token_rewards::{
     AnyoneMsg as NAssetTokenRewardsAnyoneMsg, ExecuteMsg as NAssetTokenRewardsExecuteMsg,
@@ -132,7 +136,6 @@ impl RewardsDistribution {
 pub fn update_config(
     deps: DepsMut,
     mut current_config: Config,
-    governance_contract_addr: Option<String>,
     nasset_token_rewards_contract_addr: Option<String>,
     community_pool_contract_addr: Option<String>,
     basset_vault_strategy_contract_addr: Option<String>,
@@ -140,10 +143,6 @@ pub fn update_config(
     fee_rate: Option<Decimal256>,
     tax_rate: Option<Decimal256>,
 ) -> ContractResult<Response> {
-    if let Some(ref governance_contract_addr) = governance_contract_addr {
-        current_config.governance_contract = deps.api.addr_validate(governance_contract_addr)?;
-    }
-
     if let Some(ref nasset_token_rewards_contract_addr) = nasset_token_rewards_contract_addr {
         current_config.nasset_token_rewards_contract =
             deps.api.addr_validate(nasset_token_rewards_contract_addr)?;
@@ -176,8 +175,48 @@ pub fn update_config(
         current_config.tax_rate = tax_rate;
     }
 
-    store_config(deps.storage, &current_config)?;
+    save_config(deps.storage, &current_config)?;
     Ok(Response::default())
+}
+
+pub fn update_governance_addr(
+    deps: DepsMut,
+    env: Env,
+    gov_addr: String,
+    seconds_to_wait_for_accept_gov_tx: u64,
+) -> ContractResult<Response> {
+    let current_time = get_time(&env.block);
+    let gov_update = GovernanceUpdateState {
+        new_governance_contract_addr: deps.api.addr_validate(&gov_addr)?,
+        wait_approve_until: current_time + seconds_to_wait_for_accept_gov_tx,
+    };
+    save_gov_update(deps.storage, &gov_update)?;
+    Ok(Response::default())
+}
+
+pub fn accept_governance(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+    let gov_update = load_gov_update(deps.storage)?;
+    let current_time = get_time(&env.block);
+
+    if gov_update.wait_approve_until < current_time {
+        return Err(StdError::generic_err("too late to accept governance owning").into());
+    }
+
+    if info.sender != gov_update.new_governance_contract_addr {
+        return Err(ContractError::Unauthorized);
+    }
+
+    let new_gov_add_str = gov_update.new_governance_contract_addr.to_string();
+
+    let mut config = load_config(deps.storage)?;
+    config.governance_contract = gov_update.new_governance_contract_addr;
+    save_config(deps.storage, &config)?;
+    remove_gov_update(deps.storage);
+
+    Ok(Response::default().add_attributes(vec![
+        ("action", "change_governance_contract"),
+        ("new_address", &new_gov_add_str),
+    ]))
 }
 
 fn validate_field_to_one(
@@ -192,6 +231,10 @@ fn validate_field_to_one(
     }
 
     return Ok(());
+}
+
+fn get_time(block: &BlockInfo) -> u64 {
+    block.time.seconds()
 }
 
 #[cfg(test)]

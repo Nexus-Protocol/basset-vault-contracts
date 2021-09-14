@@ -7,7 +7,7 @@ use crate::{
     commands,
     error::ContractError,
     queries,
-    state::{load_config, store_config, Config},
+    state::{load_config, save_config, Config},
     ContractResult,
 };
 use basset_vault::psi_distributor::{
@@ -42,7 +42,7 @@ pub fn instantiate(
         fee_rate: msg.fee_rate,
         tax_rate: msg.tax_rate,
     };
-    store_config(deps.storage, &config)?;
+    save_config(deps.storage, &config)?;
 
     Ok(Response::default())
 }
@@ -57,9 +57,10 @@ pub fn execute(
     match msg {
         ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
             AnyoneMsg::DistributeRewards {} => commands::distribute_rewards(deps, env),
+            AnyoneMsg::AcceptGovernance {} => commands::accept_governance(deps, env, info),
         },
 
-        ExecuteMsg::GovernanceMsg { governance_msg } => {
+        ExecuteMsg::Governance { governance_msg } => {
             let config = load_config(deps.storage)?;
             if info.sender != config.governance_contract {
                 return Err(ContractError::Unauthorized {});
@@ -67,7 +68,6 @@ pub fn execute(
 
             match governance_msg {
                 GovernanceMsg::UpdateConfig {
-                    governance_contract_addr,
                     nasset_token_rewards_contract_addr,
                     community_pool_contract_addr,
                     basset_vault_strategy_contract_addr,
@@ -77,13 +77,22 @@ pub fn execute(
                 } => commands::update_config(
                     deps,
                     config,
-                    governance_contract_addr,
                     nasset_token_rewards_contract_addr,
                     community_pool_contract_addr,
                     basset_vault_strategy_contract_addr,
                     manual_ltv,
                     fee_rate,
                     tax_rate,
+                ),
+
+                GovernanceMsg::UpdateGovernanceContract {
+                    gov_addr,
+                    seconds_to_wait_for_accept_gov_tx,
+                } => commands::update_governance_addr(
+                    deps,
+                    env,
+                    gov_addr,
+                    seconds_to_wait_for_accept_gov_tx,
                 ),
             }
         }

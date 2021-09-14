@@ -19,26 +19,31 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     Anyone { anyone_msg: AnyoneMsg },
-    GovernanceMsg { governance_msg: GovernanceMsg },
+    Governance { governance_msg: GovernanceMsg },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AnyoneMsg {
     DistributeRewards {},
+    AcceptGovernance {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum GovernanceMsg {
     UpdateConfig {
-        governance_contract_addr: Option<String>,
         nasset_token_rewards_contract_addr: Option<String>,
         community_pool_contract_addr: Option<String>,
         basset_vault_strategy_contract_addr: Option<String>,
         manual_ltv: Option<Decimal256>,
         fee_rate: Option<Decimal256>,
         tax_rate: Option<Decimal256>,
+    },
+    UpdateGovernanceContract {
+        gov_addr: String,
+        //how long to wait for 'AcceptGovernance' transaction
+        seconds_to_wait_for_accept_gov_tx: u64,
     },
 }
 
