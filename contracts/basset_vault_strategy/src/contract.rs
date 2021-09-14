@@ -10,7 +10,7 @@ use crate::{
 };
 use crate::{state::Config, ContractResult};
 use basset_vault::basset_vault_strategy::{
-    ExecuteMsg, GovernanceMsg, InstantiateMsg, MigrateMsg, QueryMsg,
+    AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, MigrateMsg, QueryMsg,
 };
 
 #[entry_point]
@@ -41,12 +41,16 @@ pub fn instantiate(
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> ContractResult<Response> {
     match msg {
-        ExecuteMsg::GovernanceMsg { governance_msg } => {
+        ExecuteMsg::Anyone { anyone_msg } => match anyone_msg {
+            AnyoneMsg::AcceptGovernance {} => commands::accept_governance(deps, env, info),
+        },
+
+        ExecuteMsg::Governance { governance_msg } => {
             let config = load_config(deps.storage)?;
             if info.sender != config.governance_contract {
                 return Err(ContractError::Unauthorized {});
@@ -54,7 +58,6 @@ pub fn execute(
 
             match governance_msg {
                 GovernanceMsg::UpdateConfig {
-                    governance_addr,
                     oracle_addr,
                     basset_token_addr,
                     stable_denom,
@@ -67,7 +70,6 @@ pub fn execute(
                 } => commands::update_config(
                     deps,
                     config,
-                    governance_addr,
                     oracle_addr,
                     basset_token_addr,
                     stable_denom,
@@ -77,6 +79,16 @@ pub fn execute(
                     basset_max_ltv,
                     buffer_part,
                     price_timeframe,
+                ),
+
+                GovernanceMsg::UpdateGovernanceContract {
+                    gov_addr,
+                    seconds_to_wait_for_accept_gov_tx,
+                } => commands::update_governance_addr(
+                    deps,
+                    env,
+                    gov_addr,
+                    seconds_to_wait_for_accept_gov_tx,
                 ),
             }
         }

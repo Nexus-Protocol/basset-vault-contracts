@@ -21,14 +21,20 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    GovernanceMsg { governance_msg: GovernanceMsg },
+    Governance { governance_msg: GovernanceMsg },
+    Anyone { anyone_msg: AnyoneMsg },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AnyoneMsg {
+    AcceptGovernance {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum GovernanceMsg {
     UpdateConfig {
-        governance_addr: Option<String>,
         oracle_addr: Option<String>,
         basset_token_addr: Option<String>,
         stable_denom: Option<String>,
@@ -38,6 +44,11 @@ pub enum GovernanceMsg {
         basset_max_ltv: Option<Decimal256>,
         buffer_part: Option<Decimal256>,
         price_timeframe: Option<u64>,
+    },
+    UpdateGovernanceContract {
+        gov_addr: String,
+        //how long to wait for 'AcceptGovernance' transaction
+        seconds_to_wait_for_accept_gov_tx: u64,
     },
 }
 

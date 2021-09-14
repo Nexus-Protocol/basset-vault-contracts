@@ -1,7 +1,11 @@
-use cosmwasm_std::{DepsMut, Response};
+use cosmwasm_std::{BlockInfo, DepsMut, Env, MessageInfo, Response, StdError};
 
 use crate::{
-    state::{save_config, Config},
+    error::ContractError,
+    state::{
+        load_config, load_gov_update, remove_gov_update, save_config, store_gov_update, Config,
+        GovernanceUpdateState,
+    },
     ContractResult,
 };
 use cosmwasm_bignumber::Decimal256;
@@ -10,7 +14,6 @@ use cosmwasm_bignumber::Decimal256;
 pub fn update_config(
     deps: DepsMut,
     mut current_config: Config,
-    governance_addr: Option<String>,
     oracle_addr: Option<String>,
     basset_token_addr: Option<String>,
     stable_denom: Option<String>,
@@ -21,10 +24,6 @@ pub fn update_config(
     buffer_part: Option<Decimal256>,
     price_timeframe: Option<u64>,
 ) -> ContractResult<Response> {
-    if let Some(ref governance_addr) = governance_addr {
-        current_config.governance_contract = deps.api.addr_validate(governance_addr)?;
-    }
-
     if let Some(ref oracle_addr) = oracle_addr {
         current_config.oracle_contract = deps.api.addr_validate(oracle_addr)?;
     }
@@ -57,4 +56,48 @@ pub fn update_config(
 
     save_config(deps.storage, &current_config)?;
     Ok(Response::default())
+}
+
+pub fn update_governance_addr(
+    deps: DepsMut,
+    env: Env,
+    gov_addr: String,
+    seconds_to_wait_for_accept_gov_tx: u64,
+) -> ContractResult<Response> {
+    let current_time = get_time(&env.block);
+    let gov_update = GovernanceUpdateState {
+        new_governance_contract_addr: deps.api.addr_validate(&gov_addr)?,
+        wait_approve_until: current_time + seconds_to_wait_for_accept_gov_tx,
+    };
+    store_gov_update(deps.storage, &gov_update)?;
+    Ok(Response::default())
+}
+
+pub fn accept_governance(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
+    let gov_update = load_gov_update(deps.storage)?;
+    let current_time = get_time(&env.block);
+
+    if gov_update.wait_approve_until < current_time {
+        return Err(StdError::generic_err("too late to accept governance owning").into());
+    }
+
+    if info.sender != gov_update.new_governance_contract_addr {
+        return Err(ContractError::Unauthorized);
+    }
+
+    let new_gov_add_str = gov_update.new_governance_contract_addr.to_string();
+
+    let mut config = load_config(deps.storage)?;
+    config.governance_contract = gov_update.new_governance_contract_addr;
+    save_config(deps.storage, &config)?;
+    remove_gov_update(deps.storage);
+
+    Ok(Response::default().add_attributes(vec![
+        ("action", "change_governance_contract"),
+        ("new_address", &new_gov_add_str),
+    ]))
+}
+
+fn get_time(block: &BlockInfo) -> u64 {
+    block.time.seconds()
 }
