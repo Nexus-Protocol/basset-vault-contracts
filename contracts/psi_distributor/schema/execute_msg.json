@@ -25,10 +25,10 @@
     {
       "type": "object",
       "required": [
-        "governance_msg"
+        "governance"
       ],
       "properties": {
-        "governance_msg": {
+        "governance": {
           "type": "object",
           "required": [
             "governance_msg"
@@ -53,6 +53,18 @@
           ],
           "properties": {
             "distribute_rewards": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "accept_governance"
+          ],
+          "properties": {
+            "accept_governance": {
               "type": "object"
             }
           },
@@ -97,12 +109,6 @@
                     }
                   ]
                 },
-                "governance_contract_addr": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
                 "manual_ltv": {
                   "anyOf": [
                     {
@@ -128,6 +134,32 @@
                       "type": "null"
                     }
                   ]
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "update_governance_contract"
+          ],
+          "properties": {
+            "update_governance_contract": {
+              "type": "object",
+              "required": [
+                "gov_addr",
+                "seconds_to_wait_for_accept_gov_tx"
+              ],
+              "properties": {
+                "gov_addr": {
+                  "type": "string"
+                },
+                "seconds_to_wait_for_accept_gov_tx": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
                 }
               }
             }

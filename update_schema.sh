@@ -4,7 +4,7 @@ cd contracts
 
 for dir in */; do
     cd $dir
-    cargo schema
+    cargo run --example schema
     cd ..
 done
 
