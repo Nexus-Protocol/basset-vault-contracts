@@ -58,6 +58,8 @@ pub fn execute(
             AnyoneMsg::ClaimRewardsForSomeone { address } => {
                 commands::claim_rewards_for_someone(deps, env, address)
             }
+
+            AnyoneMsg::AcceptGovernance {} => commands::accept_governance(deps, env, info),
         },
 
         ExecuteMsg::Token { token_msg } => {
@@ -87,13 +89,21 @@ pub fn execute(
                 GovernanceMsg::UpdateConfig {
                     psi_token_contract_addr,
                     nasset_token_contract_addr,
-                    governance_contract_addr,
                 } => commands::update_config(
                     deps,
                     config,
                     psi_token_contract_addr,
                     nasset_token_contract_addr,
-                    governance_contract_addr,
+                ),
+
+                GovernanceMsg::UpdateGovernanceContract {
+                    gov_addr,
+                    seconds_to_wait_for_accept_gov_tx,
+                } => commands::update_governance_addr(
+                    deps,
+                    env,
+                    gov_addr,
+                    seconds_to_wait_for_accept_gov_tx,
                 ),
             }
         }

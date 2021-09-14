@@ -3,7 +3,7 @@ use cosmwasm_std::{BlockInfo, DepsMut, Env, MessageInfo, Response, StdError};
 use crate::{
     error::ContractError,
     state::{
-        load_config, load_gov_update, remove_gov_update, save_config, store_gov_update, Config,
+        load_config, load_gov_update, remove_gov_update, save_config, save_gov_update, Config,
         GovernanceUpdateState,
     },
     ContractResult,
@@ -69,7 +69,7 @@ pub fn update_governance_addr(
         new_governance_contract_addr: deps.api.addr_validate(&gov_addr)?,
         wait_approve_until: current_time + seconds_to_wait_for_accept_gov_tx,
     };
-    store_gov_update(deps.storage, &gov_update)?;
+    save_gov_update(deps.storage, &gov_update)?;
     Ok(Response::default())
 }
 

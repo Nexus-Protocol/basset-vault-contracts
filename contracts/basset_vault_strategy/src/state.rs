@@ -151,7 +151,7 @@ pub fn load_gov_update(storage: &dyn Storage) -> StdResult<GovernanceUpdateState
     KEY_GOVERNANCE_UPDATE.load(storage)
 }
 
-pub fn store_gov_update(
+pub fn save_gov_update(
     storage: &mut dyn Storage,
     gov_update: &GovernanceUpdateState,
 ) -> StdResult<()> {

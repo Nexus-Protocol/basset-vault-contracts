@@ -5,8 +5,8 @@ use cosmwasm_std::{
 
 use crate::error::ContractError;
 use crate::state::{
-    load_config, load_gov_update, remove_gov_update, save_config,
-    set_nasset_token_rewards_contract, store_gov_update, GovernanceUpdateState,
+    load_config, load_gov_update, remove_gov_update, save_config, save_gov_update,
+    set_nasset_token_rewards_contract, GovernanceUpdateState,
 };
 use crate::ContractResult;
 use basset_vault::nasset_token_config_holder::{
@@ -105,7 +105,7 @@ pub fn update_governance_addr(
         new_governance_contract_addr: deps.api.addr_validate(&gov_addr)?,
         wait_approve_until: current_time + seconds_to_wait_for_accept_gov_tx,
     };
-    store_gov_update(deps.storage, &gov_update)?;
+    save_gov_update(deps.storage, &gov_update)?;
     Ok(Response::default())
 }
 
