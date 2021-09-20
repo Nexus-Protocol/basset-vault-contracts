@@ -110,7 +110,10 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                         admin: None,
                         code_id: child_contracts_info.nasset_token_code_id,
                         msg: to_binary(&NAssetTokenInstantiateMsg {
-                            name: "Nexus bAsset token share representation".to_string(),
+                            name: format!(
+                                "Nexus b{} token share representation",
+                                child_contracts_info.collateral_token_symbol
+                            ),
                             symbol: format!("n{}", child_contracts_info.collateral_token_symbol),
                             decimals: 6,
                             initial_balances: vec![],

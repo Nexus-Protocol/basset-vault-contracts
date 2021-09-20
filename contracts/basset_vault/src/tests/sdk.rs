@@ -194,7 +194,10 @@ impl Sdk {
                     msg: WasmMsg::Instantiate {
                         code_id: init_msg.nasset_t_ci,
                         msg: to_binary(&NAssetTokenInstantiateMsg {
-                            name: "nexus bAsset token share representation".to_string(),
+                            name: format!(
+                                "Nexus b{} token share representation",
+                                COLLATERAL_TOKEN_SYMBOL
+                            ),
                             symbol: format!("n{}", COLLATERAL_TOKEN_SYMBOL),
                             decimals: 6,
                             initial_balances: vec![],
