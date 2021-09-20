@@ -1,6 +1,4 @@
-use crate::{
-    commands::LOAN_REPAYMENT_MAX_RECURSION_DEEP, state::load_repaying_loan_state, SubmsgIds,
-};
+use crate::{state::load_repaying_loan_state, SubmsgIds};
 
 use super::sdk::Sdk;
 use crate::tests::sdk::{ANCHOR_MARKET_CONTRACT, ATERRA_TOKEN, STABLE_DENOM};
@@ -9,6 +7,7 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use basset_vault::{
     basset_vault_strategy::BorrowerActionResponse,
     querier::{AnchorMarketCw20Msg, AnchorMarketMsg},
+    BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP,
 };
 use cosmwasm_std::{to_binary, Coin, ReplyOn, Response, SubMsg, Uint128, WasmMsg};
 use cw20::Cw20ExecuteMsg;
@@ -284,7 +283,7 @@ fn limited_recursion_depth_all_errors() {
 
     // -= ANCHOR REDEEM FAILED =-
     let start_from = 1;
-    for repaying_index in start_from..LOAN_REPAYMENT_MAX_RECURSION_DEEP {
+    for repaying_index in start_from..BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP {
         let response = sdk.aterra_redeed_failed().unwrap();
         //now contract should repay loan with buffer and try to redeem aterra for that amount
         assert_eq!(
@@ -356,7 +355,7 @@ fn limited_recursion_depth_repayed_something() {
 
     // -= ANCHOR REDEEM FAILED =-
     let start_from = 2;
-    for repaying_index in start_from..LOAN_REPAYMENT_MAX_RECURSION_DEEP {
+    for repaying_index in start_from..BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP {
         let response = sdk.aterra_redeed_failed().unwrap();
         //now contract should repay loan with buffer and try to redeem aterra for that amount
         assert_eq!(
@@ -430,7 +429,7 @@ fn reset_iteration_index() {
 
     // -= ANCHOR REDEEM FAILED =-
     let start_from = 1;
-    for _ in start_from..LOAN_REPAYMENT_MAX_RECURSION_DEEP {
+    for _ in start_from..BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP {
         let response = sdk.aterra_redeed_failed();
         assert!(response.is_ok());
     }
@@ -440,7 +439,7 @@ fn reset_iteration_index() {
     let rapaying_state = load_repaying_loan_state(&sdk.deps.storage).unwrap();
     assert_eq!(
         rapaying_state.iteration_index,
-        LOAN_REPAYMENT_MAX_RECURSION_DEEP - 1
+        BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP - 1
     );
 
     // -= SECOND REPAY =-

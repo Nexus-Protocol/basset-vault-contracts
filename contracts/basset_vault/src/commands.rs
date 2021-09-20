@@ -1,20 +1,11 @@
-use cosmwasm_std::{
-    from_binary, to_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, SubMsg, Uint128, WasmMsg,
-};
-use cosmwasm_std::{BlockInfo, StdResult};
-
-use crate::state::{
-    load_gov_update, load_last_rewards_claiming_height, remove_gov_update, store_gov_update,
-    Config, GovernanceUpdateState,
-};
 use crate::{
     commands,
     state::{
-        load_aim_buffer_size, load_config, load_repaying_loan_state,
-        load_stable_balance_before_selling_anc, store_aim_buffer_size, store_config,
-        store_last_rewards_claiming_height, store_repaying_loan_state,
-        store_stable_balance_before_selling_anc, RepayingLoanState,
+        load_aim_buffer_size, load_config, load_gov_update, load_last_rewards_claiming_height,
+        load_repaying_loan_state, load_stable_balance_before_selling_anc, remove_gov_update,
+        store_aim_buffer_size, store_config, store_gov_update, store_last_rewards_claiming_height,
+        store_repaying_loan_state, store_stable_balance_before_selling_anc, Config,
+        GovernanceUpdateState, RepayingLoanState,
     },
     tax_querier::get_tax_info,
     utils::{
@@ -34,8 +25,13 @@ use basset_vault::{
     },
     terraswap::{Asset, AssetInfo},
     terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
+    BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP,
 };
 use cosmwasm_bignumber::{Decimal256, Uint256};
+use cosmwasm_std::{
+    from_binary, to_binary, Addr, BlockInfo, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
+};
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 
 pub fn update_config(
@@ -509,12 +505,10 @@ pub(crate) fn repay_logic(
     repay_action.to_response(&config)
 }
 
-pub(crate) const LOAN_REPAYMENT_MAX_RECURSION_DEEP: u8 = 10;
-
 pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Response> {
     let mut repaying_loan_state = load_repaying_loan_state(deps.storage)?;
     repaying_loan_state.iteration_index += 1;
-    if repaying_loan_state.iteration_index >= LOAN_REPAYMENT_MAX_RECURSION_DEEP {
+    if repaying_loan_state.iteration_index >= BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP {
         if repaying_loan_state.repayed_something {
             return Ok(Response::default());
         } else {
