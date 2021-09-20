@@ -291,6 +291,8 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             AnyoneMsg::HonestWork {} => commands::claim_anc_rewards(deps, env),
 
             AnyoneMsg::ClaimRemainder {} => commands::claim_remainded_stables(deps.as_ref(), env),
+
+            AnyoneMsg::AcceptGovernance {} => commands::accept_governance(deps, env, info),
         },
 
         ExecuteMsg::Yourself { yourself_msg } => {
@@ -312,7 +314,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 
             match governance_msg {
                 GovernanceMsg::UpdateConfig {
-                    gov_addr,
                     psi_distributor_addr,
                     anchor_overseer_contract_addr,
                     anchor_market_contract_addr,
@@ -325,7 +326,6 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                 } => commands::update_config(
                     deps,
                     config,
-                    gov_addr,
                     psi_distributor_addr,
                     anchor_overseer_contract_addr,
                     anchor_market_contract_addr,
@@ -335,6 +335,16 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                     basset_vault_strategy_contract_addr,
                     claiming_rewards_delay,
                     over_loan_balance_value,
+                ),
+
+                GovernanceMsg::UpdateGovernanceContract {
+                    gov_addr,
+                    seconds_to_wait_for_accept_gov_tx,
+                } => commands::update_governance_addr(
+                    deps,
+                    env,
+                    gov_addr,
+                    seconds_to_wait_for_accept_gov_tx,
                 ),
             }
         }

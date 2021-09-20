@@ -26,6 +26,7 @@ pub enum AnyoneMsg {
     ClaimRewards { recipient: Option<String> },
     //Claim rewards for some address, rewards will be sent to it, not to sender!
     ClaimRewardsForSomeone { address: String },
+    AcceptGovernance {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -34,7 +35,11 @@ pub enum GovernanceMsg {
     UpdateConfig {
         psi_token_contract_addr: Option<String>,
         nasset_token_contract_addr: Option<String>,
-        governance_contract_addr: Option<String>,
+    },
+    UpdateGovernanceContract {
+        gov_addr: String,
+        //how long to wait for 'AcceptGovernance' transaction
+        seconds_to_wait_for_accept_gov_tx: u64,
     },
 }
 

@@ -16,14 +16,36 @@ pub struct Config {
     pub tax_rate: Decimal256,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct GovernanceUpdateState {
+    pub new_governance_contract_addr: Addr,
+    pub wait_approve_until: u64,
+}
+
 static KEY_CONFIG: Item<Config> = Item::new("config");
+static KEY_GOVERNANCE_UPDATE: Item<GovernanceUpdateState> = Item::new("gov_update");
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
     KEY_CONFIG.load(storage)
 }
 
-pub fn store_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()> {
+pub fn save_config(storage: &mut dyn Storage, config: &Config) -> StdResult<()> {
     KEY_CONFIG.save(storage, config)
+}
+
+pub fn load_gov_update(storage: &dyn Storage) -> StdResult<GovernanceUpdateState> {
+    KEY_GOVERNANCE_UPDATE.load(storage)
+}
+
+pub fn save_gov_update(
+    storage: &mut dyn Storage,
+    gov_update: &GovernanceUpdateState,
+) -> StdResult<()> {
+    KEY_GOVERNANCE_UPDATE.save(storage, gov_update)
+}
+
+pub fn remove_gov_update(storage: &mut dyn Storage) -> () {
+    KEY_GOVERNANCE_UPDATE.remove(storage)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

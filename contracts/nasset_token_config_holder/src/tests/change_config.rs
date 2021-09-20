@@ -1,9 +1,9 @@
 use crate::error::ContractError;
 use crate::state::load_config;
 
+use basset_vault::nasset_token_config_holder::{ExecuteMsg, GovernanceMsg};
 use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
-use basset_vault::nasset_token_config_holder::{ExecuteMsg, GovernanceMsg};
 
 #[test]
 fn fail_to_change_config_if_sender_is_not_governance() {
@@ -22,12 +22,10 @@ fn fail_to_change_config_if_sender_is_not_governance() {
     // ====================================
 
     let new_nasset_token_rewards_contract_addr = Some("addr9999".to_string());
-    let new_governance_contract_addr = Some("addr9998".to_string());
 
     let change_config_msg = ExecuteMsg::Governance {
         governance_msg: GovernanceMsg::UpdateConfig {
             nasset_token_rewards_contract_addr: new_nasset_token_rewards_contract_addr,
-            governance_contract_addr: new_governance_contract_addr,
         },
     };
 
@@ -56,14 +54,12 @@ fn success_to_change_config_if_sender_governance() {
     // ====================================
 
     let new_nasset_token_rewards_contract_addr = "addr9999".to_string();
-    let new_governance_contract_addr = "addr9998".to_string();
 
     let change_config_msg = ExecuteMsg::Governance {
         governance_msg: GovernanceMsg::UpdateConfig {
             nasset_token_rewards_contract_addr: Some(
                 new_nasset_token_rewards_contract_addr.clone(),
             ),
-            governance_contract_addr: Some(new_governance_contract_addr.clone()),
         },
     };
 
@@ -72,7 +68,6 @@ fn success_to_change_config_if_sender_governance() {
     crate::contract::execute(deps.as_mut(), env, info, change_config_msg).unwrap();
 
     let config = load_config(&deps.storage).unwrap();
-    assert_eq!(new_governance_contract_addr, config.governance_contract);
     assert_eq!(
         new_nasset_token_rewards_contract_addr,
         config.nasset_token_rewards_contract

@@ -21,6 +21,7 @@ pub enum AnyoneMsg {
     SetTokenRewardsContract {
         nasset_token_rewards_contract_addr: String,
     },
+    AcceptGovernance {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -28,7 +29,11 @@ pub enum AnyoneMsg {
 pub enum GovernanceMsg {
     UpdateConfig {
         nasset_token_rewards_contract_addr: Option<String>,
-        governance_contract_addr: Option<String>,
+    },
+    UpdateGovernanceContract {
+        gov_addr: String,
+        //how long to wait for 'AcceptGovernance' transaction
+        seconds_to_wait_for_accept_gov_tx: u64,
     },
 }
 

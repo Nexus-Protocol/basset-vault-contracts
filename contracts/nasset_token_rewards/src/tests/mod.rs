@@ -1,4 +1,5 @@
 mod change_config;
+mod change_governance_addr;
 mod claim_rewards;
 mod instantiate;
 mod sdk;

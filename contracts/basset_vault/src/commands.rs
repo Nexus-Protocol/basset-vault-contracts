@@ -1,11 +1,13 @@
-use cosmwasm_std::StdResult;
 use cosmwasm_std::{
     from_binary, to_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
     StdError, SubMsg, Uint128, WasmMsg,
 };
+use cosmwasm_std::{BlockInfo, StdResult};
 
-use crate::state::load_last_rewards_claiming_height;
-use crate::state::Config;
+use crate::state::{
+    load_gov_update, load_last_rewards_claiming_height, remove_gov_update, store_gov_update,
+    Config, GovernanceUpdateState,
+};
 use crate::{
     commands,
     state::{
@@ -39,7 +41,6 @@ use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 pub fn update_config(
     deps: DepsMut,
     mut current_config: Config,
-    gov_addr: Option<String>,
     psi_distributor_addr: Option<String>,
     anchor_overseer_contract_addr: Option<String>,
     anchor_market_contract_addr: Option<String>,
@@ -50,10 +51,6 @@ pub fn update_config(
     claiming_rewards_delay: Option<u64>,
     over_loan_balance_value: Option<Decimal256>,
 ) -> StdResult<Response> {
-    if let Some(ref gov_addr) = gov_addr {
-        current_config.governance_contract = deps.api.addr_validate(gov_addr)?;
-    }
-
     if let Some(ref psi_distributor_addr) = psi_distributor_addr {
         current_config.psi_distributor = deps.api.addr_validate(psi_distributor_addr)?;
     }
@@ -100,6 +97,48 @@ pub fn update_config(
 
     store_config(deps.storage, &current_config)?;
     Ok(Response::default())
+}
+
+pub fn update_governance_addr(
+    deps: DepsMut,
+    env: Env,
+    gov_addr: String,
+    seconds_to_wait_for_accept_gov_tx: u64,
+) -> StdResult<Response> {
+    let current_time = get_time(&env.block);
+    let gov_update = GovernanceUpdateState {
+        new_governance_contract_addr: deps.api.addr_validate(&gov_addr)?,
+        wait_approve_until: current_time + seconds_to_wait_for_accept_gov_tx,
+    };
+    store_gov_update(deps.storage, &gov_update)?;
+    Ok(Response::default())
+}
+
+pub fn accept_governance(deps: DepsMut, env: Env, info: MessageInfo) -> StdResult<Response> {
+    let gov_update = load_gov_update(deps.storage)?;
+    let current_time = get_time(&env.block);
+
+    if gov_update.wait_approve_until < current_time {
+        return Err(StdError::generic_err(
+            "too late to accept governance owning",
+        ));
+    }
+
+    if info.sender != gov_update.new_governance_contract_addr {
+        return Err(StdError::generic_err("unauthorized"));
+    }
+
+    let new_gov_add_str = gov_update.new_governance_contract_addr.to_string();
+
+    let mut config = load_config(deps.storage)?;
+    config.governance_contract = gov_update.new_governance_contract_addr;
+    store_config(deps.storage, &config)?;
+    remove_gov_update(deps.storage);
+
+    Ok(Response::default().add_attributes(vec![
+        ("action", "change_governance_contract"),
+        ("new_address", &new_gov_add_str),
+    ]))
 }
 
 pub fn receive_cw20(
@@ -690,4 +729,8 @@ pub fn buy_psi_on_remainded_stable_coins(
                 ("bying_psi", &stable_coin_to_buy_psi.to_string()),
             ]))
     }
+}
+
+fn get_time(block: &BlockInfo) -> u64 {
+    block.time.seconds()
 }

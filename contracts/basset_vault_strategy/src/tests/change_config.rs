@@ -1,11 +1,11 @@
 use crate::error::ContractError;
 use crate::state::load_config;
 
+use basset_vault::basset_vault_strategy::{ExecuteMsg, GovernanceMsg};
 use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
 use std::str::FromStr;
-use basset_vault::basset_vault_strategy::{ExecuteMsg, GovernanceMsg};
 
 #[test]
 fn fail_to_change_config_if_sender_is_not_governance() {
@@ -37,7 +37,6 @@ fn fail_to_change_config_if_sender_is_not_governance() {
     let new_oracle_addr = Some("addr9999".to_string());
     let new_basset_token_addr = Some("addr9998".to_string());
     let new_stable_denom = Some("addr9997".to_string());
-    let new_governance_addr = Some("addr9996".to_string());
     let new_borrow_ltv_max = Some(Decimal256::from_str("0.6").unwrap());
     let new_borrow_ltv_min = Some(Decimal256::from_str("0.4").unwrap());
     let new_borrow_ltv_aim = Some(Decimal256::from_str("0.5").unwrap());
@@ -45,9 +44,8 @@ fn fail_to_change_config_if_sender_is_not_governance() {
     let new_buffer_part = Some(Decimal256::from_str("0.99").unwrap());
     let new_price_timeframe = Some(100);
 
-    let change_config_msg = ExecuteMsg::GovernanceMsg {
+    let change_config_msg = ExecuteMsg::Governance {
         governance_msg: GovernanceMsg::UpdateConfig {
-            governance_addr: new_governance_addr,
             oracle_addr: new_oracle_addr,
             basset_token_addr: new_basset_token_addr,
             stable_denom: new_stable_denom,
@@ -98,7 +96,6 @@ fn success_to_change_config_if_sender_governance() {
     let new_oracle_addr = "addr9999".to_string();
     let new_basset_token_addr = "addr9998".to_string();
     let new_stable_denom = "addr9997".to_string();
-    let new_governance_addr = "addr9996".to_string();
     let new_borrow_ltv_max = Decimal256::from_str("0.6").unwrap();
     let new_borrow_ltv_min = Decimal256::from_str("0.4").unwrap();
     let new_borrow_ltv_aim = Decimal256::from_str("0.5").unwrap();
@@ -106,9 +103,8 @@ fn success_to_change_config_if_sender_governance() {
     let new_buffer_part = Decimal256::from_str("0.99").unwrap();
     let new_price_timeframe = 100;
 
-    let change_config_msg = ExecuteMsg::GovernanceMsg {
+    let change_config_msg = ExecuteMsg::Governance {
         governance_msg: GovernanceMsg::UpdateConfig {
-            governance_addr: Some(new_governance_addr.clone()),
             oracle_addr: Some(new_oracle_addr.clone()),
             basset_token_addr: Some(new_basset_token_addr.clone()),
             stable_denom: Some(new_stable_denom.clone()),
@@ -126,7 +122,6 @@ fn success_to_change_config_if_sender_governance() {
     crate::contract::execute(deps.as_mut(), env, info, change_config_msg).unwrap();
 
     let config = load_config(&deps.storage).unwrap();
-    assert_eq!(new_governance_addr, config.governance_contract);
     assert_eq!(new_oracle_addr, config.oracle_contract);
     assert_eq!(new_basset_token_addr, config.basset_token);
     assert_eq!(new_stable_denom, config.stable_denom);

@@ -24,8 +24,15 @@ pub struct Holder {
     pub pending_rewards: Decimal,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct GovernanceUpdateState {
+    pub new_governance_contract_addr: Addr,
+    pub wait_approve_until: u64,
+}
+
 static KEY_CONFIG: Item<Config> = Item::new("config");
 static KEY_STATE: Item<State> = Item::new("state");
+static KEY_GOVERNANCE_UPDATE: Item<GovernanceUpdateState> = Item::new("gov_update");
 pub(crate) static HOLDERS: Map<&Addr, Holder> = Map::new("state");
 
 pub fn load_state(storage: &dyn Storage) -> StdResult<State> {
@@ -52,4 +59,19 @@ pub fn load_holder(storage: &dyn Storage, addr: &Addr) -> StdResult<Holder> {
 
 pub fn save_holder(storage: &mut dyn Storage, addr: &Addr, holder: &Holder) -> StdResult<()> {
     HOLDERS.save(storage, addr, holder)
+}
+
+pub fn load_gov_update(storage: &dyn Storage) -> StdResult<GovernanceUpdateState> {
+    KEY_GOVERNANCE_UPDATE.load(storage)
+}
+
+pub fn save_gov_update(
+    storage: &mut dyn Storage,
+    gov_update: &GovernanceUpdateState,
+) -> StdResult<()> {
+    KEY_GOVERNANCE_UPDATE.save(storage, gov_update)
+}
+
+pub fn remove_gov_update(storage: &mut dyn Storage) -> () {
+    KEY_GOVERNANCE_UPDATE.remove(storage)
 }

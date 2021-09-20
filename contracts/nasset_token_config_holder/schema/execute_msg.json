@@ -66,6 +66,18 @@
             }
           },
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "accept_governance"
+          ],
+          "properties": {
+            "accept_governance": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },
@@ -80,17 +92,37 @@
             "update_config": {
               "type": "object",
               "properties": {
-                "governance_contract_addr": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
                 "nasset_token_rewards_contract_addr": {
                   "type": [
                     "string",
                     "null"
                   ]
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "update_governance_contract"
+          ],
+          "properties": {
+            "update_governance_contract": {
+              "type": "object",
+              "required": [
+                "gov_addr",
+                "seconds_to_wait_for_accept_gov_tx"
+              ],
+              "properties": {
+                "gov_addr": {
+                  "type": "string"
+                },
+                "seconds_to_wait_for_accept_gov_tx": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
                 }
               }
             }

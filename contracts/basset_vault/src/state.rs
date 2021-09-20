@@ -45,6 +45,12 @@ pub struct ChildContractsInfo {
     pub tax_rate: Decimal256,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct GovernanceUpdateState {
+    pub new_governance_contract_addr: Addr,
+    pub wait_approve_until: u64,
+}
+
 static KEY_CONFIG: Item<Config> = Item::new("config");
 static KEY_REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
 static KEY_AIM_BUFFER_SIZE: Item<Uint256> = Item::new("aim_buf_size");
@@ -54,6 +60,8 @@ static KEY_LAST_REWARDS_CLAIMING_HEIGHT: Item<u64> = Item::new("last_rewards_cla
 //need that only for instantiating
 static KEY_CHILD_CONTRACTS_INFO: Item<ChildContractsInfo> = Item::new("child_contracts_code_id");
 static KEY_NASSET_TOKEN_CONFIG_HOLDER: Item<Addr> = Item::new("nasset_token_config_holder");
+
+static KEY_GOVERNANCE_UPDATE: Item<GovernanceUpdateState> = Item::new("gov_update");
 
 pub fn load_nasset_token_config_holder(storage: &dyn Storage) -> StdResult<Addr> {
     KEY_NASSET_TOKEN_CONFIG_HOLDER.load(storage)
@@ -152,4 +160,19 @@ pub fn store_last_rewards_claiming_height(
     height: &u64,
 ) -> StdResult<()> {
     KEY_LAST_REWARDS_CLAIMING_HEIGHT.save(storage, height)
+}
+
+pub fn load_gov_update(storage: &dyn Storage) -> StdResult<GovernanceUpdateState> {
+    KEY_GOVERNANCE_UPDATE.load(storage)
+}
+
+pub fn store_gov_update(
+    storage: &mut dyn Storage,
+    gov_update: &GovernanceUpdateState,
+) -> StdResult<()> {
+    KEY_GOVERNANCE_UPDATE.save(storage, gov_update)
+}
+
+pub fn remove_gov_update(storage: &mut dyn Storage) -> () {
+    KEY_GOVERNANCE_UPDATE.remove(storage)
 }

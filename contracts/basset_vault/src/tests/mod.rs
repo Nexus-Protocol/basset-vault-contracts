@@ -1,6 +1,7 @@
 mod action_with_profit;
 mod after_borrow_action;
 mod change_config;
+mod change_governance_addr;
 mod deposit_basset;
 mod distribute_rewards;
 mod instantiate;

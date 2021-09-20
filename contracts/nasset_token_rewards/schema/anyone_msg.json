@@ -53,6 +53,18 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "accept_governance"
+      ],
+      "properties": {
+        "accept_governance": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     }
   ]
 }

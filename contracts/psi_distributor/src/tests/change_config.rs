@@ -15,9 +15,8 @@ use std::str::FromStr;
 fn fail_to_change_config_if_sender_is_not_governance() {
     let mut sdk = Sdk::init();
 
-    let change_config_msg = ExecuteMsg::GovernanceMsg {
+    let change_config_msg = ExecuteMsg::Governance {
         governance_msg: basset_vault::psi_distributor::GovernanceMsg::UpdateConfig {
-            governance_contract_addr: Some("addr9997".to_string()),
             nasset_token_rewards_contract_addr: None,
             community_pool_contract_addr: None,
             basset_vault_strategy_contract_addr: None,
@@ -38,7 +37,6 @@ fn fail_to_change_config_if_sender_is_not_governance() {
 fn success_to_change_config_if_sender_governance() {
     let mut sdk = Sdk::init();
 
-    let new_governance_contract_addr = "addr9997".to_string();
     let new_nasset_token_rewards_contract_addr = "addr9996".to_string();
     let new_basset_vault_strategy_contract_addr = "addr9995".to_string();
     let new_community_pool_contract_addr = "addr9995".to_string();
@@ -46,9 +44,8 @@ fn success_to_change_config_if_sender_governance() {
     let new_fee_rate = Decimal256::from_str("0.77").unwrap();
     let new_tax_rate = Decimal256::from_str("0.9798").unwrap();
 
-    let change_config_msg = ExecuteMsg::GovernanceMsg {
+    let change_config_msg = ExecuteMsg::Governance {
         governance_msg: GovernanceMsg::UpdateConfig {
-            governance_contract_addr: Some(new_governance_contract_addr.clone()),
             nasset_token_rewards_contract_addr: Some(
                 new_nasset_token_rewards_contract_addr.clone(),
             ),
@@ -67,7 +64,6 @@ fn success_to_change_config_if_sender_governance() {
     crate::contract::execute(sdk.deps.as_mut(), env, info, change_config_msg).unwrap();
 
     let config = load_config(&sdk.deps.storage).unwrap();
-    assert_eq!(new_governance_contract_addr, config.governance_contract);
     assert_eq!(
         new_nasset_token_rewards_contract_addr,
         config.nasset_token_rewards_contract
@@ -89,7 +85,6 @@ fn success_to_change_config_if_sender_governance() {
 fn wrong_value_in_change_config() {
     let mut sdk = Sdk::init();
 
-    let new_governance_contract_addr = "addr9997".to_string();
     let new_nasset_token_rewards_contract_addr = "addr9996".to_string();
     let new_basset_vault_strategy_contract_addr = "addr9995".to_string();
     let new_community_pool_contract_addr = "addr9995".to_string();
@@ -99,9 +94,8 @@ fn wrong_value_in_change_config() {
 
     {
         let info = mock_info(GOVERNANCE_CONTRACT_ADDR, &[]);
-        let change_config_msg = ExecuteMsg::GovernanceMsg {
+        let change_config_msg = ExecuteMsg::Governance {
             governance_msg: GovernanceMsg::UpdateConfig {
-                governance_contract_addr: Some(new_governance_contract_addr.clone()),
                 nasset_token_rewards_contract_addr: Some(
                     new_nasset_token_rewards_contract_addr.clone(),
                 ),
@@ -127,9 +121,8 @@ fn wrong_value_in_change_config() {
 
     {
         let info = mock_info(GOVERNANCE_CONTRACT_ADDR, &[]);
-        let change_config_msg = ExecuteMsg::GovernanceMsg {
+        let change_config_msg = ExecuteMsg::Governance {
             governance_msg: GovernanceMsg::UpdateConfig {
-                governance_contract_addr: Some(new_governance_contract_addr.clone()),
                 nasset_token_rewards_contract_addr: Some(
                     new_nasset_token_rewards_contract_addr.clone(),
                 ),
@@ -155,9 +148,8 @@ fn wrong_value_in_change_config() {
 
     {
         let info = mock_info(GOVERNANCE_CONTRACT_ADDR, &[]);
-        let change_config_msg = ExecuteMsg::GovernanceMsg {
+        let change_config_msg = ExecuteMsg::Governance {
             governance_msg: GovernanceMsg::UpdateConfig {
-                governance_contract_addr: Some(new_governance_contract_addr.clone()),
                 nasset_token_rewards_contract_addr: Some(
                     new_nasset_token_rewards_contract_addr.clone(),
                 ),
