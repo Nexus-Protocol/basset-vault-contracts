@@ -7,6 +7,10 @@
 5. [nAsset token config holder](#nasset-token-config-holder)
 6. [nAsset token rewards](#nasset-token-rewards)
 
+## Halborn audit report
+
+[link](https://github.com/HalbornSecurity/PublicReports/blob/master/CosmWasm%20Smart%20Contract%20Audits/Nexus_Protocol_CosmWasm_Smart_Contract_Security_Audit_Report_Halborn%20v1.1.pdf)
+
 ## bAsset vault
 
 ### v1
