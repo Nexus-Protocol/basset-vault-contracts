@@ -74,7 +74,7 @@ pub fn instantiate(
 
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
         CosmosMsg::Wasm(WasmMsg::Instantiate {
-            admin: None,
+            admin: Some(config.governance_contract.to_string()),
             code_id: msg.nasset_t_ch_ci,
             msg: to_binary(&NAssetTokenConfigHolderInstantiateMsg {
                 governance_contract_addr: msg.gov_addr,
@@ -103,11 +103,12 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                 &Addr::unchecked(nasset_token_config_holder),
             )?;
             let child_contracts_info = load_child_contracts_info(deps.as_ref().storage)?;
+            let config = load_config(deps.storage)?;
 
             Ok(Response::new()
                 .add_submessage(SubMsg::reply_on_success(
                     CosmosMsg::Wasm(WasmMsg::Instantiate {
-                        admin: None,
+                        admin: Some(config.governance_contract.to_string()),
                         code_id: child_contracts_info.nasset_token_code_id,
                         msg: to_binary(&NAssetTokenInstantiateMsg {
                             name: format!(
@@ -153,7 +154,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
             Ok(Response::new()
                 .add_submessage(SubMsg::reply_on_success(
                     CosmosMsg::Wasm(WasmMsg::Instantiate {
-                        admin: None,
+                        admin: Some(config.governance_contract.to_string()),
                         code_id: child_contracts_info.nasset_token_rewards_code_id,
                         msg: to_binary(&NAssetTokenRewardsInstantiateMsg {
                             psi_token_addr: config.psi_token.to_string(),
@@ -187,7 +188,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
             Ok(Response::new()
                 .add_submessage(SubMsg::reply_on_success(
                     CosmosMsg::Wasm(WasmMsg::Instantiate {
-                        admin: None,
+                        admin: Some(config.governance_contract.to_string()),
                         code_id: child_contracts_info.psi_distributor_code_id,
                         msg: to_binary(&PsiDistributorInstantiateMsg {
                             psi_token_addr: config.psi_token.to_string(),
