@@ -35,3 +35,17 @@ impl From<OverflowError> for ContractError {
         Self::overflow(source)
     }
 }
+
+//need it only for 'query_holder' function
+impl Into<StdError> for ContractError {
+    fn into(self) -> StdError {
+        match self {
+            ContractError::Std(std) => std,
+            ContractError::Unauthorized => StdError::generic_err("unauthorized"),
+            ContractError::Impossible(msg) => {
+                StdError::generic_err(format!("impossible case, message: '{}'", msg))
+            }
+            ContractError::Overflow { .. } => StdError::generic_err("calculations overflow"),
+        }
+    }
+}

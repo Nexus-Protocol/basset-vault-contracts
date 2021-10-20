@@ -28,6 +28,13 @@ fn increase_balance_and_claim_rewards() {
         assert_eq!(deposit_1_amount, holder_state.balance);
         assert_eq!(Decimal::zero(), holder_state.index);
         assert_eq!(Decimal::zero(), holder_state.pending_rewards);
+
+        sdk.query_holder_state(
+            &user_1_address,
+            deposit_1_amount,
+            Decimal::from_ratio(rewards_before_receive_nasset, deposit_1_amount),
+            Decimal::from_ratio(rewards_before_receive_nasset, Uint128::new(1)),
+        )
     }
 
     //===============================================================================
@@ -36,6 +43,15 @@ fn increase_balance_and_claim_rewards() {
     let rewards_after_receive_nasset: Uint128 = 5000u64.into();
     {
         sdk.set_psi_balance(rewards_before_receive_nasset + rewards_after_receive_nasset);
+        sdk.query_holder_state(
+            &user_1_address,
+            deposit_1_amount,
+            Decimal::from_str("60").unwrap(),
+            Decimal::from_ratio(
+                rewards_before_receive_nasset + rewards_after_receive_nasset,
+                Uint128::new(1),
+            ),
+        )
     }
 
     //===============================================================================
@@ -43,6 +59,7 @@ fn increase_balance_and_claim_rewards() {
 
     {
         let response = sdk.claim_rewards(&user_1_address).unwrap();
+        sdk.set_psi_balance(Uint128::zero());
 
         assert_eq!(
             response.messages,
@@ -66,6 +83,13 @@ fn increase_balance_and_claim_rewards() {
         assert_eq!(Decimal::from_str("60").unwrap(), state.global_index);
         assert_eq!(deposit_1_amount, state.total_balance);
         assert_eq!(Uint128::zero(), state.prev_reward_balance);
+
+        sdk.query_holder_state(
+            &user_1_address,
+            deposit_1_amount,
+            Decimal::from_str("60").unwrap(),
+            Decimal::zero(),
+        )
     }
     //===============================================================================
 }
