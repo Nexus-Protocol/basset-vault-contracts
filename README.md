@@ -32,7 +32,7 @@ P.S. Anyone can set `nasset_token_rewards` in `nasset_token_config_holder` but o
         - If stablecoins value < stablecoins value before selling ANC : do nothing;
         - buy psi tokens and destribute rewards
         - deposite to anchor to be able to repay loans later
-- `Rebalance {}`;  
+- `Rebalance {}`:
     Here `basset_vault_strategy` comes up on the stage. Strategy decides what to do to achieve the main `basset_vault` aims.
 
     Strategy which borrows UST and lend it to Anchor Earn for 20% yeild.
@@ -62,7 +62,7 @@ P.S. Anyone can set `nasset_token_rewards` in `nasset_token_config_holder` but o
         },
     }
     ```
-- `ClaimRemainder {}`;
+- `ClaimRemainder {}`:
     The chance that it will happen is slim to none.
     `basset_vault` locks 101% of loans.   
     Query borrowed info from anchor smart contract and check loan_amount. If it's zero (all users have withdrown all bAsset deposits):  
