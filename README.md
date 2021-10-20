@@ -62,7 +62,7 @@ P.S. Anyone can set `nasset_token_rewards` in `nasset_token_config_holder` but o
         },
     }
     ```
-- ClaimRemainder {};
+- `ClaimRemainder {}`;
     The chance that it will happen is slim to none.
     `basset_vault` locks 101% of loans.   
     Query borrowed info from anchor smart contract and check loan_amount. If it's zero (all users have withdrown all bAsset deposits):  
