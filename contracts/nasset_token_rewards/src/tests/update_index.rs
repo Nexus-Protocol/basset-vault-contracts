@@ -127,11 +127,26 @@ fn decrease_balance_should_update_index() {
     assert_eq!(deposit_amount, holder_state.balance);
     assert_eq!(Decimal::zero(), holder_state.index);
     assert_eq!(Decimal::zero(), holder_state.pending_rewards);
+
+    sdk.query_holder_state(
+        &user_address,
+        deposit_amount,
+        Decimal::zero(),
+        Decimal::zero(),
+    );
+
     //===============================================================================
 
     //rewards coming
     let rewards: Uint128 = 1000u64.into();
     sdk.set_psi_balance(rewards);
+
+    sdk.query_holder_state(
+        &user_address,
+        deposit_amount,
+        Decimal::from_ratio(rewards, deposit_amount),
+        Decimal::from_ratio(rewards, Uint128::new(1)),
+    );
 
     //===============================================================================
     //user send (decrease his amount) nasset
@@ -151,5 +166,12 @@ fn decrease_balance_should_update_index() {
     assert_eq!(Decimal::from_str("10").unwrap(), state.global_index);
     assert_eq!(Uint128::new(50), state.total_balance);
     assert_eq!(rewards, state.prev_reward_balance);
+
+    sdk.query_holder_state(
+        &user_address,
+        deposit_amount.checked_sub(withdraw_amount).unwrap(),
+        Decimal::from_ratio(rewards, deposit_amount),
+        Decimal::from_ratio(rewards, Uint128::new(1)),
+    )
     //===============================================================================
 }

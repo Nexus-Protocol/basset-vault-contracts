@@ -1,6 +1,7 @@
 use crate::{
+    commands::calculate_global_index,
     math::decimal_summation_in_256,
-    state::{Holder, HOLDERS},
+    state::{Holder, State, HOLDERS},
     utils::calculate_decimal_rewards,
 };
 use basset_vault::{
@@ -9,7 +10,7 @@ use basset_vault::{
         AccruedRewardsResponse, ConfigResponse, HolderResponse, HoldersResponse, StateResponse,
     },
 };
-use cosmwasm_std::{Addr, Deps, StdResult, Storage, Uint128};
+use cosmwasm_std::{Addr, Decimal, Deps, Env, StdError, StdResult, Storage, Uint128};
 use cw0::{calc_range_end, calc_range_start};
 use cw_storage_plus::Bound;
 
@@ -49,9 +50,25 @@ pub fn query_accrued_rewards(deps: Deps, address: String) -> StdResult<AccruedRe
     Ok(AccruedRewardsResponse { rewards })
 }
 
-pub fn query_holder(deps: Deps, address: String) -> StdResult<HolderResponse> {
+pub fn query_holder(deps: Deps, env: Env, address: String) -> StdResult<HolderResponse> {
     let holder_addr = deps.api.addr_validate(&address)?;
-    let holder: Holder = load_holder(deps.storage, &holder_addr)?;
+    let mut holder: Holder = load_holder(deps.storage, &holder_addr)?;
+
+    let mut state: State = load_state(deps.storage)?;
+    let config: Config = load_config(deps.storage)?;
+
+    calculate_global_index(deps, env, &config, &mut state)
+        .map_err::<StdError, _>(|err| err.into())?;
+
+    let reward_with_decimals =
+        calculate_decimal_rewards(state.global_index, holder.index, holder.balance)?;
+
+    let all_reward_with_decimals: Decimal =
+        decimal_summation_in_256(reward_with_decimals, holder.pending_rewards);
+
+    holder.pending_rewards = all_reward_with_decimals;
+    holder.index = state.global_index;
+
     Ok(HolderResponse {
         address,
         balance: holder.balance,

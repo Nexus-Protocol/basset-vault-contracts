@@ -111,14 +111,14 @@ pub fn execute(
 }
 
 #[entry_point]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&queries::query_config(deps)?),
         QueryMsg::State {} => to_binary(&queries::query_state(deps)?),
         QueryMsg::AccruedRewards { address } => {
             to_binary(&queries::query_accrued_rewards(deps, address)?)
         }
-        QueryMsg::Holder { address } => to_binary(&queries::query_holder(deps, address)?),
+        QueryMsg::Holder { address } => to_binary(&queries::query_holder(deps, env, address)?),
         QueryMsg::Holders {
             start_after,
             limit,

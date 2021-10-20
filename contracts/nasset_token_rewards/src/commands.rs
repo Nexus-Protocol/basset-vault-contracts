@@ -100,7 +100,7 @@ pub fn accept_governance(deps: DepsMut, env: Env, info: MessageInfo) -> Contract
     ]))
 }
 
-fn calculate_global_index(
+pub fn calculate_global_index(
     deps: Deps,
     env: Env,
     config: &Config,

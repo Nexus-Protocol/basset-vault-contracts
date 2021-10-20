@@ -1,13 +1,14 @@
-use crate::tests::mock_dependencies;
 use crate::ContractResult;
+use crate::{contract::query, tests::mock_dependencies};
 
 use cosmwasm_std::{
+    from_binary,
     testing::{mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-    Addr, OwnedDeps,
+    Addr, Decimal, OwnedDeps,
 };
 use cosmwasm_std::{Empty, Response, Uint128};
 
-use basset_vault::nasset_token_rewards::ExecuteMsg;
+use basset_vault::nasset_token_rewards::{ExecuteMsg, HolderResponse, QueryMsg};
 
 use super::WasmMockQuerier;
 
@@ -104,5 +105,33 @@ impl Sdk {
                 anyone_msg: claim_msg,
             },
         )
+    }
+
+    pub fn query_holder_state(
+        &self,
+        holder: &Addr,
+        expected_balance: Uint128,
+        expected_index: Decimal,
+        expected_pending_rewards: Decimal,
+    ) {
+        let holder_query_res = query(
+            self.deps.as_ref(),
+            mock_env(),
+            QueryMsg::Holder {
+                address: holder.to_string(),
+            },
+        )
+        .unwrap();
+
+        let query_response: HolderResponse = from_binary(&holder_query_res).unwrap();
+        assert_eq!(
+            query_response,
+            HolderResponse {
+                address: holder.to_string(),
+                balance: expected_balance,
+                index: expected_index,
+                pending_rewards: expected_pending_rewards,
+            }
+        );
     }
 }
