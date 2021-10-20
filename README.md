@@ -25,14 +25,14 @@
 P.S. Anyone can set `nasset_token_rewards` in `nasset_token_config_holder` but only once.
 
 `basset_vault` is able to hadle a list of messages:
-- HonestWork:
+- `HonestWork {}`:
     - claim ANC from anchor contract;
     - swap ANC to stablecoins on TerraSwap;
     - few options are possible here: 
         - If stablecoins value < stablecoins value before selling ANC : do nothing;
         - buy psi tokens and destribute rewards
         - deposite to anchor to be able to repay loans later
-- Rebalance {};  
+- `Rebalance {}`;  
     Here `basset_vault_strategy` comes up on the stage. Strategy decides what to do to achieve the main `basset_vault` aims.
 
     Strategy which borrows UST and lend it to Anchor Earn for 20% yeild.
@@ -68,7 +68,7 @@ P.S. Anyone can set `nasset_token_rewards` in `nasset_token_config_holder` but o
     Query borrowed info from anchor smart contract and check loan_amount. If it's zero (all users have withdrown all bAsset deposits):  
     - if aUST is not zero `basset_vault` redeems UST;
     - `basset_vault` uses extra 1% of UST to byu psi_tokens and sent them to governance stakers (there are no any nasset holders at thit moment).
-There is claim_rewards_delay parrameter to avoid blockchain span.
+There is `claim_rewards_delay` parrameter to avoid blockchain spam.
 
 [Rebalance strategy](#basset-vault-strategy)
 
@@ -125,7 +125,7 @@ This contract receive PSi bought by `basset_vault` and distribute it between:
 
 ## nAsset token
 
-CW20 compatible contract where that CW20_base contracts methods are synhcronized with nAsset_token_rewards to rewards nAsset token **holders** (no need to stake).
+CW20 compatible contract where that CW20_base contracts methods are synhcronized with nAsset_token_rewards to reward nAsset token **holders** (no need to stake).
 `nAsset` token represent share of `bAsset` tokens locked in `basset_vault` and used as collateral on Anchor Earn.
 
 ## nAsset token config holder
