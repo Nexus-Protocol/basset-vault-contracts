@@ -37,7 +37,7 @@ fn distribute_rewards() {
                 .unwrap(),
             })),
             SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: PSI_TOKEN_ADDR.to_string(),
+                contract_addr: NASSET_TOKEN_REWARDS_CONTRACT_ADDR.to_string(),
                 funds: vec![],
                 msg: to_binary(&NAssetTokenRewardsExecuteMsg::Anyone {
                     anyone_msg: NAssetTokenRewardsAnyoneMsg::UpdateGlobalIndex {},
@@ -91,7 +91,7 @@ fn distribute_rewards_enought_only_for_nasset_holders() {
                 .unwrap(),
             })),
             SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: PSI_TOKEN_ADDR.to_string(),
+                contract_addr: NASSET_TOKEN_REWARDS_CONTRACT_ADDR.to_string(),
                 funds: vec![],
                 msg: to_binary(&NAssetTokenRewardsExecuteMsg::Anyone {
                     anyone_msg: NAssetTokenRewardsAnyoneMsg::UpdateGlobalIndex {},
@@ -127,7 +127,7 @@ fn distribute_rewards_enought_for_nasset_holders_and_governance() {
                 .unwrap(),
             })),
             SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: PSI_TOKEN_ADDR.to_string(),
+                contract_addr: NASSET_TOKEN_REWARDS_CONTRACT_ADDR.to_string(),
                 funds: vec![],
                 msg: to_binary(&NAssetTokenRewardsExecuteMsg::Anyone {
                     anyone_msg: NAssetTokenRewardsAnyoneMsg::UpdateGlobalIndex {},
