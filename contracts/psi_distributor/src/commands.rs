@@ -47,7 +47,7 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
         })));
 
         messages.push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: config.psi_token.to_string(),
+            contract_addr: config.nasset_token_rewards_contract.to_string(),
             funds: vec![],
             msg: to_binary(&NAssetTokenRewardsExecuteMsg::Anyone {
                 anyone_msg: NAssetTokenRewardsAnyoneMsg::UpdateGlobalIndex {},
