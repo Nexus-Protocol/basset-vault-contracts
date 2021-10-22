@@ -154,7 +154,7 @@ impl Sdk {
                         .unwrap(),
                         funds: vec![],
                         label: "".to_string(),
-                        admin: None,
+                        admin: Some(GOVERNANCE_CONTRACT.to_string()),
                     }
                     .into(),
                     gas_limit: None,
@@ -211,7 +211,7 @@ impl Sdk {
                         .unwrap(),
                         funds: vec![],
                         label: "".to_string(),
-                        admin: None,
+                        admin: Some(GOVERNANCE_CONTRACT.to_string()),
                     }
                     .into(),
                     gas_limit: None,
@@ -266,7 +266,7 @@ impl Sdk {
                         .unwrap(),
                         funds: vec![],
                         label: "".to_string(),
-                        admin: None,
+                        admin: Some(GOVERNANCE_CONTRACT.to_string()),
                     }
                     .into(),
                     gas_limit: None,
@@ -329,7 +329,7 @@ impl Sdk {
                             .unwrap(),
                             funds: vec![],
                             label: "".to_string(),
-                            admin: None,
+                            admin: Some(GOVERNANCE_CONTRACT.to_string()),
                         }
                         .into(),
                         gas_limit: None,
