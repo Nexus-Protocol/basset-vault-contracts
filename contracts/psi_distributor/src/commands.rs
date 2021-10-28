@@ -82,15 +82,15 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
         .add_attributes(vec![
             ("action", "rewards_distribution"),
             (
-                "nassest_holder_rewards",
+                "nasset_holder_rewards",
                 &rewards_distribution.nasset_holder.to_string(),
             ),
             (
-                "governance_rewars",
+                "governance_rewards",
                 &rewards_distribution.governance.to_string(),
             ),
             (
-                "community_pool_rewars",
+                "community_pool_rewards",
                 &rewards_distribution.community_pool.to_string(),
             ),
         ]))
@@ -122,12 +122,12 @@ impl RewardsDistribution {
         let protocol_rewards = psi_amount * protocol_fee;
 
         let community_pool_rewards = protocol_rewards * tax_rate;
-        let governance_rewars = protocol_rewards - community_pool_rewards;
+        let governance_rewards = protocol_rewards - community_pool_rewards;
         let nassest_holder_rewards = psi_amount - protocol_rewards;
 
         Self {
             nasset_holder: nassest_holder_rewards,
-            governance: governance_rewars,
+            governance: governance_rewards,
             community_pool: community_pool_rewards,
         }
     }
@@ -260,7 +260,7 @@ mod test {
     }
 
     #[test]
-    pub fn manual_ltv_equlas_than_aim() {
+    pub fn manual_ltv_equals_to_aim() {
         let psi_amount = Uint256::from(1_000u64);
         let aim_ltv = Decimal256::from_str("0.8").unwrap();
         let manual_ltv = Decimal256::from_str("0.8").unwrap();
