@@ -82,7 +82,7 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
         .add_attributes(vec![
             ("action", "rewards_distribution"),
             (
-                "nassest_holder_rewards",
+                "nasset_holder_rewards",
                 &rewards_distribution.nasset_holder.to_string(),
             ),
             (

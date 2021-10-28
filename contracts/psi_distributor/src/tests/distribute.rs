@@ -24,6 +24,14 @@ fn distribute_rewards() {
     //distribute rewards
 
     let response = sdk.distribute_rewards().unwrap();
+
+    assert_eq!(response.attributes, vec![
+        ("action", "rewards_distribution"),
+        ("nasset_holder_rewards", "900"),
+        ("governance_rewards", "75"),
+        ("community_pool_rewards", "25"),
+    ]);
+
     assert_eq!(
         response.messages,
         vec![
