@@ -176,4 +176,6 @@ pub struct IsRewardsClaimableResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub new_over_loan_balance_value: Decimal256,
+}

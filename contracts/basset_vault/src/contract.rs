@@ -366,6 +366,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[entry_point]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> StdResult<Response> {
+    let mut config: Config = load_config(deps.storage)?;
+    config.over_loan_balance_value = msg.new_over_loan_balance_value;
+    store_config(deps.storage, &config)?;
     Ok(Response::default())
 }
