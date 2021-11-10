@@ -172,7 +172,7 @@ pub fn get_repay_loan_action(
     //on first try only selling aterra, cause with high probability we will repay loan
     //in 'reply' handler, so don't need to do that twice
     if is_first_try || repay_amount.is_zero() {
-        if aterra_value.is_zero() {
+        if aterra_value.is_zero() && !repay_amount.is_zero() {
             return RepayLoanAction::RepayLoan {
                 amount: repay_amount,
             };
@@ -214,9 +214,15 @@ pub fn get_repay_loan_action(
             let aterra_to_sell = tax_info.append_tax(bounded_aterra_value) / aterra_exchange_rate;
             //make sure that we do not redeem more then we have (in case if some issue with tax precision)
             let aterra_to_sell = aterra_to_sell.min(aterra_balance);
-            RepayLoanAction::RepayLoanAndSellAterra {
-                aterra_amount_to_sell: aterra_to_sell,
-                repay_loan_amount: repay_amount,
+            if aterra_to_sell.is_zero() {
+                return RepayLoanAction::RepayLoan {
+                    amount: repay_amount,
+                };
+            } else {
+                RepayLoanAction::RepayLoanAndSellAterra {
+                    aterra_amount_to_sell: aterra_to_sell,
+                    repay_loan_amount: repay_amount,
+                }
             }
         }
     }
