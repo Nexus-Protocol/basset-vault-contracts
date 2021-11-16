@@ -13,6 +13,7 @@ use basset_vault::nasset_token_rewards::{
     AnyoneMsg as NAssetTokenRewardsAnyoneMsg, ExecuteMsg as NAssetTokenRewardsExecuteMsg,
 };
 use basset_vault::querier::query_token_balance;
+use basset_vault::terraswap_pair::Cw20HookMsg as TerraswapCw20HookMsg;
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ExecuteMsg;
 
@@ -69,11 +70,16 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
     if !rewards_distribution.community_pool.is_zero() {
         messages.push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.psi_token.to_string(),
-            funds: vec![],
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                recipient: config.community_pool_contract.to_string(),
+            msg: to_binary(&Cw20ExecuteMsg::Send {
                 amount: rewards_distribution.community_pool.into(),
+                contract: config.psi_nasset_swap_contract_addr.to_string(),
+                msg: to_binary(&TerraswapCw20HookMsg::Swap {
+                    belief_price: None,
+                    max_spread: None,
+                    to: Some(config.community_pool_contract.to_string()),
+                })?,
             })?,
+            funds: vec![],
         })));
     }
 
@@ -139,6 +145,7 @@ pub fn update_config(
     nasset_token_rewards_contract_addr: Option<String>,
     community_pool_contract_addr: Option<String>,
     basset_vault_strategy_contract_addr: Option<String>,
+    nasset_psi_swap_contract_addr: Option<String>,
     manual_ltv: Option<Decimal256>,
     fee_rate: Option<Decimal256>,
     tax_rate: Option<Decimal256>,
@@ -157,6 +164,11 @@ pub fn update_config(
         current_config.basset_vault_strategy_contract = deps
             .api
             .addr_validate(basset_vault_strategy_contract_addr)?;
+    }
+
+    if let Some(ref nasset_psi_swap_contract_addr) = nasset_psi_swap_contract_addr {
+        current_config.psi_nasset_swap_contract_addr = deps.api
+            .addr_validate(nasset_psi_swap_contract_addr)?;
     }
 
     let one = Decimal256::one();

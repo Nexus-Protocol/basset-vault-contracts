@@ -48,6 +48,7 @@ pub fn instantiate(
         anchor_custody_basset_contract: deps.api.addr_validate(&msg.a_custody_basset_addr)?,
         anc_stable_swap_contract: deps.api.addr_validate(&msg.anc_stable_swap_addr)?,
         psi_stable_swap_contract: deps.api.addr_validate(&msg.psi_stable_swap_addr)?,
+        psi_nasset_swap_contract: deps.api.addr_validate(&msg.psi_nasset_swap_addr)?,
         basset_token: deps.api.addr_validate(&msg.basset_addr)?,
         aterra_token: deps.api.addr_validate(&msg.aterra_addr)?,
         psi_token: deps.api.addr_validate(&msg.psi_addr)?,
@@ -196,6 +197,9 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                             governance_contract_addr: config.governance_contract.to_string(),
                             basset_vault_strategy_contract_addr: config
                                 .basset_vault_strategy_contract
+                                .to_string(),
+                            psi_nasset_swap_contract_addr: config
+                                .psi_nasset_swap_contract
                                 .to_string(),
                             community_pool_contract_addr: child_contracts_info
                                 .community_pool_contract_addr,

@@ -13,6 +13,7 @@ pub struct Config {
     pub anchor_custody_basset_contract: Addr,
     pub anc_stable_swap_contract: Addr,
     pub psi_stable_swap_contract: Addr,
+    pub psi_nasset_swap_contract: Addr,
     pub basset_token: Addr,
     pub aterra_token: Addr,
     pub psi_token: Addr,

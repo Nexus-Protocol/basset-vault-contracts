@@ -54,6 +54,7 @@ pub const ANCHOR_OVERSEER_CONTRACT: &str = "addr0004";
 pub const ANCHOR_TOKEN: &str = "addr0006";
 pub const ANC_STABLE_SWAP_CONTRACT: &str = "addr0008";
 pub const PSI_STABLE_SWAP_CONTRACT: &str = "addr0009";
+pub const PSI_NASSET_SWAP_CONTRACT: &str = "addr0014";
 pub const BASSET_VAULT_STRATEGY_CONTRACT: &str = "addr0012";
 pub const COMMUNITY_POOL_CONTRACT_ADDR: &str = "addr0013";
 pub const CLAIMING_REWARDS_DELAY: u64 = 1000;
@@ -93,6 +94,7 @@ impl Sdk {
             a_custody_basset_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
             anc_stable_swap_addr: ANC_STABLE_SWAP_CONTRACT.to_string(),
             psi_stable_swap_addr: PSI_STABLE_SWAP_CONTRACT.to_string(),
+            psi_nasset_swap_addr: PSI_NASSET_SWAP_CONTRACT.to_string(),
             aterra_addr: ATERRA_TOKEN.to_string(),
             psi_addr: PSI_TOKEN.to_string(),
             basset_vs_addr: BASSET_VAULT_STRATEGY_CONTRACT.to_string(),
@@ -322,6 +324,7 @@ impl Sdk {
                                 basset_vault_strategy_contract_addr: init_msg
                                     .basset_vs_addr
                                     .clone(),
+                                psi_nasset_swap_contract_addr: init_msg.psi_nasset_swap_addr.clone(),
                                 manual_ltv: init_msg.manual_ltv,
                                 fee_rate: init_msg.fee_rate,
                                 tax_rate: init_msg.tax_rate

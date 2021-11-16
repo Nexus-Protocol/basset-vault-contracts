@@ -1,14 +1,9 @@
 use super::sdk::Sdk;
-use crate::{
-    error::ContractError,
-    tests::sdk::{
-        COMMUNITY_POOL_CONTRACT_ADDR, GOVERNANCE_CONTRACT_ADDR, NASSET_TOKEN_REWARDS_CONTRACT_ADDR,
-        PSI_TOKEN_ADDR,
-    },
-};
+use crate::{error::ContractError, tests::sdk::{COMMUNITY_POOL_CONTRACT_ADDR, GOVERNANCE_CONTRACT_ADDR, NASSET_TOKEN_REWARDS_CONTRACT_ADDR, PSI_NASSET_SWAP_CONTRACT_ADDR, PSI_TOKEN_ADDR}};
 use basset_vault::nasset_token_rewards::{
     AnyoneMsg as NAssetTokenRewardsAnyoneMsg, ExecuteMsg as NAssetTokenRewardsExecuteMsg,
 };
+use basset_vault::terraswap_pair::Cw20HookMsg as TerraswapCw20HookMsg;
 use cosmwasm_std::{to_binary, StdError, Uint128};
 use cosmwasm_std::{CosmosMsg, SubMsg, WasmMsg};
 use cw20::Cw20ExecuteMsg;
@@ -64,11 +59,15 @@ fn distribute_rewards() {
             SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: PSI_TOKEN_ADDR.to_string(),
                 funds: vec![],
-                msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                    recipient: COMMUNITY_POOL_CONTRACT_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Send {
                     amount: Uint128::from(25u64),
-                })
-                .unwrap(),
+                    contract: PSI_NASSET_SWAP_CONTRACT_ADDR.to_string(),
+                    msg: to_binary(&TerraswapCw20HookMsg::Swap {
+                        belief_price: None,
+                        max_spread: None,
+                        to: Some(COMMUNITY_POOL_CONTRACT_ADDR.to_string()),
+                    }).unwrap(),
+                }).unwrap(),
             })),
         ]
     );
@@ -166,7 +165,7 @@ fn distribute_rewards_with_zero_balance() {
     let response = sdk.distribute_rewards();
     assert!(response.is_err());
     let error = response.err().unwrap();
-    if let ContractError::Std(StdError::GenericErr { msg }) = error {
+    if let ContractError::Std(StdError::GenericErr { msg, .. }) = error {
         assert_eq!("psi balance is zero", msg);
     } else {
         panic!("wrong error");

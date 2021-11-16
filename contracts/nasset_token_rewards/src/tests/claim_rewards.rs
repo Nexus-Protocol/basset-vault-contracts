@@ -123,7 +123,7 @@ fn claim_zero_rewards() {
 
         assert!(response.is_err());
         let error = response.err().unwrap();
-        if let ContractError::Std(StdError::GenericErr { msg }) = error {
+        if let ContractError::Std(StdError::GenericErr { msg, .. }) = error {
             assert_eq!("No rewards have accrued yet", msg);
         } else {
             panic!("wrong error type");

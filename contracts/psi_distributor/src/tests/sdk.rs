@@ -12,6 +12,7 @@ pub const NASSET_TOKEN_REWARDS_CONTRACT_ADDR: &str = "addr0002";
 pub const GOVERNANCE_CONTRACT_ADDR: &str = "addr0003";
 pub const COMMUNITY_POOL_CONTRACT_ADDR: &str = "addr0004";
 pub const BASSET_VAULT_STRATEGY_CONTRACT_ADDR: &str = "addr0005";
+pub const PSI_NASSET_SWAP_CONTRACT_ADDR: &str = "addr0006";
 pub const AIM_LTV: &str = "0.8";
 pub const MANUAL_LTV: &str = "0.6";
 pub const FEE_RATE: &str = "0.5";
@@ -29,6 +30,7 @@ impl Sdk {
             nasset_token_rewards_contract_addr: NASSET_TOKEN_REWARDS_CONTRACT_ADDR.to_string(),
             community_pool_contract_addr: COMMUNITY_POOL_CONTRACT_ADDR.to_string(),
             basset_vault_strategy_contract_addr: BASSET_VAULT_STRATEGY_CONTRACT_ADDR.to_string(),
+            psi_nasset_swap_contract_addr: PSI_NASSET_SWAP_CONTRACT_ADDR.to_string(),
             manual_ltv: Decimal256::from_str(MANUAL_LTV).unwrap(),
             fee_rate: Decimal256::from_str(FEE_RATE).unwrap(),
             tax_rate: Decimal256::from_str(TAX_RATE).unwrap(),

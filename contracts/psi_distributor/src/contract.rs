@@ -38,6 +38,9 @@ pub fn instantiate(
         basset_vault_strategy_contract: deps
             .api
             .addr_validate(&msg.basset_vault_strategy_contract_addr)?,
+        psi_nasset_swap_contract_addr: deps
+            .api
+            .addr_validate(&msg.psi_nasset_swap_contract_addr)?,
         manual_ltv: msg.manual_ltv,
         fee_rate: msg.fee_rate,
         tax_rate: msg.tax_rate,
@@ -71,6 +74,7 @@ pub fn execute(
                     nasset_token_rewards_contract_addr,
                     community_pool_contract_addr,
                     basset_vault_strategy_contract_addr,
+                    nasset_psi_swap_contract_addr,
                     manual_ltv,
                     fee_rate,
                     tax_rate,
@@ -80,6 +84,7 @@ pub fn execute(
                     nasset_token_rewards_contract_addr,
                     community_pool_contract_addr,
                     basset_vault_strategy_contract_addr,
+                    nasset_psi_swap_contract_addr,
                     manual_ltv,
                     fee_rate,
                     tax_rate,

@@ -37,6 +37,8 @@ pub struct InstantiateMsg {
     pub anc_stable_swap_addr: String,
     // psi_stable_swap_contract_addr
     pub psi_stable_swap_addr: String,
+    // psi_nasset_swap_contract_addr
+    pub psi_nasset_swap_addr: String,
     // aterra_token_addr
     pub aterra_addr: String,
     // psi_token_addr
