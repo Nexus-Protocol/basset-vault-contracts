@@ -125,6 +125,12 @@
                     "null"
                   ]
                 },
+                "psi_nasset_swap_contract_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
                 "tax_rate": {
                   "anyOf": [
                     {

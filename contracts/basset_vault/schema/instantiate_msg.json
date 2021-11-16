@@ -23,6 +23,7 @@
     "over_loan_balance_value",
     "psi_addr",
     "psi_distr_ci",
+    "psi_nasset_swap_addr",
     "psi_stable_swap_addr",
     "stable_denom",
     "tax_rate"
@@ -112,6 +113,9 @@
       "type": "integer",
       "format": "uint64",
       "minimum": 0.0
+    },
+    "psi_nasset_swap_addr": {
+      "type": "string"
     },
     "psi_stable_swap_addr": {
       "type": "string"
