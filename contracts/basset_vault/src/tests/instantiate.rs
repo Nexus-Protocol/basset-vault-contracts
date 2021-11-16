@@ -31,7 +31,6 @@ fn proper_initialization() {
             anchor_custody_basset_contract: Addr::unchecked(ANCHOR_CUSTODY_BASSET_CONTRACT),
             anc_stable_swap_contract: Addr::unchecked(ANC_STABLE_SWAP_CONTRACT),
             psi_stable_swap_contract: Addr::unchecked(PSI_STABLE_SWAP_CONTRACT),
-            psi_nasset_swap_contract: Addr::unchecked(PSI_NASSET_SWAP_CONTRACT),
             basset_token: Addr::unchecked(BASSET_TOKEN_ADDR),
             aterra_token: Addr::unchecked(ATERRA_TOKEN),
             psi_token: Addr::unchecked(PSI_TOKEN),
@@ -56,6 +55,7 @@ fn proper_initialization() {
             manual_ltv: Decimal256::from_str(MANUAL_LTV).unwrap(),
             fee_rate: Decimal256::from_str(FEE_RATE).unwrap(),
             tax_rate: Decimal256::from_str(TAX_RATE).unwrap(),
+            psi_nasset_swap_contract_addr: PSI_NASSET_SWAP_CONTRACT.to_string(),
         }
     );
 }
