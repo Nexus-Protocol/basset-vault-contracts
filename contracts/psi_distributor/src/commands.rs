@@ -145,7 +145,7 @@ pub fn update_config(
     nasset_token_rewards_contract_addr: Option<String>,
     community_pool_contract_addr: Option<String>,
     basset_vault_strategy_contract_addr: Option<String>,
-    nasset_psi_swap_contract_addr: Option<String>,
+    psi_nasset_swap_contract_addr: Option<String>,
     manual_ltv: Option<Decimal256>,
     fee_rate: Option<Decimal256>,
     tax_rate: Option<Decimal256>,
@@ -166,9 +166,9 @@ pub fn update_config(
             .addr_validate(basset_vault_strategy_contract_addr)?;
     }
 
-    if let Some(ref nasset_psi_swap_contract_addr) = nasset_psi_swap_contract_addr {
-        current_config.psi_nasset_swap_contract_addr = deps.api
-            .addr_validate(nasset_psi_swap_contract_addr)?;
+    if let Some(ref psi_nasset_swap_contract_addr) = psi_nasset_swap_contract_addr {
+        current_config.psi_nasset_swap_contract_addr =
+            deps.api.addr_validate(psi_nasset_swap_contract_addr)?;
     }
 
     let one = Decimal256::one();

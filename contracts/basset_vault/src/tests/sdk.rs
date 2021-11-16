@@ -324,7 +324,9 @@ impl Sdk {
                                 basset_vault_strategy_contract_addr: init_msg
                                     .basset_vs_addr
                                     .clone(),
-                                psi_nasset_swap_contract_addr: init_msg.psi_nasset_swap_addr.clone(),
+                                psi_nasset_swap_contract_addr: init_msg
+                                    .psi_nasset_swap_addr
+                                    .clone(),
                                 manual_ltv: init_msg.manual_ltv,
                                 fee_rate: init_msg.fee_rate,
                                 tax_rate: init_msg.tax_rate

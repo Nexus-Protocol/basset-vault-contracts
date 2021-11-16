@@ -37,7 +37,7 @@ pub enum GovernanceMsg {
         nasset_token_rewards_contract_addr: Option<String>,
         community_pool_contract_addr: Option<String>,
         basset_vault_strategy_contract_addr: Option<String>,
-        nasset_psi_swap_contract_addr: Option<String>,
+        psi_nasset_swap_contract_addr: Option<String>,
         manual_ltv: Option<Decimal256>,
         fee_rate: Option<Decimal256>,
         tax_rate: Option<Decimal256>,

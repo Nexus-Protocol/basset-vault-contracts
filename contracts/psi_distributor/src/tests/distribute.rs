@@ -1,5 +1,11 @@
 use super::sdk::Sdk;
-use crate::{error::ContractError, tests::sdk::{COMMUNITY_POOL_CONTRACT_ADDR, GOVERNANCE_CONTRACT_ADDR, NASSET_TOKEN_REWARDS_CONTRACT_ADDR, PSI_NASSET_SWAP_CONTRACT_ADDR, PSI_TOKEN_ADDR}};
+use crate::{
+    error::ContractError,
+    tests::sdk::{
+        COMMUNITY_POOL_CONTRACT_ADDR, GOVERNANCE_CONTRACT_ADDR, NASSET_TOKEN_REWARDS_CONTRACT_ADDR,
+        PSI_NASSET_SWAP_CONTRACT_ADDR, PSI_TOKEN_ADDR,
+    },
+};
 use basset_vault::nasset_token_rewards::{
     AnyoneMsg as NAssetTokenRewardsAnyoneMsg, ExecuteMsg as NAssetTokenRewardsExecuteMsg,
 };
@@ -20,12 +26,15 @@ fn distribute_rewards() {
 
     let response = sdk.distribute_rewards().unwrap();
 
-    assert_eq!(response.attributes, vec![
-        ("action", "rewards_distribution"),
-        ("nasset_holder_rewards", "900"),
-        ("governance_rewards", "75"),
-        ("community_pool_rewards", "25"),
-    ]);
+    assert_eq!(
+        response.attributes,
+        vec![
+            ("action", "rewards_distribution"),
+            ("nasset_holder_rewards", "900"),
+            ("governance_rewards", "75"),
+            ("community_pool_rewards", "25"),
+        ]
+    );
 
     assert_eq!(
         response.messages,
@@ -66,8 +75,10 @@ fn distribute_rewards() {
                         belief_price: None,
                         max_spread: None,
                         to: Some(COMMUNITY_POOL_CONTRACT_ADDR.to_string()),
-                    }).unwrap(),
-                }).unwrap(),
+                    })
+                    .unwrap(),
+                })
+                .unwrap(),
             })),
         ]
     );
