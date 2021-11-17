@@ -1311,6 +1311,30 @@ mod test {
         );
     }
 
+    #[allow(non_snake_case)]
+    #[test]
+    fn get_repay_loan_action_repay_loan_zero_amoun() {
+        let aterra_balance = Uint256::from(300_000u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.25").unwrap();
+        let stable_coin_balance = Uint256::from(1u64);
+        let repay_amount = Uint256::from(1u64);
+        let aim_buffer_size = Uint256::from(0u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(25),
+            cap: Uint256::from(750u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            false,
+        );
+        assert_eq!(RepayLoanAction::Nothing, repay_action);
+    }
+
     #[test]
     fn calc_wanted_stablecoins_1() {
         let stable_coin_balance = Uint256::zero();
