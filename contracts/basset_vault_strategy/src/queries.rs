@@ -111,6 +111,14 @@ fn calc_borrower_action(
     }
 
     let max_borrow_amount: Uint256 = locked_basset_amount * ltv_info.basset_price * basset_max_ltv;
+    // If locked_basset_amount is small enough and basset_price is low It's possible max_borrow_amount = 0
+    if max_borrow_amount == Uint256::zero() {
+        if borrowed_amount > Uint256::zero() {
+            return BorrowerActionResponse::repay(borrowed_amount, Uint256::zero());
+        } else {
+            return BorrowerActionResponse::nothing();
+        }
+    }
     let current_ltv: Decimal256 =
         Decimal256::from_uint256(borrowed_amount) / Decimal256::from_uint256(max_borrow_amount);
 
@@ -271,6 +279,52 @@ mod test {
             borrower_action,
             BorrowerActionResponse::repay(borrowed_amount, Uint256::zero())
         );
+    }
+
+    #[test]
+    fn collateral_value_is_low_and_borrowed_zero() {
+        let borrowed_amount = Uint256::zero();
+        let locked_basset_amount = Uint256::from(1u64);
+        let basset_max_ltv = Decimal256::from_str("0.5").unwrap();
+        let buffer_part = Decimal256::from_str("0.018").unwrap();
+        let ltv_info = LTVInfo {
+            basset_price: Decimal256::from_str("1").unwrap(),
+            borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
+            borrow_ltv_min: Decimal256::from_str("0.75").unwrap(),
+            borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
+        };
+
+        let borrower_action = calc_borrower_action(
+            ltv_info,
+            borrowed_amount,
+            locked_basset_amount,
+            basset_max_ltv,
+            buffer_part,
+        );
+        assert_eq!(borrower_action, BorrowerActionResponse::nothing());
+    }
+
+    #[test]
+    fn collateral_value_is_low_and_borrowed_not_zero() {
+        let borrowed_amount = Uint256::from(10_000u64);
+        let locked_basset_amount = Uint256::from(1u64);
+        let basset_max_ltv = Decimal256::from_str("0.5").unwrap();
+        let buffer_part = Decimal256::from_str("0.018").unwrap();
+        let ltv_info = LTVInfo {
+            basset_price: Decimal256::from_str("1").unwrap(),
+            borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
+            borrow_ltv_min: Decimal256::from_str("0.75").unwrap(),
+            borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
+        };
+
+        let borrower_action = calc_borrower_action(
+            ltv_info,
+            borrowed_amount,
+            locked_basset_amount,
+            basset_max_ltv,
+            buffer_part,
+        );
+        assert_eq!(borrower_action, BorrowerActionResponse::repay(borrowed_amount, Uint256::zero()));
     }
 
     #[test]
