@@ -10,9 +10,15 @@ pub struct TaxInfo {
 impl TaxInfo {
     pub fn get_tax_for(&self, amount: Uint256) -> Uint256 {
         std::cmp::min(
-            amount * (Decimal256::one() - Decimal256::one() / (Decimal256::one() + self.rate)),
+            TaxInfo::round_up(Decimal256::from_uint256(amount) * self.rate),
             self.cap,
         )
+    }
+
+    fn round_up(decimal: Decimal256) -> Uint256 {
+        let truncated =
+            (decimal.0 / Decimal256::DECIMAL_FRACTIONAL) * Decimal256::DECIMAL_FRACTIONAL;
+        Uint256((truncated + Decimal256::DECIMAL_FRACTIONAL) / Decimal256::DECIMAL_FRACTIONAL)
     }
 
     pub fn get_revert_tax(&self, amount: Uint256) -> Uint256 {
@@ -98,5 +104,15 @@ mod test {
         };
         let tax = tax_info.get_tax_for(Uint256::from(100_000u64));
         assert_eq!(tax, Uint256::from(320u64));
+    }
+
+    #[test]
+    fn calcl_tax_to_send_million_coins_assert_from_terra_station() {
+        let tax_info = TaxInfo {
+            rate: Decimal256::from_str("0.003191811080725897").unwrap(),
+            cap: Uint256::from(1_411_603u64),
+        };
+        let tax = tax_info.get_tax_for(Uint256::from(1_000_000u64));
+        assert_eq!(tax, Uint256::from(3_192u64));
     }
 }

@@ -1313,7 +1313,7 @@ mod test {
 
     #[allow(non_snake_case)]
     #[test]
-    fn get_repay_loan_action_repay_loan_zero_amoun() {
+    fn get_repay_loan_action_repay_loan_zero_amount() {
         let aterra_balance = Uint256::from(300_000u64);
         let aterra_exchange_rate = Decimal256::from_str("1.25").unwrap();
         let stable_coin_balance = Uint256::from(1u64);
