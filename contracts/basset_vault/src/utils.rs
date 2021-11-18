@@ -143,6 +143,7 @@ pub fn get_repay_loan_action(
     tax_info: &TaxInfo,
     is_first_try: bool,
 ) -> RepayLoanAction {
+    println!("oooooooooooo stable_coin_balance: {}", stable_coin_balance);
     if aterra_balance.is_zero() && stable_coin_balance.is_zero() {
         return RepayLoanAction::Nothing;
     }
@@ -153,9 +154,13 @@ pub fn get_repay_loan_action(
         tax_info.append_tax(total_repay_amount),
         aim_buffer_size,
     );
+    println!("oooooooooooo wanted_stables: {}", wanted_stables);
 
+    println!("stable_coin_balance: {}", stable_coin_balance);
     let max_amount_to_send = tax_info.subtract_tax(stable_coin_balance);
+    println!("oooooooooooo_1");
     let repay_amount = total_repay_amount.min(max_amount_to_send);
+    println!("oooooooooooo_2");
 
     if wanted_stables.is_zero() {
         if repay_amount.is_zero() {
@@ -166,9 +171,11 @@ pub fn get_repay_loan_action(
             };
         }
     }
+    println!("oooooooooooo_3 aterra_balance: {}", aterra_balance);
 
     //anchor will pay tax, so we will recieve lesser then assume
     let aterra_value = tax_info.subtract_tax(aterra_balance * aterra_exchange_rate);
+    println!("oooooooooooo_4");
     //on first try only selling aterra, cause with high probability we will repay loan
     //in 'reply' handler, so don't need to do that twice
     if is_first_try || repay_amount.is_zero() {
@@ -245,21 +252,31 @@ fn calc_wanted_stablecoins(
     aim_buffer_size: Uint256,
 ) -> Uint256 {
     //we have enough balance to repay loan without any additional stables
+    //TODO: тут должно 'repay_amount' считаться без добавленной таксы
     if stable_coin_balance >= repay_amount + aim_buffer_size {
         return Uint256::zero();
     }
+    println!("kkkkkkkkkkk");
 
     //we can take some coins from buffer to repay loan
     if stable_coin_balance >= aim_buffer_size {
+        println!("kkkkkkkkkkk1");
         let can_get_from_balance = stable_coin_balance - aim_buffer_size;
+        println!("kkkkkkkkkkk2");
+        //TODO: тут должно 'repay_amount' считаться без добавленной таксы
+        //TODO: add test similar too 'get_repay_loan_action_do_nothing_3', but that goes into this
+        //leaf
         if repay_amount <= can_get_from_balance {
+            println!("kkkkkkkkkkk3");
             return Uint256::zero();
         }
+        println!("kkkkkkkkkkk4");
         return repay_amount - can_get_from_balance;
     }
 
     //need to fill up buffer and repay loan
     let add_to_buffer = aim_buffer_size - stable_coin_balance;
+    println!("kkkkkkkkkkk_end");
     return repay_amount + add_to_buffer;
 }
 
@@ -1333,6 +1350,36 @@ mod test {
             false,
         );
         assert_eq!(RepayLoanAction::Nothing, repay_action);
+    }
+
+    #[allow(non_snake_case)]
+    #[test]
+    fn get_repay_loan_action_do_not_substract_tax_twice() {
+        let aterra_balance = Uint256::from(300_000u64);
+        let aterra_exchange_rate = Decimal256::from_str("1.25").unwrap();
+        let stable_coin_balance = Uint256::from(5_000u64);
+        let repay_amount = Uint256::from(10_000u64);
+        let aim_buffer_size = Uint256::from(1u64);
+        let tax_info = TaxInfo {
+            rate: Decimal256::percent(100),
+            cap: Uint256::from(1u64),
+        };
+        let repay_action = get_repay_loan_action(
+            stable_coin_balance,
+            aterra_balance,
+            aterra_exchange_rate,
+            repay_amount,
+            aim_buffer_size,
+            &tax_info,
+            false,
+        );
+        assert_eq!(
+            RepayLoanAction::RepayLoanAndSellAterra {
+                repay_loan_amount: Uint256::from(4_999u64),
+                aterra_amount_to_sell: Uint256::from(3_999u64),
+            },
+            repay_action
+        );
     }
 
     #[test]

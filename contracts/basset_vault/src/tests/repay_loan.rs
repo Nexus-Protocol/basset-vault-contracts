@@ -23,6 +23,7 @@ fn repay_loan_without_problems() {
     let aterra_balance = Uint256::from(200u64);
     let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
 
+    sdk.set_stable_balance(stable_coin_balance);
     sdk.set_aterra_balance(aterra_balance);
     sdk.set_borrower_action(BorrowerActionResponse::Repay {
         amount: loan_to_repay,
@@ -31,6 +32,7 @@ fn repay_loan_without_problems() {
     sdk.set_aterra_exchange_rate(aterra_exchange_rate);
     sdk.set_tax(20, 10u128);
 
+    println!("xxxxxxxx");
     // -= REBALANCE =-
     {
         let response = sdk.rebalance().unwrap();
@@ -59,6 +61,11 @@ fn repay_loan_without_problems() {
         assert_eq!(rapaying_state.repaying_amount, Uint256::zero());
         assert_eq!(rapaying_state.aim_buffer_size, advised_buffer_size);
     }
+
+    println!("===============");
+    println!("===============");
+    println!("===============");
+    println!("===============");
 
     // -= ANCHOR REDEEM SUCCESSFULL =-
     {

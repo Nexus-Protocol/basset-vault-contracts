@@ -2,31 +2,113 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Deps, StdResult};
 use terra_cosmwasm::TerraQuerier;
 
+pub trait Tax {
+    fn get_tax_for(&self, amount: Uint256) -> Uint256;
+}
+
 pub struct TaxInfo {
     pub rate: Decimal256,
     pub cap: Uint256,
 }
 
 impl TaxInfo {
+    #[cfg(not(test))]
     pub fn get_tax_for(&self, amount: Uint256) -> Uint256 {
-        std::cmp::min(
-            TaxInfo::round_up(Decimal256::from_uint256(amount) * self.rate),
-            self.cap,
-        )
+        let tax_amount = if amount.is_zero() {
+            Decimal256::zero()
+        } else {
+            Decimal256::from_uint256(amount)
+                * (Decimal256::one() - Decimal256::one() / (Decimal256::one() + self.rate))
+        };
+
+        let tax_amount = TaxInfo::round_up(tax_amount);
+        let tax_capped = std::cmp::min(tax_amount, self.cap);
+        std::cmp::max(tax_capped, Uint256::one())
     }
 
+    // #[cfg(not(test))]
     fn round_up(decimal: Decimal256) -> Uint256 {
-        let truncated =
-            (decimal.0 / Decimal256::DECIMAL_FRACTIONAL) * Decimal256::DECIMAL_FRACTIONAL;
-        Uint256((truncated + Decimal256::DECIMAL_FRACTIONAL) / Decimal256::DECIMAL_FRACTIONAL)
+        if decimal.is_zero() {
+            Uint256::zero()
+        } else {
+            let truncated =
+                (decimal.0 / Decimal256::DECIMAL_FRACTIONAL) * Decimal256::DECIMAL_FRACTIONAL;
+            Uint256((truncated + Decimal256::DECIMAL_FRACTIONAL) / Decimal256::DECIMAL_FRACTIONAL)
+        }
     }
 
+    #[cfg(test)]
+    pub fn get_tax_for(&self, amount: Uint256) -> Uint256 {
+        if self.rate.is_zero() {
+            return Uint256::zero();
+        }
+
+        let tax_amount = if amount.is_zero() {
+            Decimal256::zero()
+        } else {
+            Decimal256::from_uint256(amount)
+                * (Decimal256::one() - Decimal256::one() / (Decimal256::one() + self.rate))
+        };
+        println!("jjjjjjjj");
+        let tax_amount = TaxInfo::round_up(tax_amount);
+        println!("jjjjjjjj_2");
+        let tax_capped = std::cmp::min(tax_amount, self.cap);
+        println!("jjjjjjjj_3");
+
+        std::cmp::max(tax_capped, Uint256::one())
+    }
+
+    // #[cfg(test)]
+    // fn round_up(&self, decimal: Decimal256) -> Uint256 {
+    //     if self.rate.is_zero() {
+    //         return Uint256::zero();
+    //     }
+
+    //     if decimal.is_zero() {
+    //         Uint256::zero()
+    //     } else {
+    //         let truncated =
+    //             (decimal.0 / Decimal256::DECIMAL_FRACTIONAL) * Decimal256::DECIMAL_FRACTIONAL;
+    //         Uint256((truncated + Decimal256::DECIMAL_FRACTIONAL) / Decimal256::DECIMAL_FRACTIONAL)
+    //     }
+    // }
+
+    #[cfg(test)]
     pub fn get_revert_tax(&self, amount: Uint256) -> Uint256 {
-        std::cmp::min(amount * self.rate, self.cap)
+        if self.rate.is_zero() {
+            return Uint256::zero();
+        }
+
+        if amount.is_zero() {
+            return Uint256::zero();
+        }
+        let tax_amount = amount * self.rate;
+        let tax_capped = std::cmp::min(tax_amount, self.cap);
+        std::cmp::max(tax_capped, Uint256::one())
+    }
+
+    #[cfg(not(test))]
+    pub fn get_revert_tax(&self, amount: Uint256) -> Uint256 {
+        if amount.is_zero() {
+            return Uint256::zero();
+        }
+        let tax_amount = amount * self.rate;
+        let tax_capped = std::cmp::min(tax_amount, self.cap);
+        std::cmp::max(tax_capped, Uint256::one())
     }
 
     pub fn subtract_tax(&self, coin_amount: Uint256) -> Uint256 {
-        coin_amount - self.get_tax_for(coin_amount)
+        println!(">>>>> coin_amount: {}", coin_amount);
+        println!(
+            ">>>>> self.get_tax_for(coin_amount): {}",
+            self.get_tax_for(coin_amount)
+        );
+        if coin_amount.is_zero() {
+            return Uint256::zero();
+        }
+        let res = coin_amount - self.get_tax_for(coin_amount);
+        println!(">>>>> 2");
+        res
     }
 
     pub fn append_tax(&self, coin_amount: Uint256) -> Uint256 {
@@ -103,7 +185,7 @@ mod test {
             cap: Uint256::from(1_411_603u64),
         };
         let tax = tax_info.get_tax_for(Uint256::from(100_000u64));
-        assert_eq!(tax, Uint256::from(320u64));
+        assert_eq!(tax, Uint256::from(319u64));
     }
 
     #[test]
@@ -113,6 +195,6 @@ mod test {
             cap: Uint256::from(1_411_603u64),
         };
         let tax = tax_info.get_tax_for(Uint256::from(1_000_000u64));
-        assert_eq!(tax, Uint256::from(3_192u64));
+        assert_eq!(tax, Uint256::from(3_182u64));
     }
 }

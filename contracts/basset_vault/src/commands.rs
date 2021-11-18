@@ -385,6 +385,7 @@ pub fn rebalance(
     basset_in_custody: Uint256,
     basset_to_withdraw: Option<Uint256>,
 ) -> StdResult<Response> {
+    println!("qqqqqqqqq");
     let basset_in_custody = basset_in_custody - basset_to_withdraw.unwrap_or_default();
 
     let borrower_info: BorrowerInfoResponse = query_borrower_info(
@@ -401,6 +402,7 @@ pub fn rebalance(
         basset_in_custody,
     )?;
 
+    println!("qqqqqqqqq");
     match borrower_action {
         BorrowerActionResponse::Nothing {} => {
             //maybe it is better to return error here, but
@@ -478,6 +480,7 @@ pub(crate) fn repay_logic(
     config: &Config,
     mut repaying_loan_state: RepayingLoanState,
 ) -> StdResult<Response> {
+    println!("zzzzzz");
     let aterra_balance =
         query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address);
     let aterra_exchange_rate: Decimal256 =
@@ -487,6 +490,7 @@ pub(crate) fn repay_logic(
         &env.contract.address,
         config.stable_denom.clone(),
     )?;
+    println!("zzzzzz stable_coin_balance: {}", stable_coin_balance);
 
     let tax_info = get_tax_info(deps.as_ref(), &config.stable_denom)?;
     let repay_action = get_repay_loan_action(
@@ -498,6 +502,7 @@ pub(crate) fn repay_logic(
         &tax_info,
         repaying_loan_state.iteration_index == 0,
     );
+    println!("zzzzzz");
 
     repaying_loan_state.repaying_amount = repay_action.repaying_loan_amount();
     store_repaying_loan_state(deps.storage, &repaying_loan_state)?;
