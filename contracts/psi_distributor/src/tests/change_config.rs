@@ -20,7 +20,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
             nasset_token_rewards_contract_addr: None,
             community_pool_contract_addr: None,
             basset_vault_strategy_contract_addr: None,
-            psi_nasset_swap_contract_addr: None,
+            nasset_psi_swap_contract_addr: None,
             manual_ltv: None,
             fee_rate: None,
             tax_rate: None,
@@ -41,7 +41,7 @@ fn success_to_change_config_if_sender_governance() {
     let new_nasset_token_rewards_contract_addr = "addr9996".to_string();
     let new_basset_vault_strategy_contract_addr = "addr9995".to_string();
     let new_community_pool_contract_addr = "addr9995".to_string();
-    let new_psi_nasset_swap_contract_addr = "addr9995".to_string();
+    let new_nasset_psi_swap_contract_addr = "addr9995".to_string();
     let new_manual_ltv = Decimal256::from_str("0.1").unwrap();
     let new_fee_rate = Decimal256::from_str("0.77").unwrap();
     let new_tax_rate = Decimal256::from_str("0.9798").unwrap();
@@ -55,7 +55,7 @@ fn success_to_change_config_if_sender_governance() {
             basset_vault_strategy_contract_addr: Some(
                 new_basset_vault_strategy_contract_addr.clone(),
             ),
-            psi_nasset_swap_contract_addr: Some(new_psi_nasset_swap_contract_addr.clone()),
+            nasset_psi_swap_contract_addr: Some(new_nasset_psi_swap_contract_addr.clone()),
             manual_ltv: Some(new_manual_ltv),
             fee_rate: Some(new_fee_rate),
             tax_rate: Some(new_tax_rate),
@@ -80,8 +80,8 @@ fn success_to_change_config_if_sender_governance() {
         config.community_pool_contract
     );
     assert_eq!(
-        new_psi_nasset_swap_contract_addr,
-        config.psi_nasset_swap_contract_addr
+        new_nasset_psi_swap_contract_addr,
+        config.nasset_psi_swap_contract_addr
     );
     assert_eq!(new_manual_ltv, config.manual_ltv);
     assert_eq!(new_fee_rate, config.fee_rate);
@@ -95,7 +95,7 @@ fn wrong_value_in_change_config() {
     let new_nasset_token_rewards_contract_addr = "addr9996".to_string();
     let new_basset_vault_strategy_contract_addr = "addr9995".to_string();
     let new_community_pool_contract_addr = "addr9995".to_string();
-    let new_psi_nasset_swap_contract_addr = "addr9995".to_string();
+    let new_nasset_psi_swap_contract_addr = "addr9995".to_string();
     let new_manual_ltv = Decimal256::from_str("0.1").unwrap();
     let new_fee_rate = Decimal256::from_str("0.77").unwrap();
     let new_tax_rate = Decimal256::from_str("0.9798").unwrap();
@@ -111,7 +111,7 @@ fn wrong_value_in_change_config() {
                 basset_vault_strategy_contract_addr: Some(
                     new_basset_vault_strategy_contract_addr.clone(),
                 ),
-                psi_nasset_swap_contract_addr: Some(new_psi_nasset_swap_contract_addr.clone()),
+                nasset_psi_swap_contract_addr: Some(new_nasset_psi_swap_contract_addr.clone()),
                 manual_ltv: Some(Decimal256::from_str("1.1").unwrap()),
                 fee_rate: Some(new_fee_rate),
                 tax_rate: Some(new_tax_rate),
@@ -139,7 +139,7 @@ fn wrong_value_in_change_config() {
                 basset_vault_strategy_contract_addr: Some(
                     new_basset_vault_strategy_contract_addr.clone(),
                 ),
-                psi_nasset_swap_contract_addr: Some(new_psi_nasset_swap_contract_addr.clone()),
+                nasset_psi_swap_contract_addr: Some(new_nasset_psi_swap_contract_addr.clone()),
                 manual_ltv: Some(new_manual_ltv),
                 fee_rate: Some(Decimal256::from_str("1.1").unwrap()),
                 tax_rate: Some(new_tax_rate),
@@ -167,7 +167,7 @@ fn wrong_value_in_change_config() {
                 basset_vault_strategy_contract_addr: Some(
                     new_basset_vault_strategy_contract_addr.clone(),
                 ),
-                psi_nasset_swap_contract_addr: Some(new_psi_nasset_swap_contract_addr.clone()),
+                nasset_psi_swap_contract_addr: Some(new_nasset_psi_swap_contract_addr.clone()),
                 manual_ltv: Some(new_manual_ltv),
                 fee_rate: Some(new_fee_rate),
                 tax_rate: Some(Decimal256::from_str("1.1").unwrap()),

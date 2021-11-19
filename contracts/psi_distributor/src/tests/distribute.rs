@@ -2,8 +2,8 @@ use super::sdk::Sdk;
 use crate::{
     error::ContractError,
     tests::sdk::{
-        COMMUNITY_POOL_CONTRACT_ADDR, GOVERNANCE_CONTRACT_ADDR, NASSET_TOKEN_REWARDS_CONTRACT_ADDR,
-        PSI_NASSET_SWAP_CONTRACT_ADDR, PSI_TOKEN_ADDR,
+        COMMUNITY_POOL_CONTRACT_ADDR, GOVERNANCE_CONTRACT_ADDR, NASSET_PSI_SWAP_CONTRACT_ADDR,
+        NASSET_TOKEN_REWARDS_CONTRACT_ADDR, PSI_TOKEN_ADDR,
     },
 };
 use basset_vault::nasset_token_rewards::{
@@ -70,7 +70,7 @@ fn distribute_rewards() {
                 funds: vec![],
                 msg: to_binary(&Cw20ExecuteMsg::Send {
                     amount: Uint128::from(25u64),
-                    contract: PSI_NASSET_SWAP_CONTRACT_ADDR.to_string(),
+                    contract: NASSET_PSI_SWAP_CONTRACT_ADDR.to_string(),
                     msg: to_binary(&TerraswapCw20HookMsg::Swap {
                         belief_price: None,
                         max_spread: None,

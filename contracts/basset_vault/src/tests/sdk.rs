@@ -9,7 +9,7 @@ use cosmwasm_std::{
     Api, CosmosMsg, Decimal, OwnedDeps, Querier, Reply, ReplyOn, Storage, SubMsg,
     SubMsgExecutionResponse, WasmMsg,
 };
-use cosmwasm_std::{to_binary, Coin, Empty, Response, Uint128};
+use cosmwasm_std::{to_binary, Coin, Empty, Event, Response, Uint128};
 use cw20::Cw20ReceiveMsg;
 use cw20::MinterResponse;
 
@@ -54,9 +54,10 @@ pub const ANCHOR_OVERSEER_CONTRACT: &str = "addr0004";
 pub const ANCHOR_TOKEN: &str = "addr0006";
 pub const ANC_STABLE_SWAP_CONTRACT: &str = "addr0008";
 pub const PSI_STABLE_SWAP_CONTRACT: &str = "addr0009";
-pub const PSI_NASSET_SWAP_CONTRACT: &str = "addr0014";
+pub const TERRASWAP_FACTORY_CONTRACT_ADDR: &str = "addr0014";
 pub const BASSET_VAULT_STRATEGY_CONTRACT: &str = "addr0012";
 pub const COMMUNITY_POOL_CONTRACT_ADDR: &str = "addr0013";
+pub const NASSET_PSI_SWAP_CONTRACT_ADDR: &str = "addr0019";
 pub const CLAIMING_REWARDS_DELAY: u64 = 1000;
 pub const NASSET_TOKEN_CODE_ID: u64 = 10u64;
 pub const NASSET_TOKEN_CONFIG_HOLDER_CODE_ID: u64 = 11u64;
@@ -94,7 +95,7 @@ impl Sdk {
             a_custody_basset_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
             anc_stable_swap_addr: ANC_STABLE_SWAP_CONTRACT.to_string(),
             psi_stable_swap_addr: PSI_STABLE_SWAP_CONTRACT.to_string(),
-            psi_nasset_swap_addr: PSI_NASSET_SWAP_CONTRACT.to_string(),
+            ts_factory_addr: TERRASWAP_FACTORY_CONTRACT_ADDR.to_string(),
             aterra_addr: ATERRA_TOKEN.to_string(),
             psi_addr: PSI_TOKEN.to_string(),
             basset_vs_addr: BASSET_VAULT_STRATEGY_CONTRACT.to_string(),
@@ -258,21 +259,24 @@ impl Sdk {
             assert_eq!(
                 res.messages,
                 vec![SubMsg {
-                    msg: WasmMsg::Instantiate {
-                        code_id: init_msg.nasset_t_r_ci,
-                        msg: to_binary(&NAssetTokenRewardsInstantiateMsg {
-                            nasset_token_addr: nasset_contract_addr.to_string(),
-                            psi_token_addr: PSI_TOKEN.to_string(),
-                            governance_contract_addr: init_msg.gov_addr.clone()
+                    msg: WasmMsg::Execute {
+                        contract_addr: TERRASWAP_FACTORY_CONTRACT_ADDR.to_string(),
+                        msg: to_binary(&terraswap::factory::ExecuteMsg::CreatePair {
+                            asset_infos: [
+                                terraswap::asset::AssetInfo::Token {
+                                    contract_addr: nasset_contract_addr.to_string(),
+                                },
+                                terraswap::asset::AssetInfo::Token {
+                                    contract_addr: PSI_TOKEN.to_string(),
+                                }
+                            ]
                         })
                         .unwrap(),
                         funds: vec![],
-                        label: "".to_string(),
-                        admin: Some(GOVERNANCE_CONTRACT.to_string()),
                     }
                     .into(),
                     gas_limit: None,
-                    id: SubmsgIds::InitNAssetRewards.id(),
+                    id: SubmsgIds::InitNAssetPsiSwapPair.id(),
                     reply_on: ReplyOn::Success,
                 }]
             );
@@ -281,6 +285,51 @@ impl Sdk {
                 vec![
                     attr("action", "nasset_token_initialized"),
                     attr("nasset_token_addr", nasset_contract_addr),
+                ]
+            );
+        }
+
+        // ===========================================================
+        // ======== Instantiate NASSET_PSI_SWAP_CONTRACT_ADDR ========
+        // ===========================================================
+        {
+            let reply_msg = Reply {
+                id: SubmsgIds::InitNAssetPsiSwapPair.id(),
+                result: cosmwasm_std::ContractResult::Ok(SubMsgExecutionResponse {
+                    events: vec![Event::new("")
+                        .add_attribute("pair_contract_addr", NASSET_PSI_SWAP_CONTRACT_ADDR)],
+                    data: None,
+                }),
+            };
+
+            let res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg).unwrap();
+
+            assert_eq!(
+                res.messages,
+                vec![SubMsg::reply_on_success(
+                    CosmosMsg::Wasm(WasmMsg::Instantiate {
+                        admin: Some(GOVERNANCE_CONTRACT.to_string()),
+                        code_id: NASSET_TOKEN_REWARDS_CODE_ID,
+                        msg: to_binary(&NAssetTokenRewardsInstantiateMsg {
+                            psi_token_addr: PSI_TOKEN.to_string(),
+                            nasset_token_addr: NASSET_TOKEN_ADDR.to_string(),
+                            governance_contract_addr: GOVERNANCE_CONTRACT.to_string(),
+                        })
+                        .unwrap(),
+                        funds: vec![],
+                        label: "".to_string(),
+                    }),
+                    SubmsgIds::InitNAssetRewards.id(),
+                )]
+            );
+            assert_eq!(
+                res.attributes,
+                vec![
+                    attr("action", "nasset_psi_swap_pair_initialized"),
+                    attr(
+                        "nasset_psi_swap_contract_addr",
+                        NASSET_PSI_SWAP_CONTRACT_ADDR
+                    ),
                 ]
             );
         }
@@ -324,9 +373,8 @@ impl Sdk {
                                 basset_vault_strategy_contract_addr: init_msg
                                     .basset_vs_addr
                                     .clone(),
-                                psi_nasset_swap_contract_addr: init_msg
-                                    .psi_nasset_swap_addr
-                                    .clone(),
+                                nasset_psi_swap_contract_addr: NASSET_PSI_SWAP_CONTRACT_ADDR
+                                    .to_string(),
                                 manual_ltv: init_msg.manual_ltv,
                                 fee_rate: init_msg.fee_rate,
                                 tax_rate: init_msg.tax_rate

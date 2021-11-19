@@ -69,7 +69,8 @@ pub fn instantiate(
         manual_ltv: msg.manual_ltv,
         fee_rate: msg.fee_rate,
         tax_rate: msg.tax_rate,
-        psi_nasset_swap_contract_addr: msg.psi_nasset_swap_addr,
+        nasset_psi_swap_contract_addr: "".to_string(),
+        terraswap_factory_contract_addr: msg.ts_factory_addr,
     };
     store_child_contracts_info(deps.storage, &child_contracts_info)?;
 
@@ -154,12 +155,54 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
 
             Ok(Response::new()
                 .add_submessage(SubMsg::reply_on_success(
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: child_contracts_info.terraswap_factory_contract_addr,
+                        msg: to_binary(&terraswap::factory::ExecuteMsg::CreatePair {
+                            asset_infos: [
+                                terraswap::asset::AssetInfo::Token {
+                                    contract_addr: nasset_token.to_string(),
+                                },
+                                terraswap::asset::AssetInfo::Token {
+                                    contract_addr: config.psi_token.to_string(),
+                                },
+                            ],
+                        })?,
+                        funds: vec![],
+                    }),
+                    SubmsgIds::InitNAssetPsiSwapPair.id(),
+                ))
+                .add_attributes(vec![
+                    ("action", "nasset_token_initialized"),
+                    ("nasset_token_addr", nasset_token),
+                ]))
+        }
+
+        SubmsgIds::InitNAssetPsiSwapPair => {
+            let events = msg.result.unwrap().events;
+
+            let nasset_psi_swap_contract_addr = events
+                .into_iter()
+                .map(|event| event.attributes)
+                .flatten()
+                .find(|attr| attr.key == "pair_contract_addr")
+                .map(|attr| attr.value)
+                .ok_or_else(|| {
+                    StdError::generic_err("Failed to create nAsset <-> Psi swap pair")
+                })?;
+
+            let config = load_config(deps.storage)?;
+            let mut child_contracts_info = load_child_contracts_info(deps.as_ref().storage)?;
+            child_contracts_info.nasset_psi_swap_contract_addr = nasset_psi_swap_contract_addr;
+            store_child_contracts_info(deps.storage, &child_contracts_info)?;
+
+            Ok(Response::new()
+                .add_submessage(SubMsg::reply_on_success(
                     CosmosMsg::Wasm(WasmMsg::Instantiate {
                         admin: Some(config.governance_contract.to_string()),
                         code_id: child_contracts_info.nasset_token_rewards_code_id,
                         msg: to_binary(&NAssetTokenRewardsInstantiateMsg {
                             psi_token_addr: config.psi_token.to_string(),
-                            nasset_token_addr: nasset_token.to_string(),
+                            nasset_token_addr: config.nasset_token.to_string(),
                             governance_contract_addr: config.governance_contract.to_string(),
                         })?,
                         funds: vec![],
@@ -168,8 +211,11 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                     SubmsgIds::InitNAssetRewards.id(),
                 ))
                 .add_attributes(vec![
-                    ("action", "nasset_token_initialized"),
-                    ("nasset_token_addr", nasset_token),
+                    ("action", "nasset_psi_swap_pair_initialized"),
+                    (
+                        "nasset_psi_swap_contract_addr",
+                        &child_contracts_info.nasset_psi_swap_contract_addr,
+                    ),
                 ]))
         }
 
@@ -198,8 +244,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                             basset_vault_strategy_contract_addr: config
                                 .basset_vault_strategy_contract
                                 .to_string(),
-                            psi_nasset_swap_contract_addr: child_contracts_info
-                                .psi_nasset_swap_contract_addr,
+                            nasset_psi_swap_contract_addr: child_contracts_info
+                                .nasset_psi_swap_contract_addr,
                             community_pool_contract_addr: child_contracts_info
                                 .community_pool_contract_addr,
                             manual_ltv: child_contracts_info.manual_ltv,

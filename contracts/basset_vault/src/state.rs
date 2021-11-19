@@ -43,7 +43,8 @@ pub struct ChildContractsInfo {
     pub manual_ltv: Decimal256,
     pub fee_rate: Decimal256,
     pub tax_rate: Decimal256,
-    pub psi_nasset_swap_contract_addr: String,
+    pub nasset_psi_swap_contract_addr: String,
+    pub terraswap_factory_contract_addr: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

@@ -37,8 +37,6 @@ pub struct InstantiateMsg {
     pub anc_stable_swap_addr: String,
     // psi_stable_swap_contract_addr
     pub psi_stable_swap_addr: String,
-    // psi_nasset_swap_contract_addr
-    pub psi_nasset_swap_addr: String,
     // aterra_token_addr
     pub aterra_addr: String,
     // psi_token_addr
@@ -56,6 +54,8 @@ pub struct InstantiateMsg {
     ///fees, need to calc how much send to governance and community pools
     pub fee_rate: Decimal256,
     pub tax_rate: Decimal256,
+    ///terraswap_factory_contract_addr
+    pub ts_factory_addr: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

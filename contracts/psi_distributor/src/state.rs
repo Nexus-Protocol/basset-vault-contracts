@@ -11,7 +11,7 @@ pub struct Config {
     pub nasset_token_rewards_contract: Addr,
     pub community_pool_contract: Addr,
     pub basset_vault_strategy_contract: Addr,
-    pub psi_nasset_swap_contract_addr: Addr,
+    pub nasset_psi_swap_contract_addr: Addr,
     pub manual_ltv: Decimal256,
     pub fee_rate: Decimal256,
     pub tax_rate: Decimal256,
