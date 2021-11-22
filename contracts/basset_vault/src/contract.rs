@@ -28,6 +28,8 @@ use basset_vault::{
     },
     nasset_token_rewards::InstantiateMsg as NAssetTokenRewardsInstantiateMsg,
     psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg,
+    terraswap_factory::ExecuteMsg as TerraswapFactoryExecuteMsg,
+    terraswap::AssetInfo,
 };
 use cw20::MinterResponse;
 use protobuf::Message;
@@ -157,13 +159,13 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                 .add_submessage(SubMsg::reply_on_success(
                     CosmosMsg::Wasm(WasmMsg::Execute {
                         contract_addr: child_contracts_info.terraswap_factory_contract_addr,
-                        msg: to_binary(&terraswap::factory::ExecuteMsg::CreatePair {
+                        msg: to_binary(&TerraswapFactoryExecuteMsg::CreatePair {
                             asset_infos: [
-                                terraswap::asset::AssetInfo::Token {
-                                    contract_addr: nasset_token.to_string(),
+                                AssetInfo::Token {
+                                    contract_addr: config.nasset_token,
                                 },
-                                terraswap::asset::AssetInfo::Token {
-                                    contract_addr: config.psi_token.to_string(),
+                                AssetInfo::Token {
+                                    contract_addr: config.psi_token,
                                 },
                             ],
                         })?,

@@ -2,7 +2,7 @@ use crate::tests::mock_dependencies;
 use crate::TOO_HIGH_BORROW_DEMAND_ERR_MSG;
 use crate::{reply_response::MsgInstantiateContractResponse, SubmsgIds};
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::StdResult;
+use cosmwasm_std::{Addr, StdResult};
 use cosmwasm_std::{
     attr,
     testing::{mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
@@ -35,6 +35,8 @@ use basset_vault::{
     },
     nasset_token_rewards::InstantiateMsg as NAssetTokenRewardsInstantiateMsg,
 };
+use basset_vault::terraswap_factory::ExecuteMsg as TerraswapFactoryExecuteMsg;
+use basset_vault::terraswap::AssetInfo;
 
 use super::WasmMockQuerier;
 
@@ -264,13 +266,13 @@ impl Sdk {
                 vec![SubMsg {
                     msg: WasmMsg::Execute {
                         contract_addr: TERRASWAP_FACTORY_CONTRACT_ADDR.to_string(),
-                        msg: to_binary(&terraswap::factory::ExecuteMsg::CreatePair {
+                        msg: to_binary(&TerraswapFactoryExecuteMsg::CreatePair {
                             asset_infos: [
-                                terraswap::asset::AssetInfo::Token {
-                                    contract_addr: nasset_contract_addr.to_string(),
+                                AssetInfo::Token {
+                                    contract_addr: Addr::unchecked(nasset_contract_addr),
                                 },
-                                terraswap::asset::AssetInfo::Token {
-                                    contract_addr: PSI_TOKEN.to_string(),
+                                AssetInfo::Token {
+                                    contract_addr: Addr::unchecked(PSI_TOKEN),
                                 }
                             ]
                         })

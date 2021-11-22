@@ -9,6 +9,7 @@ pub mod psi_distributor;
 pub mod querier;
 pub mod terraswap;
 pub mod terraswap_pair;
+pub mod terraswap_factory;
 
 // hom many iterations is available for loan repayment
 pub const BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP: u8 = 10;
