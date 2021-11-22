@@ -2,10 +2,6 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Deps, StdResult};
 use terra_cosmwasm::TerraQuerier;
 
-pub trait Tax {
-    fn get_tax_for(&self, amount: Uint256) -> Uint256;
-}
-
 pub struct TaxInfo {
     pub rate: Decimal256,
     pub cap: Uint256,
