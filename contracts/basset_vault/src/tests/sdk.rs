@@ -308,7 +308,6 @@ impl Sdk {
                 res.messages,
                 vec![SubMsg::reply_on_success(
                     CosmosMsg::Wasm(WasmMsg::Instantiate {
-                        admin: Some(GOVERNANCE_CONTRACT.to_string()),
                         code_id: NASSET_TOKEN_REWARDS_CODE_ID,
                         msg: to_binary(&NAssetTokenRewardsInstantiateMsg {
                             psi_token_addr: PSI_TOKEN.to_string(),
@@ -318,6 +317,7 @@ impl Sdk {
                         .unwrap(),
                         funds: vec![],
                         label: "".to_string(),
+                        admin: Some(GOVERNANCE_CONTRACT.to_string()),
                     }),
                     SubmsgIds::InitNAssetRewards.id(),
                 )]
