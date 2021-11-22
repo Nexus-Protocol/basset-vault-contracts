@@ -38,10 +38,10 @@ fn fail_to_change_config_if_sender_is_not_governance() {
 fn success_to_change_config_if_sender_governance() {
     let mut sdk = Sdk::init();
 
-    let new_nasset_token_rewards_contract_addr = "addr9996".to_string();
-    let new_basset_vault_strategy_contract_addr = "addr9995".to_string();
-    let new_community_pool_contract_addr = "addr9995".to_string();
-    let new_nasset_psi_swap_contract_addr = "addr9995".to_string();
+    let new_nasset_token_rewards_contract_addr = "addr9995".to_string();
+    let new_basset_vault_strategy_contract_addr = "addr9996".to_string();
+    let new_community_pool_contract_addr = "addr9997".to_string();
+    let new_nasset_psi_swap_contract_addr = "addr9998".to_string();
     let new_manual_ltv = Decimal256::from_str("0.1").unwrap();
     let new_fee_rate = Decimal256::from_str("0.77").unwrap();
     let new_tax_rate = Decimal256::from_str("0.9798").unwrap();
@@ -92,10 +92,10 @@ fn success_to_change_config_if_sender_governance() {
 fn wrong_value_in_change_config() {
     let mut sdk = Sdk::init();
 
-    let new_nasset_token_rewards_contract_addr = "addr9996".to_string();
-    let new_basset_vault_strategy_contract_addr = "addr9995".to_string();
-    let new_community_pool_contract_addr = "addr9995".to_string();
-    let new_nasset_psi_swap_contract_addr = "addr9995".to_string();
+    let new_nasset_token_rewards_contract_addr = "addr9995".to_string();
+    let new_basset_vault_strategy_contract_addr = "addr9996".to_string();
+    let new_community_pool_contract_addr = "addr9997".to_string();
+    let new_nasset_psi_swap_contract_addr = "addr9998".to_string();
     let new_manual_ltv = Decimal256::from_str("0.1").unwrap();
     let new_fee_rate = Decimal256::from_str("0.77").unwrap();
     let new_tax_rate = Decimal256::from_str("0.9798").unwrap();
