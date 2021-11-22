@@ -127,7 +127,7 @@ fn calc_borrower_action(
     if current_ltv >= ltv_info.borrow_ltv_max {
         let repay_amount = borrowed_amount - aim_borrow_amount;
         BorrowerActionResponse::repay(repay_amount, buffer_size)
-    } else if current_ltv <= ltv_info.borrow_ltv_min {
+    } else if current_ltv <= ltv_info.borrow_ltv_min && aim_borrow_amount != Uint256::zero(){
         let borrow_amount = aim_borrow_amount - borrowed_amount;
         BorrowerActionResponse::borrow(borrow_amount, buffer_size)
     } else {
@@ -203,6 +203,32 @@ mod test {
         assert_eq!(
             borrower_action,
             BorrowerActionResponse::borrow(Uint256::from(115_500u64), Uint256::from(10_395u64))
+        );
+    }
+
+    #[test]
+    fn nothing_on_aim_borrow_amount_equals_zero() {
+        let borrowed_amount = Uint256::zero();
+        let locked_basset_amount = Uint256::from(3u64);
+        let basset_max_ltv = Decimal256::from_str("0.6").unwrap();
+        let buffer_part = Decimal256::from_str("0.018").unwrap();
+        let ltv_info = LTVInfo {
+            basset_price: Decimal256::from_str("1").unwrap(),
+            borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
+            borrow_ltv_min: Decimal256::from_str("0.75").unwrap(),
+            borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
+        };
+
+        let borrower_action = calc_borrower_action(
+            ltv_info,
+            borrowed_amount,
+            locked_basset_amount,
+            basset_max_ltv,
+            buffer_part,
+        );
+        assert_eq!(
+            borrower_action,
+            BorrowerActionResponse::nothing()
         );
     }
 
