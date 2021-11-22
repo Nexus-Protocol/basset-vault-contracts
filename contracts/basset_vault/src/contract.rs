@@ -28,8 +28,8 @@ use basset_vault::{
     },
     nasset_token_rewards::InstantiateMsg as NAssetTokenRewardsInstantiateMsg,
     psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg,
-    terraswap_factory::ExecuteMsg as TerraswapFactoryExecuteMsg,
     terraswap::AssetInfo,
+    terraswap_factory::ExecuteMsg as TerraswapFactoryExecuteMsg,
 };
 use cw20::MinterResponse;
 use protobuf::Message;

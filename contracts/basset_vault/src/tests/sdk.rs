@@ -2,7 +2,6 @@ use crate::tests::mock_dependencies;
 use crate::TOO_HIGH_BORROW_DEMAND_ERR_MSG;
 use crate::{reply_response::MsgInstantiateContractResponse, SubmsgIds};
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Addr, StdResult};
 use cosmwasm_std::{
     attr,
     testing::{mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
@@ -10,6 +9,7 @@ use cosmwasm_std::{
     SubMsgExecutionResponse, WasmMsg,
 };
 use cosmwasm_std::{to_binary, Coin, Empty, Event, Response, Uint128};
+use cosmwasm_std::{Addr, StdResult};
 use cw20::Cw20ReceiveMsg;
 use cw20::MinterResponse;
 
@@ -25,6 +25,8 @@ use basset_vault::basset_vault::Cw20HookMsg;
 use basset_vault::basset_vault_strategy::BorrowerActionResponse;
 use basset_vault::psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg;
 use basset_vault::querier::AnchorMarketEpochStateResponse;
+use basset_vault::terraswap::AssetInfo;
+use basset_vault::terraswap_factory::ExecuteMsg as TerraswapFactoryExecuteMsg;
 use basset_vault::{
     basset_vault::ExecuteMsg,
     nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
@@ -35,8 +37,6 @@ use basset_vault::{
     },
     nasset_token_rewards::InstantiateMsg as NAssetTokenRewardsInstantiateMsg,
 };
-use basset_vault::terraswap_factory::ExecuteMsg as TerraswapFactoryExecuteMsg;
-use basset_vault::terraswap::AssetInfo;
 
 use super::WasmMockQuerier;
 

@@ -1,6 +1,6 @@
+use crate::terraswap::AssetInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::terraswap::AssetInfo;
 
 // Copypasted from terraswap
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
