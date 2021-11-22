@@ -140,7 +140,8 @@ impl Sdk {
         let info = mock_info("addr9999", &[]);
 
         // ==========================================================
-        // ================ Instantiate BASSET_FARMER ===============
+        // =================== Init BASSET_FARMER ===================
+        // ========= Instantiate NASSET_TOKEN_CONFIG_HOLDER =========
         // ==========================================================
         {
             let res =
@@ -168,7 +169,8 @@ impl Sdk {
         }
 
         // ==========================================================
-        // ========= Instantiate NASSET_TOKEN_CONFIG_HOLDER =========
+        // ============= Init NASSET_TOKEN_CONFIG_HOLDER ============
+        // =============== Instantiate NASSET_TOKEN =================
         // ==========================================================
 
         {
@@ -236,7 +238,8 @@ impl Sdk {
         }
 
         // ==========================================================
-        // ========= Instantiate NASSET_TOKEN =======================
+        // =================== Init NASSET_TOKEN ====================
+        // =============== Create nAsset <-> Psi pair ===============
         // ==========================================================
         {
             let mut nasset_token_initiate_response = MsgInstantiateContractResponse::new();
@@ -290,7 +293,8 @@ impl Sdk {
         }
 
         // ===========================================================
-        // ======== Instantiate NASSET_PSI_SWAP_CONTRACT_ADDR ========
+        // =========== Init NASSET_PSI_SWAP_CONTRACT_ADDR ============
+        // ============ Instantiate NASSET_TOKEN_REWARDS =============
         // ===========================================================
         {
             let reply_msg = Reply {
@@ -334,10 +338,10 @@ impl Sdk {
             );
         }
 
-        // ==========================================================
-        // ======== Set TOKEN_REWARDS_ADDR to CONFIG_HOLDER =========
-        // ============= Instantiate PSI_DISTRIBUTOR ================
-        // ==========================================================
+        // ===========================================================================
+        // ==== Pass NASSET_TOKEN_REWARDS_ADDR to psi distributor instantiate msg ====
+        // ====================== Instantiate PSI_DISTRIBUTOR ========================
+        // ===========================================================================
         {
             let mut nasset_token_rewards_initiate_response = MsgInstantiateContractResponse::new();
             nasset_token_rewards_initiate_response
@@ -412,7 +416,7 @@ impl Sdk {
         }
 
         // ==========================================================
-        // ============= PSI_DISTRIBUTOR initialized ================
+        // ================== Init PSI_DISTRIBUTOR ==================
         // ==========================================================
         {
             let mut psi_distributor_initiate_response = MsgInstantiateContractResponse::new();
