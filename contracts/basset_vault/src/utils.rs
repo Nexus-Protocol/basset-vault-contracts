@@ -144,8 +144,21 @@ pub fn get_repay_loan_action(
     is_first_try: bool,
 ) -> RepayLoanAction {
     println!("oooooooooooo stable_coin_balance: {}", stable_coin_balance);
+    println!("oooooooooooo total_repay_amount: {}", total_repay_amount);
     if aterra_balance.is_zero() && stable_coin_balance.is_zero() {
         return RepayLoanAction::Nothing;
+    }
+
+    let wanted_stables_without_tax =
+        calc_wanted_stablecoins(stable_coin_balance, total_repay_amount, aim_buffer_size);
+
+    if wanted_stables_without_tax.is_zero() {
+        let max_amount_to_send = tax_info.subtract_tax(stable_coin_balance);
+        let repay_amount = total_repay_amount.min(max_amount_to_send);
+        println!("llllllllllll repay_amount: {}", repay_amount);
+        if repay_amount.is_zero() {
+            return RepayLoanAction::Nothing;
+        }
     }
 
     //add tax to repay_amount
@@ -189,12 +202,18 @@ pub fn get_repay_loan_action(
             };
         } else {
             let stables_from_aterra_sell = aterra_value.min(wanted_stables);
+            println!("aterra_value: {}", aterra_value);
+            println!("wanted_stables: {}", wanted_stables);
+            println!("stables_from_aterra_sell: {}", stables_from_aterra_sell);
 
             let aterra_to_sell =
                 tax_info.append_tax(stables_from_aterra_sell) / aterra_exchange_rate;
 
+            println!("aterra_to_sell: {}", aterra_to_sell);
+            println!("aterra_balance: {}", aterra_balance);
             //make sure that we do not redeem more then we have (in case if some issue with tax precision)
             let aterra_to_sell = aterra_to_sell.min(aterra_balance);
+            println!("aterra_to_sell_final: {}", aterra_to_sell);
 
             if aterra_to_sell.is_zero() {
                 return RepayLoanAction::Nothing;
@@ -251,6 +270,7 @@ fn calc_wanted_stablecoins(
     repay_amount: Uint256,
     aim_buffer_size: Uint256,
 ) -> Uint256 {
+    println!("zzzzzzzzzzzzzzzzzzz");
     //we have enough balance to repay loan without any additional stables
     //TODO: тут должно 'repay_amount' считаться без добавленной таксы
     if stable_coin_balance >= repay_amount + aim_buffer_size {
@@ -263,14 +283,14 @@ fn calc_wanted_stablecoins(
         println!("kkkkkkkkkkk1");
         let can_get_from_balance = stable_coin_balance - aim_buffer_size;
         println!("kkkkkkkkkkk2");
-        //TODO: тут должно 'repay_amount' считаться без добавленной таксы
-        //TODO: add test similar too 'get_repay_loan_action_do_nothing_3', but that goes into this
-        //leaf
         if repay_amount <= can_get_from_balance {
-            println!("kkkkkkkkkkk3");
+            //impossible check cause of first check "stable_coin_balance >= repay_amount + aim_buffer_size"
             return Uint256::zero();
         }
-        println!("kkkkkkkkkkk4");
+        println!(
+            "kkkkkkkkkkk4\nrepay_amount: {}, can_get_from_balance: {}",
+            repay_amount, can_get_from_balance
+        );
         return repay_amount - can_get_from_balance;
     }
 

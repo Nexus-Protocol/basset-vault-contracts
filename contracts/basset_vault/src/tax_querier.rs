@@ -22,14 +22,20 @@ impl TaxInfo {
         std::cmp::max(tax_capped, Uint256::one())
     }
 
-    // #[cfg(not(test))]
     fn round_up(decimal: Decimal256) -> Uint256 {
         if decimal.is_zero() {
             Uint256::zero()
         } else {
-            let truncated =
-                (decimal.0 / Decimal256::DECIMAL_FRACTIONAL) * Decimal256::DECIMAL_FRACTIONAL;
-            Uint256((truncated + Decimal256::DECIMAL_FRACTIONAL) / Decimal256::DECIMAL_FRACTIONAL)
+            let fractional = (decimal.0) % Decimal256::DECIMAL_FRACTIONAL;
+            if fractional.is_zero() {
+                Uint256(decimal.0 / Decimal256::DECIMAL_FRACTIONAL)
+            } else {
+                let truncated =
+                    (decimal.0 / Decimal256::DECIMAL_FRACTIONAL) * Decimal256::DECIMAL_FRACTIONAL;
+                Uint256(
+                    (truncated + Decimal256::DECIMAL_FRACTIONAL) / Decimal256::DECIMAL_FRACTIONAL,
+                )
+            }
         }
     }
 
@@ -45,29 +51,11 @@ impl TaxInfo {
             Decimal256::from_uint256(amount)
                 * (Decimal256::one() - Decimal256::one() / (Decimal256::one() + self.rate))
         };
-        println!("jjjjjjjj");
         let tax_amount = TaxInfo::round_up(tax_amount);
-        println!("jjjjjjjj_2");
         let tax_capped = std::cmp::min(tax_amount, self.cap);
-        println!("jjjjjjjj_3");
 
         std::cmp::max(tax_capped, Uint256::one())
     }
-
-    // #[cfg(test)]
-    // fn round_up(&self, decimal: Decimal256) -> Uint256 {
-    //     if self.rate.is_zero() {
-    //         return Uint256::zero();
-    //     }
-
-    //     if decimal.is_zero() {
-    //         Uint256::zero()
-    //     } else {
-    //         let truncated =
-    //             (decimal.0 / Decimal256::DECIMAL_FRACTIONAL) * Decimal256::DECIMAL_FRACTIONAL;
-    //         Uint256((truncated + Decimal256::DECIMAL_FRACTIONAL) / Decimal256::DECIMAL_FRACTIONAL)
-    //     }
-    // }
 
     #[cfg(test)]
     pub fn get_revert_tax(&self, amount: Uint256) -> Uint256 {
@@ -78,7 +66,10 @@ impl TaxInfo {
         if amount.is_zero() {
             return Uint256::zero();
         }
-        let tax_amount = amount * self.rate;
+        let tax_amount = Decimal256::from_uint256(amount) * self.rate;
+        println!("mmmmmmmm, tax_amount before round_up: {}", tax_amount);
+        let tax_amount = TaxInfo::round_up(tax_amount);
+        println!("mmmmmmmm, tax_amount after round_up: {}", tax_amount);
         let tax_capped = std::cmp::min(tax_amount, self.cap);
         std::cmp::max(tax_capped, Uint256::one())
     }
@@ -88,7 +79,8 @@ impl TaxInfo {
         if amount.is_zero() {
             return Uint256::zero();
         }
-        let tax_amount = amount * self.rate;
+        let tax_amount = Decimal256::from_uint256(amount) * self.rate;
+        let tax_amount = TaxInfo::round_up(tax_amount);
         let tax_capped = std::cmp::min(tax_amount, self.cap);
         std::cmp::max(tax_capped, Uint256::one())
     }
@@ -108,6 +100,7 @@ impl TaxInfo {
     }
 
     pub fn append_tax(&self, coin_amount: Uint256) -> Uint256 {
+        println!("get_revert_tax: {}", self.get_revert_tax(coin_amount));
         coin_amount + self.get_revert_tax(coin_amount)
     }
 }
@@ -192,5 +185,75 @@ mod test {
         };
         let tax = tax_info.get_tax_for(Uint256::from(1_000_000u64));
         assert_eq!(tax, Uint256::from(3_182u64));
+    }
+
+    #[test]
+    fn round_up_test_zero() {
+        let decimal = Decimal256::zero();
+        let rounded = TaxInfo::round_up(decimal);
+        assert_eq!(rounded, Uint256::zero());
+    }
+
+    #[test]
+    fn round_up_test_1() {
+        let decimal = Decimal256::from_str("0.1").unwrap();
+        let rounded = TaxInfo::round_up(decimal);
+        assert_eq!(rounded, Uint256::one());
+    }
+
+    #[test]
+    fn round_up_test_2() {
+        let decimal = Decimal256::from_str("0.5").unwrap();
+        let rounded = TaxInfo::round_up(decimal);
+        assert_eq!(rounded, Uint256::one());
+    }
+
+    #[test]
+    fn round_up_test_3() {
+        let decimal = Decimal256::from_str("0.9").unwrap();
+        let rounded = TaxInfo::round_up(decimal);
+        assert_eq!(rounded, Uint256::one());
+    }
+
+    #[test]
+    fn round_up_test_4() {
+        let decimal = Decimal256::from_str("1.0").unwrap();
+        let rounded = TaxInfo::round_up(decimal);
+        assert_eq!(rounded, Uint256::one());
+    }
+
+    #[test]
+    fn round_up_test_5() {
+        let decimal = Decimal256::from_str("1.1").unwrap();
+        let rounded = TaxInfo::round_up(decimal);
+        assert_eq!(rounded, Uint256::from(2u64));
+    }
+
+    #[test]
+    fn round_up_test_6() {
+        let decimal = Decimal256::from_str("1.5").unwrap();
+        let rounded = TaxInfo::round_up(decimal);
+        assert_eq!(rounded, Uint256::from(2u64));
+    }
+
+    #[test]
+    fn round_up_test_7() {
+        let decimal = Decimal256::from_str("1.9").unwrap();
+        let rounded = TaxInfo::round_up(decimal);
+        assert_eq!(rounded, Uint256::from(2u64));
+    }
+
+    #[test]
+    fn round_up_test_8() {
+        let decimal = Decimal256::from_str("100.0").unwrap();
+        let rounded = TaxInfo::round_up(decimal);
+        assert_eq!(rounded, Uint256::from(100u64));
+    }
+
+    #[test]
+    fn round_up_test_9() {
+        let decimal = Decimal256::from_str("100.000001").unwrap();
+        let rounded = TaxInfo::round_up(decimal);
+        assert_eq!(rounded, Uint256::from(101u64));
     }
 }
