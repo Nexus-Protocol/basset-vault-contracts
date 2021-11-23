@@ -7,7 +7,7 @@ use crate::{
     commands,
     error::ContractError,
     queries,
-    state::{load_config, save_config, Config},
+    state::{load_config, load_legacy_config, save_config, Config},
     ContractResult,
 };
 use basset_vault::psi_distributor::{
@@ -112,6 +112,27 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[entry_point]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
-    Ok(Response::default())
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> StdResult<Response> {
+    let legacy_config = load_legacy_config(deps.storage)?;
+    let config = Config {
+        psi_token: legacy_config.psi_token,
+        governance_contract: legacy_config.governance_contract,
+        nasset_token_rewards_contract: legacy_config.nasset_token_rewards_contract,
+        community_pool_contract: legacy_config.community_pool_contract,
+        basset_vault_strategy_contract: legacy_config.basset_vault_strategy_contract,
+        nasset_psi_swap_contract_addr: deps
+            .api
+            .addr_validate(&msg.nasset_psi_swap_contract_addr)?,
+        manual_ltv: legacy_config.manual_ltv,
+        fee_rate: legacy_config.fee_rate,
+        tax_rate: legacy_config.tax_rate,
+    };
+    save_config(deps.storage, &config)?;
+    Ok(Response::default().add_attributes(vec![
+        ("action", "migrate"),
+        (
+            "nasset_psi_swap_contract_addr",
+            &msg.nasset_psi_swap_contract_addr,
+        ),
+    ]))
 }

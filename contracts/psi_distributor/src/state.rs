@@ -18,13 +18,30 @@ pub struct Config {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct LegacyConfig {
+    pub psi_token: Addr,
+    pub governance_contract: Addr,
+    pub nasset_token_rewards_contract: Addr,
+    pub community_pool_contract: Addr,
+    pub basset_vault_strategy_contract: Addr,
+    pub manual_ltv: Decimal256,
+    pub fee_rate: Decimal256,
+    pub tax_rate: Decimal256,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct GovernanceUpdateState {
     pub new_governance_contract_addr: Addr,
     pub wait_approve_until: u64,
 }
 
+static LEGACY_KEY_CONFIG: Item<LegacyConfig> = Item::new("config");
 static KEY_CONFIG: Item<Config> = Item::new("config");
 static KEY_GOVERNANCE_UPDATE: Item<GovernanceUpdateState> = Item::new("gov_update");
+
+pub fn load_legacy_config(storage: &dyn Storage) -> StdResult<LegacyConfig> {
+    LEGACY_KEY_CONFIG.load(storage)
+}
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
     KEY_CONFIG.load(storage)

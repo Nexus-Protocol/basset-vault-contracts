@@ -62,10 +62,13 @@ pub struct ConfigResponse {
     pub nasset_token_rewards_contract_addr: String,
     pub community_pool_contract_addr: String,
     pub basset_vault_strategy_contract_addr: String,
+    pub nasset_psi_swap_contract_addr: String,
     pub manual_ltv: Decimal256,
     pub fee_rate: Decimal256,
     pub tax_rate: Decimal256,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub nasset_psi_swap_contract_addr: String,
+}
