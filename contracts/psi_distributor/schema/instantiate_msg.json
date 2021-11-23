@@ -8,8 +8,8 @@
     "fee_rate",
     "governance_contract_addr",
     "manual_ltv",
+    "nasset_psi_swap_contract_addr",
     "nasset_token_rewards_contract_addr",
-    "psi_nasset_swap_contract_addr",
     "psi_token_addr",
     "tax_rate"
   ],
@@ -29,10 +29,10 @@
     "manual_ltv": {
       "$ref": "#/definitions/Decimal256"
     },
-    "nasset_token_rewards_contract_addr": {
+    "nasset_psi_swap_contract_addr": {
       "type": "string"
     },
-    "psi_nasset_swap_contract_addr": {
+    "nasset_token_rewards_contract_addr": {
       "type": "string"
     },
     "psi_token_addr": {

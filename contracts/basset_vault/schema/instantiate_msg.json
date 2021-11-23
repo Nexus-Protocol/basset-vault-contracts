@@ -23,10 +23,10 @@
     "over_loan_balance_value",
     "psi_addr",
     "psi_distr_ci",
-    "psi_nasset_swap_addr",
     "psi_stable_swap_addr",
     "stable_denom",
-    "tax_rate"
+    "tax_rate",
+    "ts_factory_addr"
   ],
   "properties": {
     "a_custody_basset_addr": {
@@ -114,9 +114,6 @@
       "format": "uint64",
       "minimum": 0.0
     },
-    "psi_nasset_swap_addr": {
-      "type": "string"
-    },
     "psi_stable_swap_addr": {
       "type": "string"
     },
@@ -125,6 +122,10 @@
     },
     "tax_rate": {
       "$ref": "#/definitions/Decimal256"
+    },
+    "ts_factory_addr": {
+      "description": "terraswap_factory_contract_addr",
+      "type": "string"
     }
   },
   "definitions": {
