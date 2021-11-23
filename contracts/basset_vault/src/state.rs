@@ -2,7 +2,7 @@ use cw_storage_plus::Item;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Addr, StdResult, Storage, Uint128};
+use cosmwasm_std::{Addr, StdError, StdResult, Storage, Uint128};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Config {
@@ -43,14 +43,31 @@ pub struct ChildContractsInfo {
     pub manual_ltv: Decimal256,
     pub fee_rate: Decimal256,
     pub tax_rate: Decimal256,
-    pub nasset_psi_swap_contract_addr: String,
-    pub terraswap_factory_contract_addr: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct GovernanceUpdateState {
     pub new_governance_contract_addr: Addr,
     pub wait_approve_until: u64,
+}
+
+/// Data used only to init psi distrubutor
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct PsiDistributorInitInfo {
+    /// Terraswap factory contract to create nAsset <-> Psi pair
+    pub terraswap_factory_contract_addr: String,
+    /// Address of nAsset <-> Psi pair.
+    /// It is optional because it is set later,
+    /// after pair was created using `terraswap_factory_contract_addr`
+    pub nasset_psi_swap_contract_addr: Option<String>,
+}
+
+impl PsiDistributorInitInfo {
+    /// Convenient way to get `nasset_psi_swap_contract_addr` wrapped in `StdResult`
+    pub fn into_nasset_psi_swap_contract_addr(self) -> StdResult<String> {
+        self.nasset_psi_swap_contract_addr
+            .ok_or_else(|| StdError::generic_err("nAsset <-> Psi is not set"))
+    }
 }
 
 static KEY_CONFIG: Item<Config> = Item::new("config");
@@ -64,6 +81,10 @@ static KEY_CHILD_CONTRACTS_INFO: Item<ChildContractsInfo> = Item::new("child_con
 static KEY_NASSET_TOKEN_CONFIG_HOLDER: Item<Addr> = Item::new("nasset_token_config_holder");
 
 static KEY_GOVERNANCE_UPDATE: Item<GovernanceUpdateState> = Item::new("gov_update");
+
+//need that only for instantiating
+static KEY_PSI_DISTRIBUTOR_INIT_INFO: Item<PsiDistributorInitInfo> =
+    Item::new("psi_distributor_init_info");
 
 pub fn load_nasset_token_config_holder(storage: &dyn Storage) -> StdResult<Addr> {
     KEY_NASSET_TOKEN_CONFIG_HOLDER.load(storage)
@@ -177,4 +198,15 @@ pub fn store_gov_update(
 
 pub fn remove_gov_update(storage: &mut dyn Storage) -> () {
     KEY_GOVERNANCE_UPDATE.remove(storage)
+}
+
+pub fn load_psi_distributor_init_info(storage: &dyn Storage) -> StdResult<PsiDistributorInitInfo> {
+    KEY_PSI_DISTRIBUTOR_INIT_INFO.load(storage)
+}
+
+pub fn store_psi_distributor_init_info(
+    storage: &mut dyn Storage,
+    info: &PsiDistributorInitInfo,
+) -> StdResult<()> {
+    KEY_PSI_DISTRIBUTOR_INIT_INFO.save(storage, info)
 }

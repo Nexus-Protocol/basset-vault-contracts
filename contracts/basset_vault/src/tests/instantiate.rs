@@ -1,5 +1,8 @@
 use crate::{
-    state::{load_child_contracts_info, load_config, ChildContractsInfo, Config},
+    state::{
+        load_child_contracts_info, load_config, load_psi_distributor_init_info, ChildContractsInfo,
+        Config, PsiDistributorInitInfo,
+    },
     tests::sdk::{
         ANCHOR_CUSTODY_BASSET_CONTRACT, ANCHOR_MARKET_CONTRACT, ANCHOR_OVERSEER_CONTRACT,
         ANCHOR_TOKEN, ANC_STABLE_SWAP_CONTRACT, ATERRA_TOKEN, BASSET_TOKEN_ADDR,
@@ -56,8 +59,16 @@ fn proper_initialization() {
             manual_ltv: Decimal256::from_str(MANUAL_LTV).unwrap(),
             fee_rate: Decimal256::from_str(FEE_RATE).unwrap(),
             tax_rate: Decimal256::from_str(TAX_RATE).unwrap(),
-            nasset_psi_swap_contract_addr: NASSET_PSI_SWAP_CONTRACT_ADDR.to_string(),
-            terraswap_factory_contract_addr: TERRASWAP_FACTORY_CONTRACT_ADDR.to_string(),
         }
     );
+
+    let psi_distributor_init_info =
+        load_psi_distributor_init_info(sdk.deps.as_ref().storage).unwrap();
+    assert_eq!(
+        psi_distributor_init_info,
+        PsiDistributorInitInfo {
+            terraswap_factory_contract_addr: TERRASWAP_FACTORY_CONTRACT_ADDR.to_string(),
+            nasset_psi_swap_contract_addr: Some(NASSET_PSI_SWAP_CONTRACT_ADDR.to_string()),
+        }
+    )
 }
