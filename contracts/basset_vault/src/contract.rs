@@ -163,7 +163,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
             let psi_distributor_init_info = load_psi_distributor_init_info(deps.storage)?;
 
             Ok(Response::new()
-                .add_submessage(SubMsg::reply_on_success(
+                .add_submessage(SubMsg::reply_always(
                     CosmosMsg::Wasm(WasmMsg::Execute {
                         contract_addr: psi_distributor_init_info.terraswap_factory_contract_addr,
                         msg: to_binary(&TerraswapFactoryExecuteMsg::CreatePair {
@@ -187,7 +187,10 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
         }
 
         SubmsgIds::InitNAssetPsiSwapPair => {
-            let events = msg.result.unwrap().events;
+            let events = msg.result
+                .into_result()
+                .map_err(|err| StdError::generic_err(format!("Error creating nAsset <-> Psi pair: {}", err)))?
+                .events;
 
             let nasset_psi_swap_contract_addr = events
                 .into_iter()
