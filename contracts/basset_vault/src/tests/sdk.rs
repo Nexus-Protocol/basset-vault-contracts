@@ -282,7 +282,7 @@ impl Sdk {
                     .into(),
                     gas_limit: None,
                     id: SubmsgIds::InitNAssetPsiSwapPair.id(),
-                    reply_on: ReplyOn::Success,
+                    reply_on: ReplyOn::Always,
                 }]
             );
             assert_eq!(
