@@ -78,7 +78,7 @@ pub fn instantiate(
 
     let psi_distributor_init_info = PsiDistributorInitInfo {
         terraswap_factory_contract_addr: msg.ts_factory_addr,
-        // It is set later after pair creation
+        // It will be set later, after pair creation
         nasset_psi_swap_contract_addr: None,
     };
     store_psi_distributor_init_info(deps.storage, &psi_distributor_init_info)?;
