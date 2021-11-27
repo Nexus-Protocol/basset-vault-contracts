@@ -31,7 +31,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
     let info = mock_info("addr0010", &[]);
     let res = crate::contract::execute(sdk.deps.as_mut(), env, info, change_config_msg);
     assert!(res.is_err());
-    if let StdError::GenericErr { msg } = res.err().unwrap() {
+    if let StdError::GenericErr { msg, .. } = res.err().unwrap() {
         assert_eq!("unauthorized", msg);
     } else {
         panic!("wrong error");

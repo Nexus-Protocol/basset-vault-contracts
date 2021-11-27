@@ -25,7 +25,8 @@
     "psi_distr_ci",
     "psi_stable_swap_addr",
     "stable_denom",
-    "tax_rate"
+    "tax_rate",
+    "ts_factory_addr"
   ],
   "properties": {
     "a_custody_basset_addr": {
@@ -121,6 +122,10 @@
     },
     "tax_rate": {
       "$ref": "#/definitions/Decimal256"
+    },
+    "ts_factory_addr": {
+      "description": "terraswap_factory_contract_addr",
+      "type": "string"
     }
   },
   "definitions": {

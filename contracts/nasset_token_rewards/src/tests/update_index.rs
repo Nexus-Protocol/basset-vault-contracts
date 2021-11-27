@@ -16,7 +16,7 @@ fn update_index_error_on_zero_nasset_amount() {
     let response = sdk.update_index();
     assert!(response.is_err());
     let error = response.err().unwrap();
-    if let ContractError::Std(StdError::GenericErr { msg }) = error {
+    if let ContractError::Std(StdError::GenericErr { msg, .. }) = error {
         assert_eq!("nAsset balance is zero", msg);
     } else {
         panic!("wrong error");
@@ -38,7 +38,7 @@ fn update_index_error_on_zero_rewards() {
     let response = sdk.update_index();
     assert!(response.is_err());
     let error = response.err().unwrap();
-    if let ContractError::Std(StdError::GenericErr { msg }) = error {
+    if let ContractError::Std(StdError::GenericErr { msg, .. }) = error {
         assert_eq!("No rewards have accrued yet", msg);
     } else {
         panic!("wrong error");

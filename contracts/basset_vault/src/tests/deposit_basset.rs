@@ -140,7 +140,7 @@ fn do_not_accept_deposit_if_nluna_supply_is_not_zero_but_bluna_in_custody_is_zer
 
     let response = sdk.user_deposit(&user_address, deposit_amount.into());
     assert!(response.is_err());
-    if let StdError::GenericErr { msg } = response.err().unwrap() {
+    if let StdError::GenericErr { msg, .. } = response.err().unwrap() {
         assert_eq!(
             "bAsset balance is zero, but nAsset supply is not! Freeze contract.",
             msg

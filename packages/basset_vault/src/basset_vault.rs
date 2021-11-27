@@ -54,6 +54,8 @@ pub struct InstantiateMsg {
     ///fees, need to calc how much send to governance and community pools
     pub fee_rate: Decimal256,
     pub tax_rate: Decimal256,
+    ///terraswap_factory_contract_addr
+    pub ts_factory_addr: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

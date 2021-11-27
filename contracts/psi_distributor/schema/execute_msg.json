@@ -119,6 +119,12 @@
                     }
                   ]
                 },
+                "nasset_psi_swap_contract_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
                 "nasset_token_rewards_contract_addr": {
                   "type": [
                     "string",

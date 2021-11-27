@@ -2,14 +2,14 @@ use crate::tests::mock_dependencies;
 use crate::TOO_HIGH_BORROW_DEMAND_ERR_MSG;
 use crate::{reply_response::MsgInstantiateContractResponse, SubmsgIds};
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::StdResult;
 use cosmwasm_std::{
     attr,
     testing::{mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
     Api, CosmosMsg, Decimal, OwnedDeps, Querier, Reply, ReplyOn, Storage, SubMsg,
     SubMsgExecutionResponse, WasmMsg,
 };
-use cosmwasm_std::{to_binary, Coin, Empty, Response, Uint128};
+use cosmwasm_std::{to_binary, Coin, Empty, Event, Response, Uint128};
+use cosmwasm_std::{Addr, StdResult};
 use cw20::Cw20ReceiveMsg;
 use cw20::MinterResponse;
 
@@ -25,6 +25,8 @@ use basset_vault::basset_vault::Cw20HookMsg;
 use basset_vault::basset_vault_strategy::BorrowerActionResponse;
 use basset_vault::psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg;
 use basset_vault::querier::AnchorMarketEpochStateResponse;
+use basset_vault::terraswap::AssetInfo;
+use basset_vault::terraswap_factory::ExecuteMsg as TerraswapFactoryExecuteMsg;
 use basset_vault::{
     basset_vault::ExecuteMsg,
     nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
@@ -54,8 +56,10 @@ pub const ANCHOR_OVERSEER_CONTRACT: &str = "addr0004";
 pub const ANCHOR_TOKEN: &str = "addr0006";
 pub const ANC_STABLE_SWAP_CONTRACT: &str = "addr0008";
 pub const PSI_STABLE_SWAP_CONTRACT: &str = "addr0009";
+pub const TERRASWAP_FACTORY_CONTRACT_ADDR: &str = "addr0014";
 pub const BASSET_VAULT_STRATEGY_CONTRACT: &str = "addr0012";
 pub const COMMUNITY_POOL_CONTRACT_ADDR: &str = "addr0013";
+pub const NASSET_PSI_SWAP_CONTRACT_ADDR: &str = "addr0019";
 pub const CLAIMING_REWARDS_DELAY: u64 = 1000;
 pub const NASSET_TOKEN_CODE_ID: u64 = 10u64;
 pub const NASSET_TOKEN_CONFIG_HOLDER_CODE_ID: u64 = 11u64;
@@ -93,6 +97,7 @@ impl Sdk {
             a_custody_basset_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
             anc_stable_swap_addr: ANC_STABLE_SWAP_CONTRACT.to_string(),
             psi_stable_swap_addr: PSI_STABLE_SWAP_CONTRACT.to_string(),
+            ts_factory_addr: TERRASWAP_FACTORY_CONTRACT_ADDR.to_string(),
             aterra_addr: ATERRA_TOKEN.to_string(),
             psi_addr: PSI_TOKEN.to_string(),
             basset_vs_addr: BASSET_VAULT_STRATEGY_CONTRACT.to_string(),
@@ -137,7 +142,8 @@ impl Sdk {
         let info = mock_info("addr9999", &[]);
 
         // ==========================================================
-        // ================ Instantiate BASSET_FARMER ===============
+        // =================== Init BASSET_FARMER ===================
+        // ========= Instantiate NASSET_TOKEN_CONFIG_HOLDER =========
         // ==========================================================
         {
             let res =
@@ -165,7 +171,8 @@ impl Sdk {
         }
 
         // ==========================================================
-        // ========= Instantiate NASSET_TOKEN_CONFIG_HOLDER =========
+        // ============= Init NASSET_TOKEN_CONFIG_HOLDER ============
+        // =============== Instantiate NASSET_TOKEN =================
         // ==========================================================
 
         {
@@ -233,7 +240,8 @@ impl Sdk {
         }
 
         // ==========================================================
-        // ========= Instantiate NASSET_TOKEN =======================
+        // =================== Init NASSET_TOKEN ====================
+        // =============== Create nAsset <-> Psi pair ===============
         // ==========================================================
         {
             let mut nasset_token_initiate_response = MsgInstantiateContractResponse::new();
@@ -256,22 +264,25 @@ impl Sdk {
             assert_eq!(
                 res.messages,
                 vec![SubMsg {
-                    msg: WasmMsg::Instantiate {
-                        code_id: init_msg.nasset_t_r_ci,
-                        msg: to_binary(&NAssetTokenRewardsInstantiateMsg {
-                            nasset_token_addr: nasset_contract_addr.to_string(),
-                            psi_token_addr: PSI_TOKEN.to_string(),
-                            governance_contract_addr: init_msg.gov_addr.clone()
+                    msg: WasmMsg::Execute {
+                        contract_addr: TERRASWAP_FACTORY_CONTRACT_ADDR.to_string(),
+                        msg: to_binary(&TerraswapFactoryExecuteMsg::CreatePair {
+                            asset_infos: [
+                                AssetInfo::Token {
+                                    contract_addr: Addr::unchecked(nasset_contract_addr),
+                                },
+                                AssetInfo::Token {
+                                    contract_addr: Addr::unchecked(PSI_TOKEN),
+                                }
+                            ]
                         })
                         .unwrap(),
                         funds: vec![],
-                        label: "".to_string(),
-                        admin: Some(GOVERNANCE_CONTRACT.to_string()),
                     }
                     .into(),
                     gas_limit: None,
-                    id: SubmsgIds::InitNAssetRewards.id(),
-                    reply_on: ReplyOn::Success,
+                    id: SubmsgIds::InitNAssetPsiSwapPair.id(),
+                    reply_on: ReplyOn::Always,
                 }]
             );
             assert_eq!(
@@ -283,10 +294,56 @@ impl Sdk {
             );
         }
 
-        // ==========================================================
-        // ======== Set TOKEN_REWARDS_ADDR to CONFIG_HOLDER =========
-        // ============= Instantiate PSI_DISTRIBUTOR ================
-        // ==========================================================
+        // ===========================================================
+        // =========== Init NASSET_PSI_SWAP_CONTRACT_ADDR ============
+        // ============ Instantiate NASSET_TOKEN_REWARDS =============
+        // ===========================================================
+        {
+            let reply_msg = Reply {
+                id: SubmsgIds::InitNAssetPsiSwapPair.id(),
+                result: cosmwasm_std::ContractResult::Ok(SubMsgExecutionResponse {
+                    events: vec![Event::new("")
+                        .add_attribute("pair_contract_addr", NASSET_PSI_SWAP_CONTRACT_ADDR)],
+                    data: None,
+                }),
+            };
+
+            let res = crate::contract::reply(deps.as_mut(), mock_env(), reply_msg).unwrap();
+
+            assert_eq!(
+                res.messages,
+                vec![SubMsg::reply_on_success(
+                    CosmosMsg::Wasm(WasmMsg::Instantiate {
+                        code_id: NASSET_TOKEN_REWARDS_CODE_ID,
+                        msg: to_binary(&NAssetTokenRewardsInstantiateMsg {
+                            psi_token_addr: PSI_TOKEN.to_string(),
+                            nasset_token_addr: NASSET_TOKEN_ADDR.to_string(),
+                            governance_contract_addr: GOVERNANCE_CONTRACT.to_string(),
+                        })
+                        .unwrap(),
+                        funds: vec![],
+                        label: "".to_string(),
+                        admin: Some(GOVERNANCE_CONTRACT.to_string()),
+                    }),
+                    SubmsgIds::InitNAssetRewards.id(),
+                )]
+            );
+            assert_eq!(
+                res.attributes,
+                vec![
+                    attr("action", "nasset_psi_swap_pair_initialized"),
+                    attr(
+                        "nasset_psi_swap_contract_addr",
+                        NASSET_PSI_SWAP_CONTRACT_ADDR
+                    ),
+                ]
+            );
+        }
+
+        // ===========================================================================
+        // ==== Pass NASSET_TOKEN_REWARDS_ADDR to psi distributor instantiate msg ====
+        // ====================== Instantiate PSI_DISTRIBUTOR ========================
+        // ===========================================================================
         {
             let mut nasset_token_rewards_initiate_response = MsgInstantiateContractResponse::new();
             nasset_token_rewards_initiate_response
@@ -322,6 +379,8 @@ impl Sdk {
                                 basset_vault_strategy_contract_addr: init_msg
                                     .basset_vs_addr
                                     .clone(),
+                                nasset_psi_swap_contract_addr: NASSET_PSI_SWAP_CONTRACT_ADDR
+                                    .to_string(),
                                 manual_ltv: init_msg.manual_ltv,
                                 fee_rate: init_msg.fee_rate,
                                 tax_rate: init_msg.tax_rate
@@ -359,7 +418,7 @@ impl Sdk {
         }
 
         // ==========================================================
-        // ============= PSI_DISTRIBUTOR initialized ================
+        // ================== Init PSI_DISTRIBUTOR ==================
         // ==========================================================
         {
             let mut psi_distributor_initiate_response = MsgInstantiateContractResponse::new();

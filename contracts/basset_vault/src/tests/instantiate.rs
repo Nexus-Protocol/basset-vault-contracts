@@ -1,13 +1,17 @@
 use crate::{
-    state::{load_child_contracts_info, load_config, ChildContractsInfo, Config},
+    state::{
+        load_child_contracts_info, load_config, load_psi_distributor_init_info, ChildContractsInfo,
+        Config, PsiDistributorInitInfo,
+    },
     tests::sdk::{
         ANCHOR_CUSTODY_BASSET_CONTRACT, ANCHOR_MARKET_CONTRACT, ANCHOR_OVERSEER_CONTRACT,
         ANCHOR_TOKEN, ANC_STABLE_SWAP_CONTRACT, ATERRA_TOKEN, BASSET_TOKEN_ADDR,
         BASSET_VAULT_STRATEGY_CONTRACT, CLAIMING_REWARDS_DELAY, COLLATERAL_TOKEN_SYMBOL,
-        COMMUNITY_POOL_CONTRACT_ADDR, FEE_RATE, GOVERNANCE_CONTRACT, MANUAL_LTV, NASSET_TOKEN_ADDR,
-        NASSET_TOKEN_CODE_ID, NASSET_TOKEN_REWARDS_CODE_ID, OVER_LOAN_BALANCE_VALUE,
-        PSI_DISTRIBUTOR_CODE_ID, PSI_DISTRIBUTOR_CONTRACT, PSI_STABLE_SWAP_CONTRACT, PSI_TOKEN,
-        STABLE_DENOM, TAX_RATE,
+        COMMUNITY_POOL_CONTRACT_ADDR, FEE_RATE, GOVERNANCE_CONTRACT, MANUAL_LTV,
+        NASSET_PSI_SWAP_CONTRACT_ADDR, NASSET_TOKEN_ADDR, NASSET_TOKEN_CODE_ID,
+        NASSET_TOKEN_REWARDS_CODE_ID, OVER_LOAN_BALANCE_VALUE, PSI_DISTRIBUTOR_CODE_ID,
+        PSI_DISTRIBUTOR_CONTRACT, PSI_STABLE_SWAP_CONTRACT, PSI_TOKEN, STABLE_DENOM, TAX_RATE,
+        TERRASWAP_FACTORY_CONTRACT_ADDR,
     },
 };
 
@@ -57,4 +61,14 @@ fn proper_initialization() {
             tax_rate: Decimal256::from_str(TAX_RATE).unwrap(),
         }
     );
+
+    let psi_distributor_init_info =
+        load_psi_distributor_init_info(sdk.deps.as_ref().storage).unwrap();
+    assert_eq!(
+        psi_distributor_init_info,
+        PsiDistributorInitInfo {
+            terraswap_factory_contract_addr: TERRASWAP_FACTORY_CONTRACT_ADDR.to_string(),
+            nasset_psi_swap_contract_addr: Some(NASSET_PSI_SWAP_CONTRACT_ADDR.to_string()),
+        }
+    )
 }

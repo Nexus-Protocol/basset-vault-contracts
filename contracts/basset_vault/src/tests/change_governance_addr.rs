@@ -21,7 +21,7 @@ fn fail_to_change_governance_if_sender_is_not_governance() {
     let info = mock_info("addr0010", &[]);
     let res = crate::contract::execute(sdk.deps.as_mut(), env, info, change_gov_msg);
     assert!(res.is_err());
-    if let StdError::GenericErr { msg } = res.err().unwrap() {
+    if let StdError::GenericErr { msg, .. } = res.err().unwrap() {
         assert_eq!("unauthorized", msg);
     } else {
         panic!("wrong error");
@@ -123,7 +123,7 @@ fn fail_to_accept_governance_if_sender_is_wrong() {
             crate::contract::execute(sdk.deps.as_mut(), env.clone(), info, accept_gov_msg);
 
         assert!(gov_update_state_res.is_err());
-        if let StdError::GenericErr { msg } = gov_update_state_res.err().unwrap() {
+        if let StdError::GenericErr { msg, .. } = gov_update_state_res.err().unwrap() {
             assert_eq!("unauthorized", msg);
         } else {
             panic!("wrong error");
@@ -178,7 +178,7 @@ fn too_late_to_change_governance() {
             crate::contract::execute(sdk.deps.as_mut(), env.clone(), info, accept_gov_msg);
 
         assert!(accept_gov_res.is_err());
-        if let StdError::GenericErr { msg } = accept_gov_res.err().unwrap() {
+        if let StdError::GenericErr { msg, .. } = accept_gov_res.err().unwrap() {
             assert_eq!("too late to accept governance owning", msg);
         } else {
             panic!("wrong error");

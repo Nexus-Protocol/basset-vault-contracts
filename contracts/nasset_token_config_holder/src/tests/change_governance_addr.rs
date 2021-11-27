@@ -225,7 +225,7 @@ fn too_late_to_change_governance() {
         assert!(accept_gov_res.is_err());
         if let ContractError::Std(std_error) = accept_gov_res.err().unwrap() {
             match std_error {
-                StdError::GenericErr { msg } => {
+                StdError::GenericErr { msg, .. } => {
                     assert_eq!("too late to accept governance owning", msg);
                 }
 

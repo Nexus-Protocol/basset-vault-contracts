@@ -1,6 +1,6 @@
+use basset_vault::nasset_token_config_holder::Config;
 use cosmwasm_std::testing::mock_dependencies;
 use cosmwasm_std::testing::{mock_env, mock_info};
-use basset_vault::nasset_token_config_holder::Config;
 
 use crate::state::load_config;
 
@@ -23,12 +23,14 @@ fn proper_initialization() {
 
     // set rewards_contract
     {
-        let set_rewards_token_addr_msg = basset_vault::nasset_token_config_holder::ExecuteMsg::Anyone {
-            anyone_msg:
-                basset_vault::nasset_token_config_holder::AnyoneMsg::SetTokenRewardsContract {
-                    nasset_token_rewards_contract_addr: nasset_token_rewards_contract_addr.clone(),
-                },
-        };
+        let set_rewards_token_addr_msg =
+            basset_vault::nasset_token_config_holder::ExecuteMsg::Anyone {
+                anyone_msg:
+                    basset_vault::nasset_token_config_holder::AnyoneMsg::SetTokenRewardsContract {
+                        nasset_token_rewards_contract_addr: nasset_token_rewards_contract_addr
+                            .clone(),
+                    },
+            };
         crate::contract::execute(
             deps.as_mut(),
             env.clone(),
@@ -46,12 +48,13 @@ fn proper_initialization() {
 
     // set rewards_contract second time
     {
-        let set_rewards_token_addr_msg = basset_vault::nasset_token_config_holder::ExecuteMsg::Anyone {
-            anyone_msg:
-                basset_vault::nasset_token_config_holder::AnyoneMsg::SetTokenRewardsContract {
-                    nasset_token_rewards_contract_addr: "no_way!".to_string(),
-                },
-        };
+        let set_rewards_token_addr_msg =
+            basset_vault::nasset_token_config_holder::ExecuteMsg::Anyone {
+                anyone_msg:
+                    basset_vault::nasset_token_config_holder::AnyoneMsg::SetTokenRewardsContract {
+                        nasset_token_rewards_contract_addr: "no_way!".to_string(),
+                    },
+            };
         let execute_res = crate::contract::execute(
             deps.as_mut(),
             env.clone(),
