@@ -205,6 +205,9 @@ pub fn get_repay_loan_action(
         };
     }
 
+    //it is not first try, so we are in error handling
+    //that means we can't sell more aterra than loan repaid
+
     let repay_amount_with_tax = tax_info.append_tax(repay_amount);
     let stables_after_repaying = stable_coin_balance - repay_amount_with_tax;
 
@@ -213,8 +216,6 @@ pub fn get_repay_loan_action(
             amount: repay_amount,
         }
     }
-    //it is not first try, so we are in error handling
-    //that means we can't sell more aterra than loan repaid
 
     let stables_to_fill_buffer = aim_buffer_size - stables_after_repaying;
     let stables_to_repay_loan_remainder =
