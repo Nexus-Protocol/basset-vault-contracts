@@ -14,22 +14,22 @@ impl TaxInfo {
             Uint256::zero()
         } else {
             let rate_part = Decimal256::one() - Decimal256::one() / (Decimal256::one() + self.rate);
-            TaxInfo::uint_times_decimal_ceil(amount, rate_part)
+            TaxInfo::ceiled_mul_uint_decimal(amount, rate_part)
         };
 
         let tax_capped = std::cmp::min(tax_amount, self.cap);
         std::cmp::max(tax_capped, Uint256::one())
     }
 
-    fn uint_times_decimal_ceil(a: Uint256, b: Decimal256) -> Uint256 {
+    fn ceiled_mul_uint_decimal(a: Uint256, b: Decimal256) -> Uint256 {
         // Check for rounding error
-        let rounded_output = a * b;
         let decimal_output = Decimal256::from_uint256(a) * b;
+        let floored_output = Uint256::from(decimal_output.0 / Decimal256::DECIMAL_FRACTIONAL);
 
-        if decimal_output != Decimal256::from_uint256(rounded_output) {
-            rounded_output + Uint256::one()
+        if decimal_output != Decimal256::from_uint256(floored_output) {
+            floored_output + Uint256::one()
         } else {
-            rounded_output
+            floored_output
         }
     }
 
@@ -43,7 +43,7 @@ impl TaxInfo {
             Uint256::zero()
         } else {
             let rate_part = Decimal256::one() - Decimal256::one() / (Decimal256::one() + self.rate);
-            TaxInfo::uint_times_decimal_ceil(amount, rate_part)
+            TaxInfo::ceiled_mul_uint_decimal(amount, rate_part)
         };
         let tax_capped = std::cmp::min(tax_amount, self.cap);
 
@@ -59,7 +59,7 @@ impl TaxInfo {
         if amount.is_zero() {
             return Uint256::zero();
         }
-        let tax_amount = TaxInfo::uint_times_decimal_ceil(amount, self.rate);
+        let tax_amount = TaxInfo::ceiled_mul_uint_decimal(amount, self.rate);
         println!("mmmmmmmm, tax_amount after round_up: {}", tax_amount);
         let tax_capped = std::cmp::min(tax_amount, self.cap);
         std::cmp::max(tax_capped, Uint256::one())
@@ -70,7 +70,7 @@ impl TaxInfo {
         if amount.is_zero() {
             return Uint256::zero();
         }
-        let tax_amount = TaxInfo::uint_times_decimal_ceil(amount, self.rate);
+        let tax_amount = TaxInfo::ceiled_mul_uint_decimal(amount, self.rate);
         let tax_capped = std::cmp::min(tax_amount, self.cap);
         std::cmp::max(tax_capped, Uint256::one())
     }
