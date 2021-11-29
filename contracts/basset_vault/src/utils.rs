@@ -214,7 +214,7 @@ pub fn get_repay_loan_action(
     if stables_after_repaying >= aim_buffer_size {
         return RepayLoanAction::RepayLoan {
             amount: repay_amount,
-        }
+        };
     }
 
     let stables_to_fill_buffer = aim_buffer_size - stables_after_repaying;
@@ -229,7 +229,7 @@ pub fn get_repay_loan_action(
     let aterra_to_sell = aterra_to_sell.min(aterra_balance);
 
     if aterra_to_sell.is_zero() {
-        RepayLoanAction::RepayLoan {
+        return RepayLoanAction::RepayLoan {
             amount: repay_amount,
         };
     }
