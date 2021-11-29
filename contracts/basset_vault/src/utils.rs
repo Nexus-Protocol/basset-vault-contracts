@@ -152,37 +152,24 @@ pub fn get_repay_loan_action(
     let wanted_stables_without_tax =
         calc_wanted_stablecoins(stable_coin_balance, total_repay_amount, aim_buffer_size);
 
-    if wanted_stables_without_tax.is_zero() {
-        let max_amount_to_send = tax_info.subtract_tax(stable_coin_balance);
-        let repay_amount = total_repay_amount.min(max_amount_to_send);
-        println!("llllllllllll repay_amount: {}", repay_amount);
-        if repay_amount.is_zero() {
-            return RepayLoanAction::Nothing;
-        }
-    }
-
     //add tax to repay_amount
     let wanted_stables = calc_wanted_stablecoins(
         stable_coin_balance,
         tax_info.append_tax(total_repay_amount),
         aim_buffer_size,
     );
-    println!("oooooooooooo wanted_stables: {}", wanted_stables);
 
-    println!("stable_coin_balance: {}", stable_coin_balance);
     let max_amount_to_send = tax_info.subtract_tax(stable_coin_balance);
-    println!("oooooooooooo_1");
     let repay_amount = total_repay_amount.min(max_amount_to_send);
-    println!("oooooooooooo_2");
+
+    if (wanted_stables_without_tax.is_zero() || wanted_stables.is_zero()) && repay_amount.is_zero() {
+        return RepayLoanAction::Nothing;
+    }
 
     if wanted_stables.is_zero() {
-        if repay_amount.is_zero() {
-            return RepayLoanAction::Nothing;
-        } else {
-            return RepayLoanAction::RepayLoan {
-                amount: repay_amount,
-            };
-        }
+        return RepayLoanAction::RepayLoan {
+            amount: repay_amount,
+        };
     }
     println!("oooooooooooo_3 aterra_balance: {}", aterra_balance);
 
@@ -193,8 +180,6 @@ pub fn get_repay_loan_action(
     //in 'reply' handler, so don't need to do that twice
     if is_first_try || repay_amount.is_zero() {
         if aterra_value.is_zero() && repay_amount.is_zero() {
-            //impossible case, cause conditions already captured by code above, but for
-            //clarification I leave it
             return RepayLoanAction::Nothing;
         } else if aterra_value.is_zero() {
             return RepayLoanAction::RepayLoan {
