@@ -22,10 +22,10 @@ impl TaxInfo {
     }
 
     fn ceiled_mul_uint_decimal(a: Uint256, b: Decimal256) -> Uint256 {
-        // Check for rounding error
         let decimal_output = Decimal256::from_uint256(a) * b;
         let floored_output = Uint256::from(decimal_output.0 / Decimal256::DECIMAL_FRACTIONAL);
 
+        // Check for rounding error
         if decimal_output != Decimal256::from_uint256(floored_output) {
             floored_output + Uint256::one()
         } else {
