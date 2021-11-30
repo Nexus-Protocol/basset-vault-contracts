@@ -507,7 +507,6 @@ impl Sdk {
     }
 
     pub fn set_stable_balance(&mut self, value: Uint128) {
-        println!("set set_stable_balance: {}", value);
         self.deps.querier.update_base_balance(
             MOCK_CONTRACT_ADDR,
             vec![Coin {

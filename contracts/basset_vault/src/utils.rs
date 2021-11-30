@@ -241,33 +241,23 @@ fn calc_wanted_stablecoins(
     repay_amount: Uint256,
     aim_buffer_size: Uint256,
 ) -> Uint256 {
-    println!("zzzzzzzzzzzzzzzzzzz");
     //we have enough balance to repay loan without any additional stables
-    //TODO: тут должно 'repay_amount' считаться без добавленной таксы
     if stable_coin_balance >= repay_amount + aim_buffer_size {
         return Uint256::zero();
     }
-    println!("kkkkkkkkkkk");
 
     //we can take some coins from buffer to repay loan
     if stable_coin_balance >= aim_buffer_size {
-        println!("kkkkkkkkkkk1");
         let can_get_from_balance = stable_coin_balance - aim_buffer_size;
-        println!("kkkkkkkkkkk2");
         if repay_amount <= can_get_from_balance {
             //impossible check cause of first check "stable_coin_balance >= repay_amount + aim_buffer_size"
             return Uint256::zero();
         }
-        println!(
-            "kkkkkkkkkkk4\nrepay_amount: {}, can_get_from_balance: {}",
-            repay_amount, can_get_from_balance
-        );
         return repay_amount - can_get_from_balance;
     }
 
     //need to fill up buffer and repay loan
     let add_to_buffer = aim_buffer_size - stable_coin_balance;
-    println!("kkkkkkkkkkk_end");
     return repay_amount + add_to_buffer;
 }
 
