@@ -157,11 +157,8 @@ pub fn get_repay_loan_action(
     let max_amount_to_send = tax_info.subtract_tax(stable_coin_balance);
     let repay_amount = total_repay_amount.min(max_amount_to_send);
 
-    let wanted_stables_without_tax = calc_wanted_stablecoins(
-        stable_coin_balance,
-        total_repay_amount,
-        aim_buffer_size
-    );
+    let wanted_stables_without_tax =
+        calc_wanted_stablecoins(stable_coin_balance, total_repay_amount, aim_buffer_size);
     return_nothing_if_zero!(wanted_stables_without_tax, repay_amount);
 
     //add tax to repay_amount
@@ -193,8 +190,7 @@ pub fn get_repay_loan_action(
     if is_first_try || repay_amount.is_zero() {
         let stables_from_aterra_sell = aterra_value.min(wanted_stables);
 
-        let aterra_to_sell =
-            tax_info.append_tax(stables_from_aterra_sell) / aterra_exchange_rate;
+        let aterra_to_sell = tax_info.append_tax(stables_from_aterra_sell) / aterra_exchange_rate;
 
         //make sure that we do not redeem more then we have (in case if some issue with tax precision)
         let aterra_to_sell = aterra_to_sell.min(aterra_balance);
@@ -219,8 +215,7 @@ pub fn get_repay_loan_action(
     }
 
     let stables_to_fill_buffer = aim_buffer_size - stables_after_repaying;
-    let stables_to_repay_loan_remainder =
-        tax_info.append_tax(total_repay_amount - repay_amount);
+    let stables_to_repay_loan_remainder = tax_info.append_tax(total_repay_amount - repay_amount);
     let total_stables_needed = stables_to_repay_loan_remainder + stables_to_fill_buffer;
     let loan_amoun_that_will_be_repayed = tax_info.subtract_tax(repay_amount);
     let bounded_aterra_value = loan_amoun_that_will_be_repayed.min(total_stables_needed);
@@ -238,7 +233,7 @@ pub fn get_repay_loan_action(
     return RepayLoanAction::RepayLoanAndSellAterra {
         aterra_amount_to_sell: aterra_to_sell,
         repay_loan_amount: repay_amount,
-    }
+    };
 }
 
 fn calc_wanted_stablecoins(
