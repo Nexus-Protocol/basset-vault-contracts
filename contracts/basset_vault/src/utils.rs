@@ -134,6 +134,7 @@ impl RepayLoanAction {
     }
 }
 
+/// Returns `RepayLoanAction::Nothing` if all the listed values are zero
 macro_rules! return_nothing_if_zero {
     ($first:expr $(, $others:expr)*) => {
         if $first.is_zero() $(&& $others.is_zero())* {
