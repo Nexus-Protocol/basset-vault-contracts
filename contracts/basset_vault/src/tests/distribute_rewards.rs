@@ -101,7 +101,7 @@ fn honest_work() {
         sdk.set_loan(Uint256::from(stable_coin_balance));
         sdk.set_aterra_balance(Uint256::from(stable_coin_balance));
         sdk.set_aterra_exchange_rate(Decimal256::from_str(OVER_LOAN_BALANCE_VALUE).unwrap());
-        sdk.set_tax(0, 0);
+        sdk.set_tax(Decimal256::zero().into(), 0);
 
         let distribute_rewards_response = sdk.send_distribute_rewards().unwrap();
         let swap_asset = Asset {
@@ -144,7 +144,7 @@ fn honest_work() {
         let honest_work_response = sdk.user_send_honest_work(CLAIMING_REWARDS_DELAY * 2 - 1);
         assert!(honest_work_response.is_err());
         let error = honest_work_response.err().unwrap();
-        if let StdError::GenericErr { msg } = error {
+        if let StdError::GenericErr { msg, .. } = error {
             assert_eq!("claiming too often", msg);
         } else {
             panic!("wrong error type");

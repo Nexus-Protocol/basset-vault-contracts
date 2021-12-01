@@ -22,6 +22,7 @@ fn repay_loan_without_problems() {
     let advised_buffer_size = Uint256::from(50u64);
     let aterra_balance = Uint256::from(200u64);
     let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+    let tax_rate = Decimal256::from_str("0.2").unwrap();
 
     sdk.set_stable_balance(stable_coin_balance);
     sdk.set_aterra_balance(aterra_balance);
@@ -30,7 +31,7 @@ fn repay_loan_without_problems() {
         advised_buffer_size,
     });
     sdk.set_aterra_exchange_rate(aterra_exchange_rate);
-    sdk.set_tax(20, 10u128);
+    sdk.set_tax(tax_rate.into(), 10u128);
 
     println!("xxxxxxxx");
     // -= REBALANCE =-
@@ -127,7 +128,7 @@ fn repay_loan_fail_to_redeem_aterra() {
     sdk.set_aterra_balance(aterra_balance);
 
     //no tax
-    sdk.set_tax(0, 99999999999u128);
+    sdk.set_tax(Decimal256::zero().into(), 99999999999u128);
 
     // -= asking for REPAY =-
     {
@@ -276,7 +277,7 @@ fn limited_recursion_depth_all_errors() {
     sdk.set_aterra_balance(aterra_balance);
 
     //no tax
-    sdk.set_tax(0, 99999999999u128);
+    sdk.set_tax(Decimal256::zero().into(), 99999999999u128);
 
     let to_repay_amount = Uint256::from(10_000u64);
     let aim_buffer_size = Uint256::from(5_000u64);
@@ -348,7 +349,7 @@ fn limited_recursion_depth_repayed_something() {
     sdk.set_aterra_balance(aterra_balance);
 
     //no tax
-    sdk.set_tax(0, 99999999999u128);
+    sdk.set_tax(Decimal256::zero().into(), 99999999999u128);
 
     let to_repay_amount = Uint256::from(10_000u64);
     let aim_buffer_size = Uint256::from(5_000u64);
@@ -422,7 +423,7 @@ fn reset_iteration_index() {
     sdk.set_aterra_balance(aterra_balance);
 
     //no tax
-    sdk.set_tax(0, 99999999999u128);
+    sdk.set_tax(Decimal256::zero().into(), 99999999999u128);
 
     let to_repay_amount = Uint256::from(10_000u64);
     let aim_buffer_size = Uint256::from(5_000u64);

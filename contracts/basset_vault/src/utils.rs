@@ -187,6 +187,7 @@ pub fn get_repay_loan_action(
     println!("oooooooooooo_3 aterra_balance: {}", aterra_balance);
 
     //anchor will pay tax, so we will recieve lesser then assume
+    //TODO: avoid anchor zero amount send - check that aterra_value is enough to redeem 1 uusd at list after tax subtraction
     let aterra_value = tax_info.subtract_tax(aterra_balance * aterra_exchange_rate);
     println!("oooooooooooo_4");
     //on first try only selling aterra, cause with high probability we will repay loan
@@ -214,8 +215,10 @@ pub fn get_repay_loan_action(
             //make sure that we do not redeem more then we have (in case if some issue with tax precision)
             let aterra_to_sell = aterra_to_sell.min(aterra_balance);
             println!("aterra_to_sell_final: {}", aterra_to_sell);
+            let expected_uusd = tax_info.subtract_tax(aterra_to_sell/aterra_exchange_rate);
+            println!("expected_uusd: {}", expected_uusd);
 
-            if aterra_to_sell.is_zero() {
+            if aterra_to_sell.is_zero() || expected_uusd.is_zero(){
                 return RepayLoanAction::Nothing;
             } else {
                 return RepayLoanAction::SellAterra {
@@ -250,8 +253,11 @@ pub fn get_repay_loan_action(
             let aterra_to_sell = tax_info.append_tax(bounded_aterra_value) / aterra_exchange_rate;
             //make sure that we do not redeem more then we have (in case if some issue with tax precision)
             let aterra_to_sell = aterra_to_sell.min(aterra_balance);
+            println!("aterra_to_sell_final: {}", aterra_to_sell);
+            let expected_uusd = tax_info.subtract_tax(aterra_to_sell/aterra_exchange_rate);
+            println!("expected_uusd: {}", expected_uusd);
 
-            if aterra_to_sell.is_zero() {
+            if aterra_to_sell.is_zero()  || expected_uusd.is_zero(){
                 return RepayLoanAction::RepayLoan {
                     amount: repay_amount,
                 };
@@ -282,7 +288,6 @@ fn calc_wanted_stablecoins(
     if stable_coin_balance >= aim_buffer_size {
         println!("kkkkkkkkkkk1");
         let can_get_from_balance = stable_coin_balance - aim_buffer_size;
-        println!("kkkkkkkkkkk2");
         if repay_amount <= can_get_from_balance {
             //impossible check cause of first check "stable_coin_balance >= repay_amount + aim_buffer_size"
             return Uint256::zero();
