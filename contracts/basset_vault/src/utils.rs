@@ -224,17 +224,15 @@ pub fn get_repay_loan_action(
     let aterra_to_sell = tax_info.append_tax(bounded_aterra_value) / aterra_exchange_rate;
     //make sure that we do not redeem more then we have (in case if some issue with tax precision)
     let aterra_to_sell = aterra_to_sell.min(aterra_balance);
-
-            if aterra_to_sell.is_zero()  || expected_uusd.is_zero(){
-                return RepayLoanAction::RepayLoan {
-                    amount: repay_amount,
-                };
-            } else {
-                RepayLoanAction::RepayLoanAndSellAterra {
-                    aterra_amount_to_sell: aterra_to_sell,
-                    repay_loan_amount: repay_amount,
-                }
-            }
+    let expected_uusd = tax_info.subtract_tax(aterra_to_sell * aterra_exchange_rate);
+    if aterra_to_sell.is_zero()  || expected_uusd.is_zero(){
+        return RepayLoanAction::RepayLoan {
+        amount: repay_amount,
+        };
+    } else {
+        RepayLoanAction::RepayLoanAndSellAterra {
+            aterra_amount_to_sell: aterra_to_sell,
+            repay_loan_amount: repay_amount,
         }
     }
 }
