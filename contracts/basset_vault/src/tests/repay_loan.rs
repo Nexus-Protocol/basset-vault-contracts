@@ -33,7 +33,6 @@ fn repay_loan_without_problems() {
     sdk.set_aterra_exchange_rate(aterra_exchange_rate);
     sdk.set_tax(tax_rate.into(), 10u128);
 
-    println!("xxxxxxxx");
     // -= REBALANCE =-
     {
         let response = sdk.rebalance().unwrap();
@@ -62,11 +61,6 @@ fn repay_loan_without_problems() {
         assert_eq!(rapaying_state.repaying_amount, Uint256::zero());
         assert_eq!(rapaying_state.aim_buffer_size, advised_buffer_size);
     }
-
-    println!("===============");
-    println!("===============");
-    println!("===============");
-    println!("===============");
 
     // -= ANCHOR REDEEM SUCCESSFULL =-
     {
