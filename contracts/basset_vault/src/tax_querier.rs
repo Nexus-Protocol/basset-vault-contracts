@@ -67,9 +67,7 @@ impl TaxInfo {
             return Uint256::zero();
         }
         let tax_amount = Decimal256::from_uint256(amount) * self.rate;
-        println!("mmmmmmmm, tax_amount before round_up: {}", tax_amount);
         let tax_amount = TaxInfo::round_up(tax_amount);
-        println!("mmmmmmmm, tax_amount after round_up: {}", tax_amount);
         let tax_capped = std::cmp::min(tax_amount, self.cap);
         std::cmp::max(tax_capped, Uint256::one())
     }
@@ -86,21 +84,14 @@ impl TaxInfo {
     }
 
     pub fn subtract_tax(&self, coin_amount: Uint256) -> Uint256 {
-        println!(">>>>> coin_amount: {}", coin_amount);
-        println!(
-            ">>>>> self.get_tax_for(coin_amount): {}",
-            self.get_tax_for(coin_amount)
-        );
         if coin_amount.is_zero() {
             return Uint256::zero();
         }
         let res = coin_amount - self.get_tax_for(coin_amount);
-        println!(">>>>> 2");
         res
     }
 
     pub fn append_tax(&self, coin_amount: Uint256) -> Uint256 {
-        println!("get_revert_tax: {}", self.get_revert_tax(coin_amount));
         coin_amount + self.get_revert_tax(coin_amount)
     }
 }
