@@ -9,8 +9,9 @@ use basset_vault::{
     querier::{AnchorMarketCw20Msg, AnchorMarketMsg},
     BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP,
 };
-use cosmwasm_std::{to_binary, Coin, ReplyOn, Response, SubMsg, Uint128, WasmMsg};
+use cosmwasm_std::{to_binary, Coin, Decimal, ReplyOn, Response, SubMsg, Uint128, WasmMsg};
 use cw20::Cw20ExecuteMsg;
+use std::convert::Into;
 use std::str::FromStr;
 
 #[test]
@@ -135,7 +136,7 @@ fn repay_loan_avoid_to_sell_one_a_ust() {
     //aterra_to_sell = ((repay_amount - can_get_from_balance)/aterra_exchange_rate) = 240238
     //tax_amount = aterra_to_sell * tax_rate = 240238 * 0,001 = 240,238 => 241 after round up
     //result = 24023 + 241 = 240479
-    let aterra_to_sell = Uint128::from(240479u64);
+    let aterra_to_sell: Uint128 = Uint128::from(240479u64);
 
     // -= REBALANCE =-
     {
@@ -172,7 +173,7 @@ fn repay_loan_avoid_to_sell_one_a_ust() {
         // tax is 240 (send 239999)
         sdk.set_stable_balance(
             (Uint256::from(stable_coin_balance)
-                + Uint256::from(aterra_to_sell * aterra_exchange_rate.into())
+                + Uint256::from(aterra_to_sell * Into::<Decimal>::into(aterra_exchange_rate))
                 - Uint256::from(240u64))
             .into(),
         );
