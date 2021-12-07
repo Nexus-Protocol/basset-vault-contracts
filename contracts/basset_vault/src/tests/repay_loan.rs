@@ -137,7 +137,6 @@ fn repay_loan_avoid_to_sell_one_a_ust() {
     //result = 24023 + 241 = 240479
     let aterra_to_sell = Uint128::from(240479u64);
 
-    println!("xxxxxxxx");
     // -= REBALANCE =-
     {
         let response = sdk.rebalance().unwrap();
@@ -151,10 +150,10 @@ fn repay_loan_avoid_to_sell_one_a_ust() {
                         amount: aterra_to_sell.into(),
                         msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
                     })
-                        .unwrap(),
+                    .unwrap(),
                     funds: vec![],
                 }
-                    .into(),
+                .into(),
                 gas_limit: None,
                 id: SubmsgIds::RedeemStableOnRepayLoan.id(),
                 reply_on: ReplyOn::Always,
@@ -166,16 +165,16 @@ fn repay_loan_avoid_to_sell_one_a_ust() {
         assert_eq!(rapaying_state.repaying_amount, Uint256::zero());
         assert_eq!(rapaying_state.aim_buffer_size, advised_buffer_size);
     }
-    println!(">>>>>>>>>>>>>>>>>");
 
     // -= ANCHOR REDEEM SUCCESSFULL =-
     {
         //anchor send stables for selling aterra
         // tax is 240 (send 239999)
         sdk.set_stable_balance(
-            (Uint256::from(stable_coin_balance) + Uint256::from(aterra_to_sell * aterra_exchange_rate.into())
+            (Uint256::from(stable_coin_balance)
+                + Uint256::from(aterra_to_sell * aterra_exchange_rate.into())
                 - Uint256::from(240u64))
-                .into(),
+            .into(),
         );
         sdk.set_aterra_balance(Uint256::from(468250u64 - 240479u64));
 
@@ -193,7 +192,7 @@ fn repay_loan_avoid_to_sell_one_a_ust() {
                     msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
                     funds: vec![repay_stable_coin.clone()],
                 }
-                    .into(),
+                .into(),
                 gas_limit: None,
                 id: SubmsgIds::RepayLoan.id(),
                 reply_on: ReplyOn::Success,
