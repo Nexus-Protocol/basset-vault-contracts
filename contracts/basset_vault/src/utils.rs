@@ -225,9 +225,9 @@ pub fn get_repay_loan_action(
     //make sure that we do not redeem more then we have (in case if some issue with tax precision)
     let aterra_to_sell = aterra_to_sell.min(aterra_balance);
     let expected_uusd = tax_info.subtract_tax(aterra_to_sell * aterra_exchange_rate);
-    if aterra_to_sell.is_zero()  || expected_uusd.is_zero(){
+    if aterra_to_sell.is_zero() || expected_uusd.is_zero() {
         return RepayLoanAction::RepayLoan {
-        amount: repay_amount,
+            amount: repay_amount,
         };
     } else {
         RepayLoanAction::RepayLoanAndSellAterra {
@@ -1310,7 +1310,6 @@ mod test {
         );
     }
 
-    #[allow(non_snake_case)]
     #[test]
     fn get_repay_loan_action_repay_loan_zero_amount() {
         let aterra_balance = Uint256::from(300_000u64);
@@ -1334,7 +1333,6 @@ mod test {
         assert_eq!(RepayLoanAction::Nothing, repay_action);
     }
 
-    #[allow(non_snake_case)]
     #[test]
     fn get_repay_loan_action_do_not_substract_tax_twice() {
         let aterra_balance = Uint256::from(300_000u64);
