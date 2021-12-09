@@ -155,6 +155,7 @@ pub enum RebalanceResponse {
         amount: Uint256,
         advised_buffer_size: Uint256,
     },
+    WithdrawAll {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

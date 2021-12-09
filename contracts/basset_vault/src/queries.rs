@@ -94,7 +94,8 @@ pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
                 advised_buffer_size,
                 is_possible: is_borrowing_possible,
             }
-        }
+        },
+        BorrowerActionResponse::WithdrawAll {} => RebalanceResponse::WithdrawAll {},
     };
 
     Ok(response)

@@ -1,7 +1,8 @@
 use crate::price::{query_price, PriceResponse};
 use basset_vault::basset_vault_strategy::{BorrowerActionResponse, ConfigResponse};
+use basset_vault::querier::AnchorMarketMsg;
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Deps, Env, StdResult, Timestamp};
+use cosmwasm_std::{Deps, Env, StdResult, Timestamp, Addr};
 
 use crate::state::{load_config, Config};
 
@@ -83,7 +84,27 @@ pub fn borrower_action(
         env.block.time,
     );
 
+    let anchor_market_contract: Addr = todo!();
+    let anchor_interest_model_contract: Addr = todo!();
+    let anchor_overseer_contract: Addr = todo!();
+
+    let earn_apy = basset_vault::anchor::earn_apy::query_anchor_borrow_net_apr(
+        deps,
+        &anchor_overseer_contract
+    )?;
+
+    let anchor_net_apr = basset_vault::anchor::borrow_apr::query_anchor_borrow_net_apr(
+        deps,
+        &anchor_market_contract,
+        &anchor_interest_model_contract,
+        oracle_price.rate,
+        config.stable_denom,
+    )?;
+
+    let apy = earn_apy + anchor_net_apr;
+    
     let response = calc_borrower_action(
+        apy,
         ltv_info,
         borrowed_amount,
         locked_basset_amount,
@@ -94,13 +115,19 @@ pub fn borrower_action(
     Ok(response)
 }
 
-fn calc_borrower_action(
+fn 
+calc_borrower_action(
+    apy: Decimal256,
     ltv_info: LTVInfo,
     borrowed_amount: Uint256,
     locked_basset_amount: Uint256,
     basset_max_ltv: Decimal256,
     buffer_part: Decimal256,
 ) -> BorrowerActionResponse {
+    if apy <= Decimal256::zero() {
+        return BorrowerActionResponse::WithdrawAll {};
+    }
+
     //repay loan if you can't manage it
     if ltv_info.basset_price == Decimal256::zero() || locked_basset_amount == Uint256::zero() {
         if borrowed_amount > Uint256::zero() {
@@ -148,6 +175,7 @@ mod test {
 
     #[test]
     fn repay_loan() {
+        let apy = Decimal256::from_str("0.05").unwrap();
         let borrowed_amount = Uint256::from(519_750u64);
         let locked_basset_amount = Uint256::from(210_000u64);
         let basset_max_ltv = Decimal256::from_str("0.5").unwrap();
@@ -164,6 +192,7 @@ mod test {
         //to_repay = (0.9 - 0.8) * 577_500 = 57_750
         //buffer_size = 0.018 * 577_500 = 10_395
         let borrower_action = calc_borrower_action(
+            apy,
             ltv_info,
             borrowed_amount,
             locked_basset_amount,
@@ -178,6 +207,7 @@ mod test {
 
     #[test]
     fn borrow_more() {
+        let apy = Decimal256::from_str("0.05").unwrap();
         let borrowed_amount = Uint256::from(346_500u64);
         let locked_basset_amount = Uint256::from(210_000u64);
         let basset_max_ltv = Decimal256::from_str("0.5").unwrap();
@@ -194,6 +224,7 @@ mod test {
         //to_borrow =  (0.8 - 0.6) * 577_500 = 115_500
         //buffer_size = 0.018 * 577_500 = 10_395
         let borrower_action = calc_borrower_action(
+            apy,
             ltv_info,
             borrowed_amount,
             locked_basset_amount,
@@ -208,6 +239,7 @@ mod test {
 
     #[test]
     fn nothing_on_aim_borrow_amount_equals_zero() {
+        let apy = Decimal256::from_str("0.05").unwrap();
         let borrowed_amount = Uint256::zero();
         let locked_basset_amount = Uint256::from(3u64);
         let basset_max_ltv = Decimal256::from_str("0.6").unwrap();
@@ -220,6 +252,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
+            apy,
             ltv_info,
             borrowed_amount,
             locked_basset_amount,
@@ -231,6 +264,7 @@ mod test {
 
     #[test]
     fn do_nothing() {
+        let apy = Decimal256::from_str("0.05").unwrap();
         let borrowed_amount = Uint256::from(473_550u64);
         let locked_basset_amount = Uint256::from(210_000u64);
         let basset_max_ltv = Decimal256::from_str("0.5").unwrap();
@@ -246,6 +280,7 @@ mod test {
         //ltv = 473_550 / 577_500 = 0.82
         //0.75 < 0.82 < 0.85 => do nothing
         let borrower_action = calc_borrower_action(
+            apy,
             ltv_info,
             borrowed_amount,
             locked_basset_amount,
@@ -257,6 +292,7 @@ mod test {
 
     #[test]
     fn locked_amount_is_zero_and_borrowed_zero() {
+        let apy = Decimal256::from_str("0.05").unwrap();
         let borrowed_amount = Uint256::zero();
         let locked_basset_amount = Uint256::zero();
         let basset_max_ltv = Decimal256::from_str("0.5").unwrap();
@@ -269,6 +305,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
+            apy,
             ltv_info,
             borrowed_amount,
             locked_basset_amount,
@@ -280,6 +317,7 @@ mod test {
 
     #[test]
     fn locked_amount_is_zero_and_borrowed_not_zero() {
+        let apy = Decimal256::from_str("0.05").unwrap();
         let borrowed_amount = Uint256::from(473_550u64);
         let locked_basset_amount = Uint256::zero();
         let basset_max_ltv = Decimal256::from_str("0.5").unwrap();
@@ -292,6 +330,7 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let borrower_action = calc_borrower_action(
+            apy,
             ltv_info,
             borrowed_amount,
             locked_basset_amount,
@@ -306,6 +345,7 @@ mod test {
 
     #[test]
     fn collateral_value_is_low_and_borrowed_zero() {
+        let apy = Decimal256::from_str("0.05").unwrap();
         let borrowed_amount = Uint256::zero();
         let locked_basset_amount = Uint256::from(1u64);
         let basset_max_ltv = Decimal256::from_str("0.5").unwrap();
@@ -318,6 +358,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
+            apy,
             ltv_info,
             borrowed_amount,
             locked_basset_amount,
@@ -329,6 +370,7 @@ mod test {
 
     #[test]
     fn collateral_value_is_low_and_borrowed_not_zero() {
+        let apy = Decimal256::from_str("0.05").unwrap();
         let borrowed_amount = Uint256::from(10_000u64);
         let locked_basset_amount = Uint256::from(1u64);
         let basset_max_ltv = Decimal256::from_str("0.5").unwrap();
@@ -341,6 +383,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
+            apy,
             ltv_info,
             borrowed_amount,
             locked_basset_amount,
@@ -355,6 +398,7 @@ mod test {
 
     #[test]
     fn borrowed_amount_is_zero() {
+        let apy = Decimal256::from_str("0.05").unwrap();
         let borrowed_amount = Uint256::zero();
         let locked_basset_amount = Uint256::from(210_000u64);
         let basset_max_ltv = Decimal256::from_str("0.5").unwrap();
@@ -371,6 +415,7 @@ mod test {
         //to_borrow = (0.8 - 0.0) * 577_500 = 462_000
         //buffer_size = 0.018 * 577_500 = 10_395
         let borrower_action = calc_borrower_action(
+            apy,
             ltv_info,
             borrowed_amount,
             locked_basset_amount,
@@ -385,6 +430,7 @@ mod test {
 
     #[test]
     fn asset_price_is_zero() {
+        let apy = Decimal256::from_str("0.05").unwrap();
         let borrowed_amount = Uint256::from(473_550u64);
         let locked_basset_amount = Uint256::from(210_000u64);
         let basset_max_ltv = Decimal256::from_str("0.5").unwrap();
@@ -397,6 +443,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
+            apy,
             ltv_info,
             borrowed_amount,
             locked_basset_amount,
