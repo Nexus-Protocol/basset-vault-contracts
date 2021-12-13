@@ -8,6 +8,9 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 pub struct InstantiateMsg {
     pub governance_contract_addr: String,
     pub oracle_contract_addr: String,
+    pub anchor_market_contract: String,
+    pub anchor_interest_model_contract: String,
+    pub anchor_overseer_contract: String,
     pub basset_token_addr: String,
     pub stable_denom: String,
     pub borrow_ltv_max: Decimal256,
@@ -66,6 +69,9 @@ pub enum QueryMsg {
 pub struct ConfigResponse {
     pub governance_contract: String,
     pub oracle_contract: String,
+    pub anchor_market_contract: String,
+    pub anchor_interest_model_contract: String,
+    pub anchor_overseer_contract: String,
     pub basset_token: String,
     pub stable_denom: String,
     pub borrow_ltv_max: Decimal256,

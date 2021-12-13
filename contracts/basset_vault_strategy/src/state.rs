@@ -15,6 +15,9 @@ pub struct Config {
     pub governance_contract: Addr,
     pub oracle_contract: Addr,
     pub basset_token: Addr,
+    pub anchor_market_contract: Addr,
+    pub anchor_interest_model_contract: Addr,
+    pub anchor_overseer_contract: Addr,
     pub stable_denom: String,
     borrow_ltv_max: Decimal256,
     borrow_ltv_min: Decimal256,
@@ -31,6 +34,9 @@ impl Config {
     pub fn new(
         governance_contract: Addr,
         oracle_contract: Addr,
+        anchor_market_contract: Addr,
+        anchor_interest_model_contract: Addr,
+        anchor_overseer_contract: Addr,
         basset_token: Addr,
         stable_denom: String,
         borrow_ltv_max: Decimal256,
@@ -45,6 +51,9 @@ impl Config {
         let mut config = Config {
             governance_contract,
             oracle_contract,
+            anchor_market_contract,
+            anchor_interest_model_contract,
+            anchor_overseer_contract,
             basset_token,
             stable_denom,
             borrow_ltv_max,
@@ -186,8 +195,11 @@ mod test {
         // max = aim
         let creation_res = Config::new(
             Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
+            Addr::unchecked("addr0002"),
+            Addr::unchecked("addr0003"),
+            Addr::unchecked("addr0004"),
+            Addr::unchecked("addr0005"),
+            Addr::unchecked("addr0006"),
             "uust".to_string(),
             Decimal256::from_str("0.8").unwrap(),
             Decimal256::from_str("0.75").unwrap(),
@@ -201,8 +213,11 @@ mod test {
         // min = aim
         let creation_res = Config::new(
             Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
+            Addr::unchecked("addr0002"),
+            Addr::unchecked("addr0003"),
+            Addr::unchecked("addr0004"),
+            Addr::unchecked("addr0005"),
+            Addr::unchecked("addr0006"),
             "uust".to_string(),
             Decimal256::from_str("0.85").unwrap(),
             Decimal256::from_str("0.8").unwrap(),
@@ -216,8 +231,11 @@ mod test {
         // min > max
         let creation_res = Config::new(
             Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
+            Addr::unchecked("addr0002"),
+            Addr::unchecked("addr0003"),
+            Addr::unchecked("addr0004"),
+            Addr::unchecked("addr0005"),
+            Addr::unchecked("addr0006"),
             "uust".to_string(),
             Decimal256::from_str("0.85").unwrap(),
             Decimal256::from_str("0.9").unwrap(),
@@ -231,8 +249,11 @@ mod test {
         // max < min
         let creation_res = Config::new(
             Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
+            Addr::unchecked("addr0002"),
+            Addr::unchecked("addr0003"),
+            Addr::unchecked("addr0004"),
+            Addr::unchecked("addr0005"),
+            Addr::unchecked("addr0006"),
             "uust".to_string(),
             Decimal256::from_str("0.4").unwrap(),
             Decimal256::from_str("0.6").unwrap(),
@@ -246,8 +267,11 @@ mod test {
         // max > 1
         let creation_res = Config::new(
             Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
+            Addr::unchecked("addr0002"),
+            Addr::unchecked("addr0003"),
+            Addr::unchecked("addr0004"),
+            Addr::unchecked("addr0005"),
+            Addr::unchecked("addr0006"),
             "uust".to_string(),
             Decimal256::from_str("1.4").unwrap(),
             Decimal256::from_str("0.6").unwrap(),
@@ -261,8 +285,11 @@ mod test {
         // buffer > 1
         let creation_res = Config::new(
             Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
+            Addr::unchecked("addr0002"),
+            Addr::unchecked("addr0003"),
+            Addr::unchecked("addr0004"),
+            Addr::unchecked("addr0005"),
+            Addr::unchecked("addr0006"),
             "uust".to_string(),
             Decimal256::from_str("0.9").unwrap(),
             Decimal256::from_str("0.6").unwrap(),
@@ -276,8 +303,11 @@ mod test {
         // buffer = 0
         let creation_res = Config::new(
             Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
+            Addr::unchecked("addr0002"),
+            Addr::unchecked("addr0003"),
+            Addr::unchecked("addr0004"),
+            Addr::unchecked("addr0005"),
+            Addr::unchecked("addr0006"),
             "uust".to_string(),
             Decimal256::from_str("0.9").unwrap(),
             Decimal256::from_str("0.6").unwrap(),
@@ -293,8 +323,11 @@ mod test {
     pub fn fail_to_update_with_wrong_values() {
         let mut config = Config::new(
             Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
+            Addr::unchecked("addr0002"),
+            Addr::unchecked("addr0003"),
+            Addr::unchecked("addr0004"),
+            Addr::unchecked("addr0005"),
+            Addr::unchecked("addr0006"),
             "uust".to_string(),
             Decimal256::from_str("0.9").unwrap(),
             Decimal256::from_str("0.6").unwrap(),
@@ -365,8 +398,11 @@ mod test {
     pub fn successfully_update_buffer_part() {
         let mut config = Config::new(
             Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
+            Addr::unchecked("addr0002"),
+            Addr::unchecked("addr0003"),
+            Addr::unchecked("addr0004"),
+            Addr::unchecked("addr0005"),
+            Addr::unchecked("addr0006"),
             "uust".to_string(),
             Decimal256::from_str("0.9").unwrap(),
             Decimal256::from_str("0.6").unwrap(),
@@ -389,8 +425,11 @@ mod test {
     pub fn fail_to_update_buffer_part() {
         let mut config = Config::new(
             Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
-            Addr::unchecked("addr0001"),
+            Addr::unchecked("addr0002"),
+            Addr::unchecked("addr0003"),
+            Addr::unchecked("addr0004"),
+            Addr::unchecked("addr0005"),
+            Addr::unchecked("addr0006"),
             "uust".to_string(),
             Decimal256::from_str("0.9").unwrap(),
             Decimal256::from_str("0.6").unwrap(),

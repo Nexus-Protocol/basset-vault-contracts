@@ -23,6 +23,9 @@ pub fn instantiate(
     let config = Config::new(
         deps.api.addr_validate(&msg.governance_contract_addr)?,
         deps.api.addr_validate(&msg.oracle_contract_addr)?,
+        deps.api.addr_validate(&msg.anchor_market_contract)?,
+        deps.api.addr_validate(&msg.anchor_interest_model_contract)?,
+        deps.api.addr_validate(&msg.anchor_overseer_contract)?,
         deps.api.addr_validate(&msg.basset_token_addr)?,
         msg.stable_denom,
         msg.borrow_ltv_max,

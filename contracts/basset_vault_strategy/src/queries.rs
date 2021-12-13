@@ -1,6 +1,5 @@
 use crate::price::{query_price, PriceResponse};
 use basset_vault::basset_vault_strategy::{BorrowerActionResponse, ConfigResponse};
-use basset_vault::querier::AnchorMarketMsg;
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Deps, Env, StdResult, Timestamp, Addr};
 
@@ -9,6 +8,9 @@ use crate::state::{load_config, Config};
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let config: Config = load_config(deps.storage)?;
     Ok(ConfigResponse {
+        anchor_market_contract: config.anchor_market_contract.to_string(),
+        anchor_interest_model_contract: config.anchor_interest_model_contract.to_string(),
+        anchor_overseer_contract: config.anchor_overseer_contract.to_string(),
         governance_contract: config.governance_contract.to_string(),
         oracle_contract: config.oracle_contract.to_string(),
         basset_token: config.basset_token.to_string(),
