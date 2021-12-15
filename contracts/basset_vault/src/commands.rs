@@ -428,6 +428,8 @@ pub fn rebalance(
             };
             repay_logic(deps, env, config, repaying_loan_state)
         }
+
+        BorrowerActionResponse::WithdrawAll {} => withdraw_all_logic(deps, env, &config.aterra_token, &config.anchor_market_contract),
     }
 }
 
@@ -517,6 +519,42 @@ pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Respons
     }
     let config = load_config(deps.storage)?;
     repay_logic(deps, env, &config, repaying_loan_state)
+}
+
+pub(crate) fn withdraw_all_logic(
+    deps: DepsMut,
+    env: Env,
+    aterra_token: &Addr,
+    anchor_market_contract: &Addr,
+) -> StdResult<Response> {
+    let aterra_balance = query_token_balance(deps.as_ref(), aterra_token, &env.contract.address);
+            
+    let mut response = Response::new();
+
+    if !aterra_balance.is_zero() {
+        response = response
+            .add_submessage(
+                SubMsg::new(
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: aterra_token.to_string(),
+                        msg: to_binary(&Cw20ExecuteMsg::Send {
+                            contract: anchor_market_contract.to_string(),
+                            amount: aterra_balance.into(),
+                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
+                        })?,
+                        funds: vec![],
+                    }),
+                ),
+            );
+    }
+
+    Ok(
+        response
+            .add_attributes(vec![
+                ("action", "sell_aterra"),
+                ("amount", &aterra_balance.to_string()),
+            ])
+    )
 }
 
 /// Anyone can execute claim_anc_rewards function to claim
