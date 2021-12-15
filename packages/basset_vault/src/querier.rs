@@ -121,7 +121,13 @@ pub enum AnchorMarketCw20Msg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AnchorMarketQueryMsg {
-    EpochState { block_height: Option<u64> },
+    EpochState {
+        block_height: Option<u64>,
+    },
+    BorrowerInfo {
+        borrower: String,
+        block_height: Option<u64>,
+    },
     // using Raw query to ask for state
     // State { block_height: Option<u64> },
 }
