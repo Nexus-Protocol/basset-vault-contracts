@@ -356,16 +356,10 @@ impl WasmMockQuerier {
     ) {
         let mut result_map: HashMap<String, HashMap<Binary, Binary>> = HashMap::new();
         for (contract_addr, request, response) in contract_responses_map.iter() {
-            match result_map.get_mut(*contract_addr) {
-                Some(by_contract_responses) => {
-                    by_contract_responses.insert((**request).clone(), (**response).clone());
-                }
-                None => {
-                    let mut by_contract_responses = HashMap::new();
-                    by_contract_responses.insert((**request).clone(), (**response).clone());
-                    result_map.insert((**contract_addr).clone(), by_contract_responses);
-                }
-            }
+            result_map
+                .entry((**contract_addr).clone())
+                .or_default()
+                .insert((**request).clone(), (**response).clone());
         }
         self.wasm_query_smart_responses = result_map;
     }
