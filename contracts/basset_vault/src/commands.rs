@@ -1,11 +1,10 @@
 use crate::{
     commands,
     state::{
-        load_aim_buffer_size, load_config, load_gov_update, load_last_rewards_claiming_height,
-        load_repaying_loan_state, load_stable_balance_before_selling_anc, remove_gov_update,
-        store_aim_buffer_size, store_config, store_gov_update, store_last_rewards_claiming_height,
-        store_repaying_loan_state, store_stable_balance_before_selling_anc, Config,
-        GovernanceUpdateState, RepayingLoanState,
+        load_aim_buffer_size, load_config, load_gov_update, load_repaying_loan_state,
+        load_stable_balance_before_selling_anc, remove_gov_update, store_aim_buffer_size,
+        store_config, store_gov_update, store_repaying_loan_state,
+        store_stable_balance_before_selling_anc, Config, GovernanceUpdateState, RepayingLoanState,
     },
     tax_querier::get_tax_info,
     utils::{
@@ -525,35 +524,33 @@ pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Respons
 /// result PSI token to gov contract
 pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
     let config: Config = load_config(deps.storage)?;
-    let last_rewards_claiming_height = load_last_rewards_claiming_height(deps.as_ref().storage)?;
-    let current_height = env.block.height;
 
-    if !is_anc_rewards_claimable(
-        current_height,
-        last_rewards_claiming_height,
-        config.claiming_rewards_delay,
-    ) {
-        return Err(StdError::generic_err("claiming too often"));
+    let borrower_info = query_borrower_info(
+        deps.as_ref(),
+        &config.anchor_market_contract,
+        &env.contract.address,
+    )?;
+
+    if is_anc_rewards_claimable(borrower_info.pending_rewards) {
+        Ok(Response::new()
+            .add_messages(vec![
+                WasmMsg::Execute {
+                    contract_addr: config.anchor_market_contract.to_string(),
+                    msg: to_binary(&AnchorMarketMsg::ClaimRewards { to: None })?,
+                    funds: vec![],
+                },
+                WasmMsg::Execute {
+                    contract_addr: env.contract.address.to_string(),
+                    msg: to_binary(&ExecuteMsg::Yourself {
+                        yourself_msg: YourselfMsg::SwapAnc {},
+                    })?,
+                    funds: vec![],
+                },
+            ])
+            .add_attribute("action", "claim_anc_rewards"))
+    } else {
+        Ok(Response::default())
     }
-
-    store_last_rewards_claiming_height(deps.storage, &current_height)?;
-
-    Ok(Response::new()
-        .add_messages(vec![
-            WasmMsg::Execute {
-                contract_addr: config.anchor_market_contract.to_string(),
-                msg: to_binary(&AnchorMarketMsg::ClaimRewards { to: None })?,
-                funds: vec![],
-            },
-            WasmMsg::Execute {
-                contract_addr: env.contract.address.to_string(),
-                msg: to_binary(&ExecuteMsg::Yourself {
-                    yourself_msg: YourselfMsg::SwapAnc {},
-                })?,
-                funds: vec![],
-            },
-        ])
-        .add_attribute("action", "claim_anc_rewards"))
 }
 
 pub fn swap_anc(deps: DepsMut, env: Env) -> StdResult<Response> {
