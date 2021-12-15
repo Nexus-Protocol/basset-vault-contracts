@@ -9,8 +9,9 @@ use basset_vault::{
     querier::{AnchorMarketCw20Msg, AnchorMarketMsg},
     BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP,
 };
-use cosmwasm_std::{to_binary, Coin, ReplyOn, Response, SubMsg, Uint128, WasmMsg};
+use cosmwasm_std::{to_binary, Coin, Decimal, ReplyOn, Response, SubMsg, Uint128, WasmMsg};
 use cw20::Cw20ExecuteMsg;
+use std::convert::Into;
 use std::str::FromStr;
 
 #[test]
@@ -22,14 +23,16 @@ fn repay_loan_without_problems() {
     let advised_buffer_size = Uint256::from(50u64);
     let aterra_balance = Uint256::from(200u64);
     let aterra_exchange_rate = Decimal256::from_str("1.2").unwrap();
+    let tax_rate = Decimal256::from_str("0.2").unwrap();
 
+    sdk.set_stable_balance(stable_coin_balance);
     sdk.set_aterra_balance(aterra_balance);
     sdk.set_borrower_action(BorrowerActionResponse::Repay {
         amount: loan_to_repay,
         advised_buffer_size,
     });
     sdk.set_aterra_exchange_rate(aterra_exchange_rate);
-    sdk.set_tax(20, 10u128);
+    sdk.set_tax(tax_rate.into(), 10u128);
 
     // -= REBALANCE =-
     {
@@ -110,6 +113,105 @@ fn repay_loan_without_problems() {
 }
 
 #[test]
+fn repay_loan_avoid_to_sell_one_a_ust() {
+    let mut sdk = Sdk::init();
+
+    let stable_coin_balance = Uint128::from(10801u64);
+    let loan_to_repay = Uint256::from(240000u64);
+    let advised_buffer_size = Uint256::from(10800u64);
+    let aterra_balance = Uint256::from(468250u64);
+    let aterra_exchange_rate = Decimal256::from_str("1.000000001997067805").unwrap();
+    let tax_rate = Decimal256::from_str("0.001").unwrap();
+
+    sdk.set_stable_balance(stable_coin_balance);
+    sdk.set_aterra_balance(aterra_balance);
+    sdk.set_borrower_action(BorrowerActionResponse::Repay {
+        amount: loan_to_repay,
+        advised_buffer_size,
+    });
+    sdk.set_aterra_exchange_rate(aterra_exchange_rate);
+    sdk.set_tax(tax_rate.into(), 1000000u128);
+
+    //can_get_from_balance = stable_coin_balance - avised_buffer_size = 1;
+    //aterra_to_sell = ((repay_amount - can_get_from_balance)/aterra_exchange_rate) = 240238
+    //tax_amount = aterra_to_sell * tax_rate = 240238 * 0,001 = 240,238 => 241 after round up
+    //result = 24023 + 241 = 240479
+    let aterra_to_sell: Uint128 = Uint128::from(240479u64);
+
+    // -= REBALANCE =-
+    {
+        let response = sdk.rebalance().unwrap();
+        assert_eq!(
+            response.messages,
+            vec![SubMsg {
+                msg: WasmMsg::Execute {
+                    contract_addr: ATERRA_TOKEN.to_string(),
+                    msg: to_binary(&Cw20ExecuteMsg::Send {
+                        contract: ANCHOR_MARKET_CONTRACT.to_string(),
+                        amount: aterra_to_sell.into(),
+                        msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {}).unwrap(),
+                    })
+                    .unwrap(),
+                    funds: vec![],
+                }
+                .into(),
+                gas_limit: None,
+                id: SubmsgIds::RedeemStableOnRepayLoan.id(),
+                reply_on: ReplyOn::Always,
+            }]
+        );
+        let rapaying_state = load_repaying_loan_state(&sdk.deps.storage).unwrap();
+        assert_eq!(rapaying_state.iteration_index, 0);
+        assert_eq!(rapaying_state.to_repay_amount, loan_to_repay);
+        assert_eq!(rapaying_state.repaying_amount, Uint256::zero());
+        assert_eq!(rapaying_state.aim_buffer_size, advised_buffer_size);
+    }
+
+    // -= ANCHOR REDEEM SUCCESSFULL =-
+    {
+        //anchor send stables for selling aterra
+        // tax is 240 (send 239999)
+        sdk.set_stable_balance(
+            (Uint256::from(stable_coin_balance)
+                + Uint256::from(aterra_to_sell * Into::<Decimal>::into(aterra_exchange_rate))
+                - Uint256::from(240u64))
+            .into(),
+        );
+        sdk.set_aterra_balance(Uint256::from(468250u64 - 240479u64));
+
+        let response = sdk.aterra_redeem_success().unwrap();
+
+        let repay_stable_coin = Coin {
+            denom: STABLE_DENOM.to_string(),
+            amount: loan_to_repay.into(),
+        };
+        assert_eq!(
+            response.messages,
+            vec![SubMsg {
+                msg: WasmMsg::Execute {
+                    contract_addr: ANCHOR_MARKET_CONTRACT.to_string(),
+                    msg: to_binary(&AnchorMarketMsg::RepayStable {}).unwrap(),
+                    funds: vec![repay_stable_coin.clone()],
+                }
+                .into(),
+                gas_limit: None,
+                id: SubmsgIds::RepayLoan.id(),
+                reply_on: ReplyOn::Success,
+            }]
+        );
+
+        let rapaying_state = load_repaying_loan_state(&sdk.deps.storage).unwrap();
+        assert_eq!(rapaying_state.iteration_index, 1);
+        assert_eq!(rapaying_state.to_repay_amount, loan_to_repay);
+        assert_eq!(
+            rapaying_state.repaying_amount,
+            repay_stable_coin.amount.into()
+        );
+        assert_eq!(rapaying_state.aim_buffer_size, advised_buffer_size);
+    }
+}
+
+#[test]
 fn repay_loan_fail_to_redeem_aterra() {
     let mut sdk = Sdk::init();
 
@@ -120,7 +222,7 @@ fn repay_loan_fail_to_redeem_aterra() {
     sdk.set_aterra_balance(aterra_balance);
 
     //no tax
-    sdk.set_tax(0, 99999999999u128);
+    sdk.set_tax(Decimal256::zero().into(), 99999999999u128);
 
     // -= asking for REPAY =-
     {
@@ -269,7 +371,7 @@ fn limited_recursion_depth_all_errors() {
     sdk.set_aterra_balance(aterra_balance);
 
     //no tax
-    sdk.set_tax(0, 99999999999u128);
+    sdk.set_tax(Decimal256::zero().into(), 99999999999u128);
 
     let to_repay_amount = Uint256::from(10_000u64);
     let aim_buffer_size = Uint256::from(5_000u64);
@@ -341,7 +443,7 @@ fn limited_recursion_depth_repayed_something() {
     sdk.set_aterra_balance(aterra_balance);
 
     //no tax
-    sdk.set_tax(0, 99999999999u128);
+    sdk.set_tax(Decimal256::zero().into(), 99999999999u128);
 
     let to_repay_amount = Uint256::from(10_000u64);
     let aim_buffer_size = Uint256::from(5_000u64);
@@ -415,7 +517,7 @@ fn reset_iteration_index() {
     sdk.set_aterra_balance(aterra_balance);
 
     //no tax
-    sdk.set_tax(0, 99999999999u128);
+    sdk.set_tax(Decimal256::zero().into(), 99999999999u128);
 
     let to_repay_amount = Uint256::from(10_000u64);
     let aim_buffer_size = Uint256::from(5_000u64);

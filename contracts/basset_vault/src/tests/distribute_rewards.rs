@@ -101,7 +101,7 @@ fn honest_work() {
         sdk.set_loan(Uint256::from(stable_coin_balance));
         sdk.set_aterra_balance(Uint256::from(stable_coin_balance));
         sdk.set_aterra_exchange_rate(Decimal256::from_str(OVER_LOAN_BALANCE_VALUE).unwrap());
-        sdk.set_tax(0, 0);
+        sdk.set_tax(Decimal256::zero().into(), 0);
 
         let distribute_rewards_response = sdk.send_distribute_rewards().unwrap();
         let swap_asset = Asset {

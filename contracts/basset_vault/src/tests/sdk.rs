@@ -465,9 +465,9 @@ impl Sdk {
         )]);
     }
 
-    pub fn set_tax(&mut self, tax_percent: u64, cap: u128) {
+    pub fn set_tax(&mut self, tax_percent: Decimal, cap: u128) {
         self.deps.querier.with_tax(
-            Decimal::percent(tax_percent),
+            tax_percent,
             &[(&STABLE_DENOM.to_string(), &Uint128::new(cap))],
         );
     }
