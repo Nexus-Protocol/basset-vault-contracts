@@ -215,6 +215,8 @@ impl WasmMockQuerier {
                 let response = match self.wasm_query_smart_responses.get(contract_addr) {
                     Some(responses_map) => {
                         if responses_map.len() == 1 {
+                            //get first element cause 'get by key' would not work here,
+                            //cause 'key' is fake in that map
                             responses_map.values().next().unwrap()
                         } else {
                             responses_map.get(msg).unwrap()
