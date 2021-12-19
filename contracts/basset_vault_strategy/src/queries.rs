@@ -86,21 +86,17 @@ pub fn borrower_action(
         env.block.time,
     );
 
-    let anchor_market_contract: Addr = todo!();
-    let anchor_interest_model_contract: Addr = todo!();
-    let anchor_overseer_contract: Addr = todo!();
-
     let earn_apy = basset_vault::anchor::earn_apy::query_anchor_borrow_net_apr(
         deps,
-        &anchor_overseer_contract
+        &config.anchor_overseer_contract
     )?;
 
     let anchor_net_apr = basset_vault::anchor::borrow_apr::query_anchor_borrow_net_apr(
         deps,
-        &anchor_market_contract,
-        &anchor_interest_model_contract,
+        &config.anchor_market_contract,
+        &config.anchor_interest_model_contract,
         oracle_price.rate,
-        config.stable_denom,
+        config.stable_denom.clone(),
     )?;
 
     let apy = earn_apy + anchor_net_apr;
@@ -117,8 +113,7 @@ pub fn borrower_action(
     Ok(response)
 }
 
-fn 
-calc_borrower_action(
+fn calc_borrower_action(
     apy: Decimal256,
     ltv_info: LTVInfo,
     borrowed_amount: Uint256,
@@ -126,7 +121,13 @@ calc_borrower_action(
     basset_max_ltv: Decimal256,
     buffer_part: Decimal256,
 ) -> BorrowerActionResponse {
-    if apy <= Decimal256::zero() {
+    let profit_threshold = Decimal256::zero();
+    // Withdraw all if there are something to withdraw.
+    //
+    // When vault got `WithdrawAll` action it will call
+    // `rebalance` which will query borrower action again
+    // with locked_basset_amount = 0 in order to get `repay` action
+    if locked_basset_amount != Uint256::zero() && apy <= profit_threshold {
         return BorrowerActionResponse::WithdrawAll {};
     }
 

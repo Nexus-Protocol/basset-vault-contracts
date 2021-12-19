@@ -289,6 +289,7 @@ pub fn withdraw_basset(
 ) -> StdResult<Response> {
     //nasset_to_withdraw_amount is not zero here, cw20 contract check it
 
+    // TODO: statement below is not true anymore
     //basset_in_contract_address is always zero (except Deposit stage)
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
@@ -298,7 +299,10 @@ pub fn withdraw_basset(
 
     let nasset_token_supply = query_supply(&deps.querier, &config.nasset_token)?;
 
-    if basset_in_custody.is_zero() {
+    // TODO
+    let basset_balance = todo!();
+    
+    if (basset_in_custody + basset_balance).is_zero() {
         //interesting case - user owns some nAsset, but bAsset balance is zero
         //what we can do here:
         //1. Burn his nAsset, cause they do not have value in that context
@@ -429,7 +433,7 @@ pub fn rebalance(
             repay_logic(deps, env, config, repaying_loan_state)
         }
 
-        BorrowerActionResponse::WithdrawAll {} => withdraw_all_logic(deps, env, &config.aterra_token, &config.anchor_market_contract),
+        BorrowerActionResponse::WithdrawAll {} => withdraw_all_logic(deps, env, config),
     }
 }
 
@@ -524,37 +528,54 @@ pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Respons
 pub(crate) fn withdraw_all_logic(
     deps: DepsMut,
     env: Env,
-    aterra_token: &Addr,
-    anchor_market_contract: &Addr,
+    config: &Config,
 ) -> StdResult<Response> {
-    let aterra_balance = query_token_balance(deps.as_ref(), aterra_token, &env.contract.address);
-            
-    let mut response = Response::new();
+    let aterra_balance = query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address);
 
-    if !aterra_balance.is_zero() {
-        response = response
-            .add_submessage(
-                SubMsg::new(
-                    CosmosMsg::Wasm(WasmMsg::Execute {
-                        contract_addr: aterra_token.to_string(),
-                        msg: to_binary(&Cw20ExecuteMsg::Send {
-                            contract: anchor_market_contract.to_string(),
-                            amount: aterra_balance.into(),
-                            msg: to_binary(&AnchorMarketCw20Msg::RedeemStable {})?,
-                        })?,
-                        funds: vec![],
-                    }),
-                ),
-            );
-    }
+    let basset_in_custody = get_basset_in_custody(
+        deps.as_ref(),
+        &config.anchor_custody_basset_contract,
+        &env.contract.address,
+    )?;
 
-    Ok(
-        response
-            .add_attributes(vec![
-                ("action", "sell_aterra"),
-                ("amount", &aterra_balance.to_string()),
-            ])
-    )
+    // 1. rebalance with basset_to_withdraw = basset_in_custody,
+    //    that will sell aterra and repay loan
+    // 2. unlock basset from anchor_overseer
+    // 3. withdraw basset from anchor_custody
+
+    let rebalance_response = rebalance(
+        deps,
+        env,
+        &config,
+        basset_in_custody,
+        Some(basset_in_custody),
+    )?;
+
+    let response = rebalance_response
+        .add_submessage(
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: config.anchor_overseer_contract.to_string(),
+                msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
+                    collaterals: vec![(config.basset_token.to_string(), basset_in_custody)],
+                })?,
+                funds: vec![],
+            }))
+        )
+        .add_submessage(
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: config.anchor_custody_basset_contract.to_string(),
+                msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
+                    amount: Some(basset_in_custody),
+                })?,
+                funds: vec![],
+            }))
+        )
+        .add_attributes(vec![
+            ("action", "withdraw_all"),
+            ("amount", &aterra_balance.to_string()),
+        ]);
+
+    Ok(response)
 }
 
 /// Anyone can execute claim_anc_rewards function to claim
