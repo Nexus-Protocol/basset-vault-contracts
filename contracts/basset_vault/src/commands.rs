@@ -289,18 +289,17 @@ pub fn withdraw_basset(
 ) -> StdResult<Response> {
     //nasset_to_withdraw_amount is not zero here, cw20 contract check it
 
-    // TODO: statement below is not true anymore
-    //basset_in_contract_address is always zero (except Deposit stage)
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
         &config.anchor_custody_basset_contract,
         &env.contract.address,
     )?;
 
-    let nasset_token_supply = query_supply(&deps.querier, &config.nasset_token)?;
-
-    // TODO
-    let basset_balance = todo!();
+    let basset_balance: Uint256 = query_token_balance(
+        deps.as_ref(),
+        &config.basset_token,
+        &env.contract.address,
+    ).into();
     
     if (basset_in_custody + basset_balance).is_zero() {
         //interesting case - user owns some nAsset, but bAsset balance is zero
@@ -318,43 +317,57 @@ pub fn withdraw_basset(
         ));
     }
 
+    let nasset_token_supply = query_supply(&deps.querier, &config.nasset_token)?;
+
     let basset_to_withdraw: Uint256 = basset_in_custody * nasset_to_withdraw_amount
         / Decimal256::from_uint256(Uint256::from(nasset_token_supply));
 
-    //1. rebalance in a way you don't have basset_to_withdraw
-    //2. unlock basset from anchor_overseer
-    //3. withdraw basset from anchor_custody
-    //4. send basset to farmer
-    //5. burn nasset
-    let mut rebalance_response = rebalance(
-        deps,
-        env,
-        &config,
-        basset_in_custody,
-        Some(basset_to_withdraw),
-    )?;
+    let mut response = Response::new();
 
-    rebalance_response
-        .messages
-        .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: config.anchor_overseer_contract.to_string(),
-            msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
-                collaterals: vec![(config.basset_token.to_string(), basset_to_withdraw)],
-            })?,
-            funds: vec![],
-        })));
+    //
+    // If amount of basset on the balance is not enough
+    // then withdraw it from collateral:
+    //
+    // 1. rebalance in a way you don't have basset_to_withdraw
+    // 2. unlock basset from anchor_overseer
+    // 3. withdraw basset from anchor_custody
+    //
+    if basset_balance < basset_to_withdraw {
+        let needed_additional_amount = basset_to_withdraw - basset_balance;
 
-    rebalance_response
-        .messages
-        .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: config.anchor_custody_basset_contract.to_string(),
-            msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
-                amount: Some(basset_to_withdraw),
-            })?,
-            funds: vec![],
-        })));
+        response = rebalance(
+            deps,
+            env,
+            &config,
+            basset_in_custody,
+            Some(needed_additional_amount),
+        )?;
+    
+        response
+            .messages
+            .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: config.anchor_overseer_contract.to_string(),
+                msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
+                    collaterals: vec![(config.basset_token.to_string(), needed_additional_amount)],
+                })?,
+                funds: vec![],
+            })));
+    
+        response
+            .messages
+            .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: config.anchor_custody_basset_contract.to_string(),
+                msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
+                    amount: Some(needed_additional_amount),
+                })?,
+                funds: vec![],
+            })));
+    }
 
-    rebalance_response
+    // 1. send basset to farmer
+    // 2. burn nasset
+
+    response
         .messages
         .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.basset_token.to_string(),
@@ -365,7 +378,7 @@ pub fn withdraw_basset(
             funds: vec![],
         })));
 
-    rebalance_response
+    response
         .messages
         .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.nasset_token.to_string(),
@@ -375,7 +388,7 @@ pub fn withdraw_basset(
             funds: vec![],
         })));
 
-    Ok(rebalance_response.add_attributes(vec![
+    Ok(response.add_attributes(vec![
         ("action", "withdraw"),
         ("nasset_amount", &nasset_to_withdraw_amount.to_string()),
     ]))
