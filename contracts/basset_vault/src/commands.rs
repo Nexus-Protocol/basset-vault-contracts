@@ -165,7 +165,7 @@ pub fn receive_cw20_deposit(
     //we trust cw20 contract
     let farmer_addr: Addr = Addr::unchecked(cw20_msg.sender);
 
-    deposit_basset(deps, env, config, farmer_addr)
+    deposit_basset(deps, env, config, farmer_addr, cw20_msg.amount.into())
 }
 
 pub fn deposit_basset(
@@ -173,6 +173,7 @@ pub fn deposit_basset(
     env: Env,
     config: Config,
     farmer: Addr,
+    deposited_basset: Uint256,
 ) -> StdResult<Response> {
     let nasset_supply: Uint256 = query_supply(&deps.querier, &config.nasset_token.clone())?.into();
 
@@ -182,6 +183,7 @@ pub fn deposit_basset(
         &env.contract.address,
     )?;
 
+    // TODO: this can happen now
     if basset_in_custody.is_zero() && !nasset_supply.is_zero() {
         //read comments in 'withdraw_basset' function for a reason to return error here
         return Err(StdError::generic_err(
@@ -189,13 +191,15 @@ pub fn deposit_basset(
         ));
     }
 
-    // basset balance in cw20 contract
-    // it should be equal to 'deposit_amout',
-    // unless someone directly transfer cw20 tokens to this contract without calling 'Deposit'
-    let basset_in_contract_address =
-        query_token_balance(deps.as_ref(), &config.basset_token, &env.contract.address);
+    let basset_in_contract_address = query_token_balance(
+        deps.as_ref(),
+        &config.basset_token,
+        &env.contract.address
+    )
+    .into();
 
-    let basset_balance: Uint256 = basset_in_custody + basset_in_contract_address.into();
+    let basset_balance: Uint256 = basset_in_custody + basset_in_contract_address;
+
     if basset_balance == Uint256::zero() {
         //impossible because 'farmer' already sent some basset
         return Err(StdError::generic_err(
@@ -203,41 +207,23 @@ pub fn deposit_basset(
         ));
     }
 
-    let deposit_amount: Uint256 = basset_in_contract_address.into();
-    let is_first_depositor = deposit_amount == basset_balance;
+    let is_first_depositor = nasset_supply.is_zero();
 
     // nAsset tokens to mint:
     // user_share = (deposited_basset / total_basset)
     // nAsset_to_mint = nAsset_supply * user_share / (1 - user_share)
     let nasset_to_mint = if is_first_depositor {
-        deposit_amount
+        basset_in_contract_address
     } else {
         // 'nasset_supply' can't be zero here, cause we already mint some for first farmer
-        nasset_supply * deposit_amount / Decimal256::from_uint256(basset_balance - deposit_amount)
+        let user_share = Decimal256::from_uint256(deposited_basset) / Decimal256::from_uint256(basset_balance);
+        nasset_supply * user_share / (Decimal256::one() - user_share)
     };
 
-    //0. send basset to anchor_custody contract
-    //1. lock basset
-    //2. mint nasset
-    //3. rebalance
+    // 1. Mint nasset
+    // 2. Rebalance
     Ok(Response::new()
         .add_messages(vec![
-            WasmMsg::Execute {
-                contract_addr: config.basset_token.to_string(),
-                msg: to_binary(&Cw20ExecuteMsg::Send {
-                    contract: config.anchor_custody_basset_contract.to_string(),
-                    amount: deposit_amount.into(),
-                    msg: to_binary(&AnchorCustodyCw20Msg::DepositCollateral {})?,
-                })?,
-                funds: vec![],
-            },
-            WasmMsg::Execute {
-                contract_addr: config.anchor_overseer_contract.to_string(),
-                msg: to_binary(&AnchorOverseerMsg::LockCollateral {
-                    collaterals: vec![(config.basset_token.to_string(), deposit_amount)],
-                })?,
-                funds: vec![],
-            },
             WasmMsg::Execute {
                 contract_addr: config.nasset_token.to_string(),
                 msg: to_binary(&Cw20ExecuteMsg::Mint {
@@ -257,7 +243,7 @@ pub fn deposit_basset(
         .add_attributes(vec![
             ("action", "deposit_basset"),
             ("farmer", &farmer.to_string()),
-            ("amount", &deposit_amount.to_string()),
+            ("amount", &deposited_basset.to_string()),
         ]))
 }
 
@@ -446,6 +432,8 @@ pub fn rebalance(
             repay_logic(deps, env, config, repaying_loan_state)
         }
 
+        BorrowerActionResponse::DepositAll {} => deposit_all_logic(deps, env, config),
+
         BorrowerActionResponse::WithdrawAll {} => withdraw_all_logic(deps, env, config),
     }
 }
@@ -536,6 +524,52 @@ pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Respons
     }
     let config = load_config(deps.storage)?;
     repay_logic(deps, env, &config, repaying_loan_state)
+}
+
+pub(crate) fn deposit_all_logic(
+    deps: DepsMut,
+    env: Env,
+    config: &Config,
+) -> StdResult<Response> {
+    let basset_in_contract_address = query_token_balance(
+        deps.as_ref(),
+        &config.basset_token,
+        &env.contract.address
+    );
+
+    // 1. send basset to anchor_custody contract
+    // 2. lock basset
+    // 3. Call rebalance again, with a new state
+    Ok(Response::new()
+        .add_messages(vec![
+            WasmMsg::Execute {
+                contract_addr: config.basset_token.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Send {
+                    contract: config.anchor_custody_basset_contract.to_string(),
+                    amount: basset_in_contract_address,
+                    msg: to_binary(&AnchorCustodyCw20Msg::DepositCollateral {})?,
+                })?,
+                funds: vec![],
+            },
+            WasmMsg::Execute {
+                contract_addr: config.anchor_overseer_contract.to_string(),
+                msg: to_binary(&AnchorOverseerMsg::LockCollateral {
+                    collaterals: vec![(config.basset_token.to_string(), basset_in_contract_address.into())],
+                })?,
+                funds: vec![],
+            },
+            WasmMsg::Execute {
+                contract_addr: env.contract.address.to_string(),
+                msg: to_binary(&ExecuteMsg::Anyone {
+                    anyone_msg: AnyoneMsg::Rebalance {},
+                })?,
+                funds: vec![],
+            },
+        ])
+        .add_attributes(vec![
+            ("action", "deposit_all"),
+            ("amount", &basset_in_contract_address.to_string()),
+        ]))
 }
 
 pub(crate) fn withdraw_all_logic(

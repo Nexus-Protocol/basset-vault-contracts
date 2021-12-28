@@ -116,19 +116,26 @@ pub fn borrower_action(
 fn calc_borrower_action(
     apy: Decimal256,
     ltv_info: LTVInfo,
+    basset_on_contract_balance: Uint256, // TODO: fix quering 
     borrowed_amount: Uint256,
     locked_basset_amount: Uint256,
     basset_max_ltv: Decimal256,
     buffer_part: Decimal256,
 ) -> BorrowerActionResponse {
+    // TODO: review these states
     let profit_threshold = Decimal256::zero();
+    let anchor_has_profit = apy > profit_threshold;
     // Withdraw all if there are something to withdraw.
-    //
+    // // TODO: fix this, call repay directly
     // When vault got `WithdrawAll` action it will call
     // `rebalance` which will query borrower action again
     // with locked_basset_amount = 0 in order to get `repay` action
-    if locked_basset_amount != Uint256::zero() && apy <= profit_threshold {
+    if locked_basset_amount != Uint256::zero() && !anchor_has_profit {
         return BorrowerActionResponse::WithdrawAll {};
+    }
+
+    if anchor_has_profit && !basset_on_contract_balance.is_zero() {
+        return BorrowerActionResponse::DepositAll {};
     }
 
     //repay loan if you can't manage it

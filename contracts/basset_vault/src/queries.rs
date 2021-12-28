@@ -95,6 +95,7 @@ pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
                 is_possible: is_borrowing_possible,
             }
         },
+        BorrowerActionResponse::DepositAll {} => RebalanceResponse::DepositAll {},
         BorrowerActionResponse::WithdrawAll {} => RebalanceResponse::WithdrawAll {},
     };
 

@@ -93,6 +93,7 @@ pub enum BorrowerActionResponse {
         amount: Uint256,
         advised_buffer_size: Uint256,
     },
+    DepositAll {},
     WithdrawAll {},
 }
 
