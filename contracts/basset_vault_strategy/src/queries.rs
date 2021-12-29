@@ -125,11 +125,8 @@ fn calc_borrower_action(
     // TODO: review these states
     let profit_threshold = Decimal256::zero();
     let anchor_has_profit = apy > profit_threshold;
-    // Withdraw all if there are something to withdraw.
-    // // TODO: fix this, call repay directly
-    // When vault got `WithdrawAll` action it will call
-    // `rebalance` which will query borrower action again
-    // with locked_basset_amount = 0 in order to get `repay` action
+    
+    // Withdraw all if there are anything to withdraw
     if locked_basset_amount != Uint256::zero() && !anchor_has_profit {
         return BorrowerActionResponse::WithdrawAll {};
     }
