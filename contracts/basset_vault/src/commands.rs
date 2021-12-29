@@ -434,7 +434,7 @@ pub fn rebalance(
 
         BorrowerActionResponse::DepositAll {} => deposit_all_logic(deps, env, config),
 
-        BorrowerActionResponse::WithdrawAll {} => withdraw_all_logic(deps, env, config),
+        BorrowerActionResponse::WithdrawAll {} => withdraw_all_logic(deps, env, config, borrower_info),
     }
 }
 
@@ -576,6 +576,7 @@ pub(crate) fn withdraw_all_logic(
     deps: DepsMut,
     env: Env,
     config: &Config,
+    borrower_info: BorrowerInfoResponse,
 ) -> StdResult<Response> {
     let aterra_balance = query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address);
 
@@ -585,18 +586,17 @@ pub(crate) fn withdraw_all_logic(
         &env.contract.address,
     )?;
 
-    // 1. rebalance with basset_to_withdraw = basset_in_custody,
-    //    that will sell aterra and repay loan
+    // 1. call `repay` logic, it will sell aterra and repay loan
     // 2. unlock basset from anchor_overseer
     // 3. withdraw basset from anchor_custody
 
-    let rebalance_response = rebalance(
-        deps,
-        env,
-        &config,
-        basset_in_custody,
-        Some(basset_in_custody),
-    )?;
+    store_aim_buffer_size(deps.storage, &Uint256::zero())?;
+    let repaying_loan_state = RepayingLoanState {
+        to_repay_amount: borrower_info.loan_amount,
+        aim_buffer_size: Uint256::zero(),
+        ..RepayingLoanState::default()
+    };
+    let rebalance_response = repay_logic(deps, env, config, repaying_loan_state)?;
 
     let response = rebalance_response
         .add_submessage(
