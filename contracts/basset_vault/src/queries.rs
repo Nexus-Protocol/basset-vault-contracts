@@ -8,7 +8,7 @@ use basset_vault::{
         ChildContractsInfoResponse, ConfigResponse, IsRewardsClaimableResponse, RebalanceResponse,
     },
     basset_vault_strategy::{query_borrower_action, BorrowerActionResponse},
-    querier::query_balance,
+    querier::{query_balance, query_token_balance},
 };
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Deps, Env, StdResult};
@@ -44,6 +44,12 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
     let config: Config = load_config(deps.storage)?;
 
+    let basset_on_contract_balance = query_token_balance(
+        deps,
+        &config.basset_token,
+        &env.contract.address
+    );
+
     // basset balance in custody contract
     let basset_in_custody = get_basset_in_custody(
         deps,
@@ -58,6 +64,7 @@ pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
     let borrower_action = query_borrower_action(
         deps,
         &config.basset_vault_strategy_contract,
+        basset_on_contract_balance.into(),
         borrowed_ust,
         basset_in_custody,
     )?;

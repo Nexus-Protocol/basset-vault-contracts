@@ -60,6 +60,7 @@ pub enum GovernanceMsg {
 pub enum QueryMsg {
     Config {},
     BorrowerAction {
+        basset_on_contract_balance: Uint256,
         borrowed_amount: Uint256,
         locked_basset_amount: Uint256,
     },
@@ -120,6 +121,7 @@ impl BorrowerActionResponse {
 pub fn query_borrower_action(
     deps: Deps,
     basset_vault_strategy_contract: &Addr,
+    basset_on_contract_balance: Uint256,
     borrowed_amount: Uint256,
     locked_basset_amount: Uint256,
 ) -> StdResult<BorrowerActionResponse> {
@@ -127,6 +129,7 @@ pub fn query_borrower_action(
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: basset_vault_strategy_contract.to_string(),
             msg: to_binary(&QueryMsg::BorrowerAction {
+                basset_on_contract_balance,
                 borrowed_amount,
                 locked_basset_amount,
             })?,
