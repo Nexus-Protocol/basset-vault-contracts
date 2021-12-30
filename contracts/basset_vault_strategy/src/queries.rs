@@ -122,16 +122,19 @@ fn calc_borrower_action(
     basset_max_ltv: Decimal256,
     buffer_part: Decimal256,
 ) -> BorrowerActionResponse {
-    // TODO: review these states
     let profit_threshold = Decimal256::zero();
     let anchor_has_profit = apy > profit_threshold;
-    
-    // Withdraw all if there are anything to withdraw
-    if locked_basset_amount != Uint256::zero() && !anchor_has_profit {
-        return BorrowerActionResponse::WithdrawAll {};
+
+    if anchor_has_profit == false {
+        // Withdraw all if there are anything to withdraw
+        if locked_basset_amount != Uint256::zero() {
+            return BorrowerActionResponse::WithdrawAll {};
+        } else {
+            return BorrowerActionResponse::nothing();
+        }
     }
 
-    if anchor_has_profit && !basset_on_contract_balance.is_zero() {
+    if basset_on_contract_balance != Uint256::zero() {
         return BorrowerActionResponse::DepositAll {};
     }
 
