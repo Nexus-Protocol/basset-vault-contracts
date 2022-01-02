@@ -21,7 +21,7 @@ use basset_vault::{
     basset_vault_strategy::{query_borrower_action, BorrowerActionResponse},
     querier::{
         query_aterra_state, query_balance, query_supply, query_token_balance, AnchorCustodyCw20Msg,
-        AnchorCustodyMsg, AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg,
+        AnchorCustodyMsg, AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg, AnchorBassetRewardMsg,
     },
     terraswap::{Asset, AssetInfo},
     terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
@@ -840,4 +840,22 @@ pub fn buy_psi_on_remainded_stable_coins(
 
 fn get_time(block: &BlockInfo) -> u64 {
     block.time.seconds()
+}
+
+pub fn claim_holding_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
+    let config: Config = load_config(deps.storage)?;
+    let anchor_basset_reward = "TODO"; // TODO
+
+    Ok(Response::new()
+        .add_messages(vec![
+            SubMsg::reply_on_success(
+                WasmMsg::Execute {
+                    contract_addr: anchor_basset_reward.to_string(),
+                    msg: to_binary(&AnchorBassetRewardMsg::ClaimRewards { recipient: None })?,
+                    funds: vec![],
+                },
+                SubmsgIds::Borrowing.id(), // We claim UST, so the logic is same as for borrowing UST
+            ),
+        ])
+        .add_attribute("action", "claim_anc_rewards"))
 }

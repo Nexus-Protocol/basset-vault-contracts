@@ -163,3 +163,11 @@ pub enum AnchorCustodyMsg {
 pub enum AnchorCustodyCw20Msg {
     DepositCollateral {},
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AnchorBassetRewardMsg {
+    ClaimRewards {
+        recipient: Option<String>,
+    }
+}
