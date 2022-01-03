@@ -87,7 +87,7 @@ pub fn borrower_action(
         env.block.time,
     );
 
-    let earn_apy = basset_vault::anchor::earn_apy::query_anchor_borrow_net_apr(
+    let anchor_earn_apy = basset_vault::anchor::earn_apy::query_anchor_earn_apr(
         deps,
         &config.anchor_overseer_contract
     )?;
@@ -100,7 +100,7 @@ pub fn borrower_action(
         config.stable_denom.clone(),
     )?;
 
-    let apy = earn_apy + anchor_net_apr;
+    let anchor_apy = anchor_earn_apy + anchor_net_apr;
     
     let response = calc_borrower_action(
         apy,
@@ -116,7 +116,7 @@ pub fn borrower_action(
 }
 
 fn calc_borrower_action(
-    apy: Decimal256,
+    anchor_apy: Decimal256,
     ltv_info: LTVInfo,
     basset_on_contract_balance: Uint256, 
     borrowed_amount: Uint256,
@@ -124,6 +124,8 @@ fn calc_borrower_action(
     basset_max_ltv: Decimal256,
     buffer_part: Decimal256,
 ) -> BorrowerActionResponse {
+    let apy = anchor_apy * (Decimal256::one() - buffer_part);
+
     let profit_threshold = Decimal256::zero();
     let anchor_has_profit = apy > profit_threshold;
 

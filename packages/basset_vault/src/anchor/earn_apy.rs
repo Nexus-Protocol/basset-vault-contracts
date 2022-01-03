@@ -37,7 +37,7 @@ fn query_epoch_state(
     }))
 }
 
-pub fn query_anchor_borrow_net_apr(
+pub fn query_anchor_earn_apr(
     deps: Deps,
     anchor_overseer_contract: &Addr,
 ) -> StdResult<Decimal256> {
