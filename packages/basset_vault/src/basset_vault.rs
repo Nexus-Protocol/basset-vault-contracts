@@ -33,6 +33,8 @@ pub struct InstantiateMsg {
     pub a_overseer_addr: String,
     // anchor_custody_basset_contract_addr
     pub a_custody_basset_addr: String,
+    // anchor_basset_reward_contract
+    pub a_basset_reward_addr: String,
     // anc_stable_swap_contract_addr
     pub anc_stable_swap_addr: String,
     // psi_stable_swap_contract_addr
@@ -181,5 +183,5 @@ pub struct IsRewardsClaimableResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct MigrateMsg {
-    pub new_over_loan_balance_value: Decimal256,
+    pub anchor_basset_reward_addr: String,
 }

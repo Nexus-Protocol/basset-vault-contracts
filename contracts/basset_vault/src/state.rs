@@ -4,6 +4,28 @@ use serde::{Deserialize, Serialize};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Addr, StdError, StdResult, Storage, Uint128};
 
+/// Only for migration purpose
+#[deprecated]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct LegacyConfig {
+    pub governance_contract: Addr,
+    pub anchor_token: Addr,
+    pub anchor_overseer_contract: Addr,
+    pub anchor_market_contract: Addr,
+    pub anchor_custody_basset_contract: Addr,
+    pub anc_stable_swap_contract: Addr,
+    pub psi_stable_swap_contract: Addr,
+    pub basset_token: Addr,
+    pub aterra_token: Addr,
+    pub psi_token: Addr,
+    pub basset_vault_strategy_contract: Addr,
+    pub stable_denom: String,
+    pub claiming_rewards_delay: u64,
+    pub over_loan_balance_value: Decimal256,
+    pub nasset_token: Addr,
+    pub psi_distributor: Addr,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Config {
     pub governance_contract: Addr,
@@ -11,6 +33,7 @@ pub struct Config {
     pub anchor_overseer_contract: Addr,
     pub anchor_market_contract: Addr,
     pub anchor_custody_basset_contract: Addr,
+    pub anchor_basset_reward_contract: Addr,
     pub anc_stable_swap_contract: Addr,
     pub psi_stable_swap_contract: Addr,
     pub basset_token: Addr,
@@ -70,6 +93,9 @@ impl PsiDistributorInitInfo {
     }
 }
 
+/// Only for migration purpose
+static KEY_LEGACY_CONFIG: Item<LegacyConfig> = Item::new("config");
+
 static KEY_CONFIG: Item<Config> = Item::new("config");
 static KEY_REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
 static KEY_AIM_BUFFER_SIZE: Item<Uint256> = Item::new("aim_buf_size");
@@ -92,6 +118,11 @@ pub fn load_nasset_token_config_holder(storage: &dyn Storage) -> StdResult<Addr>
 
 pub fn store_nasset_token_config_holder(storage: &mut dyn Storage, addr: &Addr) -> StdResult<()> {
     KEY_NASSET_TOKEN_CONFIG_HOLDER.save(storage, addr)
+}
+
+/// Only for migration purpose
+pub fn load_legacy_config(storage: &dyn Storage) -> StdResult<LegacyConfig> {
+    KEY_LEGACY_CONFIG.load(storage)
 }
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {

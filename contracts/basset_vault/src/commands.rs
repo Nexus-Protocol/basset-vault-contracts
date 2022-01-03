@@ -41,6 +41,7 @@ pub fn update_config(
     anchor_overseer_contract_addr: Option<String>,
     anchor_market_contract_addr: Option<String>,
     anchor_custody_basset_contract_addr: Option<String>,
+    anchor_basset_reward_addr: Option<String>,
     anc_stable_swap_contract_addr: Option<String>,
     psi_stable_swap_contract_addr: Option<String>,
     basset_vault_strategy_contract_addr: Option<String>,
@@ -65,6 +66,12 @@ pub fn update_config(
         current_config.anchor_custody_basset_contract = deps
             .api
             .addr_validate(anchor_custody_basset_contract_addr)?;
+    }
+
+    if let Some(ref anchor_basset_reward_addr) = anchor_basset_reward_addr {
+        current_config.anchor_basset_reward_contract = deps
+            .api
+            .addr_validate(anchor_basset_reward_addr)?;
     }
 
     if let Some(ref anc_stable_swap_contract_addr) = anc_stable_swap_contract_addr {
@@ -844,18 +851,17 @@ fn get_time(block: &BlockInfo) -> u64 {
 
 pub fn claim_holding_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
     let config: Config = load_config(deps.storage)?;
-    let anchor_basset_reward = "TODO"; // TODO
 
     Ok(Response::new()
-        .add_messages(vec![
+        .add_submessage(
             SubMsg::reply_on_success(
                 WasmMsg::Execute {
-                    contract_addr: anchor_basset_reward.to_string(),
+                    contract_addr: config.anchor_basset_reward_contract.to_string(),
                     msg: to_binary(&AnchorBassetRewardMsg::ClaimRewards { recipient: None })?,
                     funds: vec![],
                 },
                 SubmsgIds::Borrowing.id(), // We claim UST, so the logic is same as for borrowing UST
             ),
-        ])
+        )
         .add_attribute("action", "claim_anc_rewards"))
 }
