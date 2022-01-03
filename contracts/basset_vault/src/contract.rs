@@ -357,7 +357,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                 commands::rebalance(deps, env, &config, basset_in_custody, None)
             }
 
-            AnyoneMsg::HonestWork {} => commands::claim_anc_rewards(deps, env),
+            AnyoneMsg::HonestWork {} => commands::claim_reward(deps, env),
 
             AnyoneMsg::ClaimRemainder {} => commands::claim_remainded_stables(deps.as_ref(), env),
 
@@ -387,6 +387,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                     anchor_overseer_contract_addr,
                     anchor_market_contract_addr,
                     anchor_custody_basset_contract_addr,
+                    anchor_basset_reward_addr,
                     anc_stable_swap_contract_addr,
                     psi_stable_swap_contract_addr,
                     basset_vault_strategy_contract_addr,
@@ -399,6 +400,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                     anchor_overseer_contract_addr,
                     anchor_market_contract_addr,
                     anchor_custody_basset_contract_addr,
+                    anchor_basset_reward_addr,
                     anc_stable_swap_contract_addr,
                     psi_stable_swap_contract_addr,
                     basset_vault_strategy_contract_addr,
@@ -442,7 +444,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> StdResult<Response>
         anchor_custody_basset_contract: legacy_config.anchor_custody_basset_contract,
         anchor_basset_reward_contract: deps.api.addr_validate(&msg.anchor_basset_reward_addr)?,
         anc_stable_swap_contract: legacy_config.anc_stable_swap_contract,
-        psi_stable_swap_contract: legacy_config.psi_distributor,
+        psi_stable_swap_contract: legacy_config.psi_stable_swap_contract,
         basset_token: legacy_config.basset_token,
         aterra_token: legacy_config.aterra_token,
         psi_token: legacy_config.psi_token,

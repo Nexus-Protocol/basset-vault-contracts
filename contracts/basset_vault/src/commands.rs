@@ -639,11 +639,8 @@ pub(crate) fn withdraw_all_logic(
     Ok(response)
 }
 
-/// Anyone can execute claim_anc_rewards function to claim
-/// ANC rewards, swap ANC => UST token, swap
-/// part of UST => PSI token and distribute
-/// result PSI token to gov contract
-pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
+/// Anyone can execute `claim_reward` function to claim ANC and bAsset holding rewards 
+pub fn claim_reward(deps: DepsMut, env: Env) -> StdResult<Response> {
     let config: Config = load_config(deps.storage)?;
     let last_rewards_claiming_height = load_last_rewards_claiming_height(deps.as_ref().storage)?;
     let current_height = env.block.height;
@@ -659,21 +656,29 @@ pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
     store_last_rewards_claiming_height(deps.storage, &current_height)?;
 
     Ok(Response::new()
-        .add_messages(vec![
-            WasmMsg::Execute {
-                contract_addr: config.anchor_market_contract.to_string(),
-                msg: to_binary(&AnchorMarketMsg::ClaimRewards { to: None })?,
-                funds: vec![],
-            },
-            WasmMsg::Execute {
-                contract_addr: env.contract.address.to_string(),
-                msg: to_binary(&ExecuteMsg::Yourself {
-                    yourself_msg: YourselfMsg::SwapAnc {},
-                })?,
-                funds: vec![],
-            },
-        ])
-        .add_attribute("action", "claim_anc_rewards"))
+        .add_messages(claim_anc_rewards_messages(env, &config)?)
+        .add_submessage(claim_basset_holding_reward_message(&config)?)
+        .add_attribute("action", "claim_reward"))
+}
+
+/// Claim ANC rewards, swap ANC => UST token, swap
+/// part of UST => PSI token and distribute
+/// result PSI token to gov contract
+fn claim_anc_rewards_messages(env: Env, config: &Config) -> StdResult<Vec<WasmMsg>> {
+    Ok(vec![
+        WasmMsg::Execute {
+            contract_addr: config.anchor_market_contract.to_string(),
+            msg: to_binary(&AnchorMarketMsg::ClaimRewards { to: None })?,
+            funds: vec![],
+        },
+        WasmMsg::Execute {
+            contract_addr: env.contract.address.to_string(),
+            msg: to_binary(&ExecuteMsg::Yourself {
+                yourself_msg: YourselfMsg::SwapAnc {},
+            })?,
+            funds: vec![],
+        },
+    ])
 }
 
 pub fn swap_anc(deps: DepsMut, env: Env) -> StdResult<Response> {
@@ -845,23 +850,17 @@ pub fn buy_psi_on_remainded_stable_coins(
     }
 }
 
-fn get_time(block: &BlockInfo) -> u64 {
-    block.time.seconds()
+fn claim_basset_holding_reward_message(config: &Config) -> StdResult<SubMsg> {
+    Ok(SubMsg::reply_on_success(
+        WasmMsg::Execute {
+            contract_addr: config.anchor_basset_reward_contract.to_string(),
+            msg: to_binary(&AnchorBassetRewardMsg::ClaimRewards { recipient: None })?,
+            funds: vec![],
+        },
+        SubmsgIds::Borrowing.id(), // We claim UST, so the logic is same as for borrowing UST
+    ))
 }
 
-pub fn claim_holding_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
-    let config: Config = load_config(deps.storage)?;
-
-    Ok(Response::new()
-        .add_submessage(
-            SubMsg::reply_on_success(
-                WasmMsg::Execute {
-                    contract_addr: config.anchor_basset_reward_contract.to_string(),
-                    msg: to_binary(&AnchorBassetRewardMsg::ClaimRewards { recipient: None })?,
-                    funds: vec![],
-                },
-                SubmsgIds::Borrowing.id(), // We claim UST, so the logic is same as for borrowing UST
-            ),
-        )
-        .add_attribute("action", "claim_anc_rewards"))
+fn get_time(block: &BlockInfo) -> u64 {
+    block.time.seconds()
 }
