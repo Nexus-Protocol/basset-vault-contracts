@@ -190,14 +190,6 @@ pub fn deposit_basset(
         &env.contract.address,
     )?;
 
-    // TODO: this can happen now
-    if basset_in_custody.is_zero() && !nasset_supply.is_zero() {
-        //read comments in 'withdraw_basset' function for a reason to return error here
-        return Err(StdError::generic_err(
-            "bAsset balance is zero, but nAsset supply is not! Freeze contract.",
-        ));
-    }
-
     let basset_on_contract_balance = query_token_balance(
         deps.as_ref(),
         &config.basset_token,
@@ -205,16 +197,23 @@ pub fn deposit_basset(
     )
     .into();
 
-    let basset_balance: Uint256 = basset_in_custody + basset_on_contract_balance;
-
-    if basset_balance == Uint256::zero() {
+    if basset_on_contract_balance == Uint256::zero() {
         //impossible because 'farmer' already sent some basset
         return Err(StdError::generic_err(
             "basset balance is zero (impossible case)".to_string(),
         ));
     }
 
-    let is_first_depositor = nasset_supply.is_zero();
+    let basset_balance: Uint256 = basset_in_custody + basset_on_contract_balance;
+
+    if (basset_balance - deposited_basset).is_zero() && !nasset_supply.is_zero() {
+        //read comments in 'withdraw_basset' function for a reason to return error here
+        return Err(StdError::generic_err(
+            "bAsset balance is zero, but nAsset supply is not! Freeze contract.",
+        ));
+    }
+
+    let is_first_depositor = nasset_supply.is_zero(); // TODO: maybe alternative `basset_balance == deposited_basset`?
 
     // nAsset tokens to mint:
     // user_share = (deposited_basset / total_basset)
