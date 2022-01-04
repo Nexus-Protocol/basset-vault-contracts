@@ -10,6 +10,25 @@ use cosmwasm_std::{Addr, StdResult, Storage};
 
 use crate::{error::ContractError, ContractResult};
 
+/// Only for migration purpose
+#[deprecated]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct LegacyConfig {
+    pub governance_contract: Addr,
+    pub oracle_contract: Addr,
+    pub basset_token: Addr,
+    pub stable_denom: String,
+    borrow_ltv_max: Decimal256,
+    borrow_ltv_min: Decimal256,
+    borrow_ltv_aim: Decimal256,
+    basset_max_ltv: Decimal256,
+    //(max_ltv - aim_ltv)*0.35
+    //(0.85-0.8) * 0.35 = 0.018
+    //to be able to repay loan in 3 iterations (in case of aterra locked)
+    buffer_part: Decimal256,
+    pub price_timeframe: u64,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub governance_contract: Addr,
@@ -68,6 +87,30 @@ impl Config {
         config.set_buffer_part(buffer_part)?;
 
         Ok(config)
+    }
+
+    /// Only for migration purpose
+    pub fn from_legacy(
+        legacy: LegacyConfig,
+        anchor_market_contract: Addr,
+        anchor_interest_model_contract: Addr,
+        anchor_overseer_contract: Addr,
+    ) -> Self {
+        Self {
+            governance_contract: legacy.governance_contract,
+            oracle_contract: legacy.oracle_contract,
+            anchor_market_contract,
+            anchor_interest_model_contract,
+            anchor_overseer_contract,
+            basset_token: legacy.basset_token,
+            stable_denom: legacy.stable_denom,
+            borrow_ltv_max: legacy.borrow_ltv_max,
+            borrow_ltv_min: legacy.borrow_ltv_min,
+            borrow_ltv_aim: legacy.borrow_ltv_aim,
+            basset_max_ltv: legacy.basset_max_ltv,
+            buffer_part: legacy.buffer_part,
+            price_timeframe: legacy.price_timeframe,
+        }
     }
 
     pub fn set_basset_max_ltv(&mut self, value: Decimal256) -> ContractResult<()> {
@@ -155,8 +198,16 @@ pub struct GovernanceUpdateState {
     pub wait_approve_until: u64,
 }
 
+/// Only for migration purpose
+static KEY_LEGACY_CONFIG: Item<LegacyConfig> = Item::new("config");
+
 static KEY_CONFIG: Item<Config> = Item::new("config");
 static KEY_GOVERNANCE_UPDATE: Item<GovernanceUpdateState> = Item::new("gov_update");
+
+/// Only for migration purpose
+pub fn load_legacy_config(storage: &dyn Storage) -> StdResult<LegacyConfig> {
+    KEY_LEGACY_CONFIG.load(storage)
+}
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
     KEY_CONFIG.load(storage)

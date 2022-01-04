@@ -8,9 +8,9 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 pub struct InstantiateMsg {
     pub governance_contract_addr: String,
     pub oracle_contract_addr: String,
-    pub anchor_market_contract: String,
-    pub anchor_interest_model_contract: String,
-    pub anchor_overseer_contract: String,
+    pub anchor_market_addr: String,
+    pub anchor_interest_model_addr: String,
+    pub anchor_overseer_addr: String,
     pub basset_token_addr: String,
     pub stable_denom: String,
     pub borrow_ltv_max: Decimal256,
@@ -47,6 +47,9 @@ pub enum GovernanceMsg {
         basset_max_ltv: Option<Decimal256>,
         buffer_part: Option<Decimal256>,
         price_timeframe: Option<u64>,
+        anchor_market_addr: Option<String>,
+        anchor_interest_model_addr: Option<String>,
+        anchor_overseer_addr: Option<String>,
     },
     UpdateGovernanceContract {
         gov_addr: String,
@@ -139,4 +142,8 @@ pub fn query_borrower_action(
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub anchor_market_addr: String,
+    pub anchor_interest_model_addr: String,
+    pub anchor_overseer_addr: String,
+}

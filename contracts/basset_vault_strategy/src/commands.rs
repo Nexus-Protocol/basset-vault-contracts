@@ -23,6 +23,9 @@ pub fn update_config(
     basset_max_ltv: Option<Decimal256>,
     buffer_part: Option<Decimal256>,
     price_timeframe: Option<u64>,
+    anchor_market_addr: Option<String>,
+    anchor_interest_model_addr: Option<String>,
+    anchor_overseer_addr: Option<String>,
 ) -> ContractResult<Response> {
     if let Some(ref oracle_addr) = oracle_addr {
         current_config.oracle_contract = deps.api.addr_validate(oracle_addr)?;
@@ -52,6 +55,18 @@ pub fn update_config(
 
     if let Some(price_timeframe) = price_timeframe {
         current_config.price_timeframe = price_timeframe;
+    }
+
+    if let Some(ref anchor_market_addr) = anchor_market_addr {
+        current_config.anchor_market_contract = deps.api.addr_validate(anchor_market_addr)?;
+    }
+
+    if let Some(ref anchor_interest_model_addr) = anchor_interest_model_addr {
+        current_config.anchor_interest_model_contract = deps.api.addr_validate(anchor_interest_model_addr)?;
+    }
+
+    if let Some(ref anchor_overseer_addr) = anchor_overseer_addr {
+        current_config.anchor_overseer_contract = deps.api.addr_validate(anchor_overseer_addr)?;
     }
 
     save_config(deps.storage, &current_config)?;

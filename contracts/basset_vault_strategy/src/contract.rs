@@ -6,7 +6,7 @@ use crate::{
     commands,
     error::ContractError,
     queries,
-    state::{load_config, save_config},
+    state::{load_config, save_config, load_legacy_config},
 };
 use crate::{state::Config, ContractResult};
 use basset_vault::basset_vault_strategy::{
@@ -23,9 +23,9 @@ pub fn instantiate(
     let config = Config::new(
         deps.api.addr_validate(&msg.governance_contract_addr)?,
         deps.api.addr_validate(&msg.oracle_contract_addr)?,
-        deps.api.addr_validate(&msg.anchor_market_contract)?,
-        deps.api.addr_validate(&msg.anchor_interest_model_contract)?,
-        deps.api.addr_validate(&msg.anchor_overseer_contract)?,
+        deps.api.addr_validate(&msg.anchor_market_addr)?,
+        deps.api.addr_validate(&msg.anchor_interest_model_addr)?,
+        deps.api.addr_validate(&msg.anchor_overseer_addr)?,
         deps.api.addr_validate(&msg.basset_token_addr)?,
         msg.stable_denom,
         msg.borrow_ltv_max,
@@ -70,6 +70,9 @@ pub fn execute(
                     basset_max_ltv,
                     buffer_part,
                     price_timeframe,
+                    anchor_market_addr,
+                    anchor_interest_model_addr,
+                    anchor_overseer_addr,
                 } => commands::update_config(
                     deps,
                     config,
@@ -82,6 +85,9 @@ pub fn execute(
                     basset_max_ltv,
                     buffer_part,
                     price_timeframe,
+                    anchor_market_addr,
+                    anchor_interest_model_addr,
+                    anchor_overseer_addr,
                 ),
 
                 GovernanceMsg::UpdateGovernanceContract {
@@ -117,6 +123,14 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[entry_point]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> StdResult<Response> {
+    let legacy_config = load_legacy_config(deps.storage);
+    let new_config = Config::from_legacy(
+        legacy_config, 
+        deps.api.addr_validate(&msg.anchor_market_addr)?,
+        deps.api.addr_validate(&msg.anchor_interest_model_addr)?,
+        deps.api.addr_validate(&msg.anchor_overseer_addr)?,
+    );
+    save_config(deps.storage, &new_config)?;
     Ok(Response::default())
 }

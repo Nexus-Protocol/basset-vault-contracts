@@ -12,9 +12,9 @@ fn proper_initialization() {
     let msg = basset_vault::basset_vault_strategy::InstantiateMsg {
         governance_contract_addr: "addr0000".to_string(),
         oracle_contract_addr: "addr0001".to_string(),
-        anchor_market_contract: "addr0002".to_string(),
-        anchor_interest_model_contract: "addr0003".to_string(),
-        anchor_overseer_contract: "addr0004".to_string(),
+        anchor_market_addr: "addr0002".to_string(),
+        anchor_interest_model_addr: "addr0003".to_string(),
+        anchor_overseer_addr: "addr0004".to_string(),
         basset_token_addr: "addr0005".to_string(),
         stable_denom: "uust".to_string(),
         borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
