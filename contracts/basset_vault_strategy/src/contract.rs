@@ -124,7 +124,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 #[entry_point]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> StdResult<Response> {
-    let legacy_config = load_legacy_config(deps.storage);
+    let legacy_config = load_legacy_config(deps.storage)?;
     let new_config = Config::from_legacy(
         legacy_config, 
         deps.api.addr_validate(&msg.anchor_market_addr)?,

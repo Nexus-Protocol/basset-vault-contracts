@@ -5,7 +5,6 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Addr, StdError, StdResult, Storage, Uint128};
 
 /// Only for migration purpose
-#[deprecated]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct LegacyConfig {
     pub governance_contract: Addr,

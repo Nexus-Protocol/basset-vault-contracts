@@ -25,6 +25,7 @@ pub enum SubmsgIds {
     RepayLoan,
     Borrowing,
     RedeemStableOnRemainder,
+    HoldingReward,
 }
 
 impl TryFrom<u64> for SubmsgIds {
@@ -47,6 +48,7 @@ impl TryFrom<u64> for SubmsgIds {
             x if x == SubmsgIds::RedeemStableOnRemainder.id() => {
                 Ok(SubmsgIds::RedeemStableOnRemainder)
             }
+            x if x == SubmsgIds::HoldingReward.id() => Ok(SubmsgIds::HoldingReward),
             unknown => Err(StdError::generic_err(format!(
                 "unknown reply message id: {}",
                 unknown
@@ -67,6 +69,7 @@ impl SubmsgIds {
             SubmsgIds::RepayLoan => 6,
             SubmsgIds::Borrowing => 7,
             SubmsgIds::RedeemStableOnRemainder => 8,
+            SubmsgIds::HoldingReward => 9,
         }
     }
 }

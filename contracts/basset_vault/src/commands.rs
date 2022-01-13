@@ -10,7 +10,7 @@ use crate::{
     tax_querier::get_tax_info,
     utils::{
         calc_after_borrow_action, get_repay_loan_action, is_anc_rewards_claimable,
-        split_profit_to_handle_interest,
+        split_profit_to_handle_interest, ActionWithProfit,
     },
     SubmsgIds,
 };
@@ -612,23 +612,23 @@ pub(crate) fn withdraw_all_logic(
     let rebalance_response = repay_logic(deps, env, config, repaying_loan_state)?;
 
     let response = rebalance_response
-        .add_submessage(
-            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+        .add_message(
+            CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.anchor_overseer_contract.to_string(),
                 msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
                     collaterals: vec![(config.basset_token.to_string(), basset_in_custody)],
                 })?,
                 funds: vec![],
-            }))
+            })
         )
-        .add_submessage(
-            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+        .add_message(
+            CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.anchor_custody_basset_contract.to_string(),
                 msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
                     amount: Some(basset_in_custody),
                 })?,
                 funds: vec![],
-            }))
+            })
         )
         .add_attributes(vec![
             ("action", "withdraw_all"),
@@ -644,6 +644,7 @@ pub fn claim_reward(deps: DepsMut, env: Env) -> StdResult<Response> {
     let last_rewards_claiming_height = load_last_rewards_claiming_height(deps.as_ref().storage)?;
     let current_height = env.block.height;
 
+    // TODO
     if !is_anc_rewards_claimable(
         current_height,
         last_rewards_claiming_height,
@@ -856,8 +857,21 @@ fn claim_basset_holding_reward_message(config: &Config) -> StdResult<SubMsg> {
             msg: to_binary(&AnchorBassetRewardMsg::ClaimRewards { recipient: None })?,
             funds: vec![],
         },
-        SubmsgIds::Borrowing.id(), // We claim UST, so the logic is same as for borrowing UST
+        SubmsgIds::HoldingReward.id(),
     ))
+}
+
+pub(crate) fn holding_reward_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Response> {
+    let config = load_config(deps.storage)?;
+    let tax_info = get_tax_info(deps.as_ref(), &config.stable_denom)?;
+    let stable_coin_balance = query_balance(
+        &deps.querier,
+        &env.contract.address,
+        config.stable_denom.clone(),
+    )?;
+
+    ActionWithProfit::BuyPsi { amount: stable_coin_balance.into() }
+        .to_response(&config, &tax_info)
 }
 
 fn get_time(block: &BlockInfo) -> u64 {
