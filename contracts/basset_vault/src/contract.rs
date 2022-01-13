@@ -188,9 +188,12 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
         }
 
         SubmsgIds::InitNAssetPsiSwapPair => {
-            let events = msg.result
+            let events = msg
+                .result
                 .into_result()
-                .map_err(|err| StdError::generic_err(format!("Error creating nAsset <-> Psi pair: {}", err)))?
+                .map_err(|err| {
+                    StdError::generic_err(format!("Error creating nAsset <-> Psi pair: {}", err))
+                })?
                 .events;
 
             let nasset_psi_swap_contract_addr = events

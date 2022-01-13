@@ -1,11 +1,10 @@
 use crate::{
     commands,
     state::{
-        load_aim_buffer_size, load_config, load_gov_update, load_last_rewards_claiming_height,
-        load_repaying_loan_state, load_stable_balance_before_selling_anc, remove_gov_update,
-        store_aim_buffer_size, store_config, store_gov_update, store_last_rewards_claiming_height,
-        store_repaying_loan_state, store_stable_balance_before_selling_anc, Config,
-        GovernanceUpdateState, RepayingLoanState,
+        load_aim_buffer_size, load_config, load_gov_update, load_repaying_loan_state,
+        load_stable_balance_before_selling_anc, remove_gov_update, store_aim_buffer_size,
+        store_config, store_gov_update, store_repaying_loan_state,
+        store_stable_balance_before_selling_anc, Config, GovernanceUpdateState, RepayingLoanState,
     },
     tax_querier::get_tax_info,
     utils::{
@@ -653,7 +652,11 @@ pub fn claim_reward(deps: DepsMut, env: Env) -> StdResult<Response> {
         return Err(StdError::generic_err("claiming too often"));
     }
 
-    store_last_rewards_claiming_height(deps.storage, &current_height)?;
+    let borrower_info = query_borrower_info(
+        deps.as_ref(),
+        &config.anchor_market_contract,
+        &env.contract.address,
+    )?;
 
     Ok(Response::new()
         .add_messages(claim_anc_rewards_messages(env, &config)?)

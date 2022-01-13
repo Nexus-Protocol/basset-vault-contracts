@@ -100,7 +100,9 @@ static KEY_REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
 static KEY_AIM_BUFFER_SIZE: Item<Uint256> = Item::new("aim_buf_size");
 
 static KEY_STABLE_BALANCE_BEFORE_SELL_ANC: Item<Uint128> = Item::new("balance_before_sell_anc");
-static KEY_LAST_REWARDS_CLAIMING_HEIGHT: Item<u64> = Item::new("last_rewards_claiming_height");
+#[allow(dead_code)]
+static LEGACY_KEY_LAST_REWARDS_CLAIMING_HEIGHT: Item<u64> =
+    Item::new("last_rewards_claiming_height");
 //need that only for instantiating
 static KEY_CHILD_CONTRACTS_INFO: Item<ChildContractsInfo> = Item::new("child_contracts_code_id");
 static KEY_NASSET_TOKEN_CONFIG_HOLDER: Item<Addr> = Item::new("nasset_token_config_holder");
@@ -200,19 +202,6 @@ pub fn store_child_contracts_info(
     child_contracts_info: &ChildContractsInfo,
 ) -> StdResult<()> {
     KEY_CHILD_CONTRACTS_INFO.save(storage, child_contracts_info)
-}
-
-pub fn load_last_rewards_claiming_height(storage: &dyn Storage) -> StdResult<u64> {
-    KEY_LAST_REWARDS_CLAIMING_HEIGHT
-        .may_load(storage)
-        .map(|may_value| may_value.unwrap_or_default())
-}
-
-pub fn store_last_rewards_claiming_height(
-    storage: &mut dyn Storage,
-    height: &u64,
-) -> StdResult<()> {
-    KEY_LAST_REWARDS_CLAIMING_HEIGHT.save(storage, height)
 }
 
 pub fn load_gov_update(storage: &dyn Storage) -> StdResult<GovernanceUpdateState> {

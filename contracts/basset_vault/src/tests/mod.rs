@@ -10,8 +10,8 @@ mod repay_loan_action;
 mod sdk;
 mod withdraw_basset;
 
-use basset_vault::anchor::basset_custody::BorrowerInfo as AnchorMarketBorrowerInfoResponse;
-use basset_vault::anchor::market::BorrowerInfoResponse as AnchorBassetCustodyBorrowerInfo;
+use basset_vault::anchor::basset_custody::BorrowerInfo as AnchorBassetCustodyBorrowerInfo;
+use basset_vault::anchor::market::BorrowerInfoResponse as AnchorMarketBorrowerInfo;
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
@@ -42,12 +42,12 @@ pub fn mock_dependencies(
 }
 
 pub struct WasmMockQuerier {
-    borrowers_info: HashMap<String, HashMap<String, AnchorBassetCustodyBorrowerInfo>>,
-    borrowers: HashMap<String, HashMap<String, AnchorMarketBorrowerInfoResponse>>,
+    borrowers_info: HashMap<String, HashMap<String, AnchorMarketBorrowerInfo>>,
+    borrowers: HashMap<String, HashMap<String, AnchorBassetCustodyBorrowerInfo>>,
     base: MockQuerier<TerraQueryWrapper>,
     tax_querier: TaxQuerier,
     token_querier: TokenQuerier,
-    wasm_query_smart_responses: HashMap<String, Binary>,
+    wasm_query_smart_responses: HashMap<String, HashMap<Binary, Binary>>,
 }
 
 #[derive(Clone, Default)]
@@ -213,7 +213,15 @@ impl WasmMockQuerier {
             }
             QueryRequest::Wasm(WasmQuery::Smart { contract_addr, msg }) => {
                 let response = match self.wasm_query_smart_responses.get(contract_addr) {
-                    Some(response) => response,
+                    Some(responses_map) => {
+                        if responses_map.len() == 1 {
+                            //get first element cause 'get by key' would not work here,
+                            //cause 'key' is fake in that map
+                            responses_map.values().next().unwrap()
+                        } else {
+                            responses_map.get(msg).unwrap()
+                        }
+                    }
                     None => {
                         return SystemResult::Err(SystemError::InvalidRequest {
                             error: format!(
@@ -253,7 +261,7 @@ impl WasmMockQuerier {
             };
 
             let empty_borrowers = HashMap::new();
-            let default_borrower = AnchorMarketBorrowerInfoResponse {
+            let default_borrower = AnchorBassetCustodyBorrowerInfo {
                 balance: Uint256::zero(),
             };
 
@@ -294,7 +302,7 @@ impl WasmMockQuerier {
             };
 
             let empty_borrowers_info = HashMap::new();
-            let default_borrower_info = AnchorBassetCustodyBorrowerInfo {
+            let default_borrower_info = AnchorMarketBorrowerInfo {
                 borrower: address.to_string(),
                 loan_amount: Uint256::zero(),
                 pending_rewards: Decimal256::zero(),
@@ -339,15 +347,21 @@ impl WasmMockQuerier {
 
     pub fn with_loan(
         &mut self,
-        borrowers_info: &[(&String, &[(&String, &AnchorBassetCustodyBorrowerInfo)])],
+        borrowers_info: &[(&String, &[(&String, &AnchorMarketBorrowerInfo)])],
     ) {
         self.borrowers_info = array_to_hashmap(borrowers_info);
     }
 
-    pub fn with_wasm_query_response(&mut self, contract_responses_map: &[(&String, &Binary)]) {
-        let mut result_map: HashMap<String, Binary> = HashMap::new();
-        for (contract_addr, response) in contract_responses_map.iter() {
-            result_map.insert((**contract_addr).clone(), (**response).clone());
+    pub fn with_wasm_query_response(
+        &mut self,
+        contract_responses_map: &[(&String, &Binary, &Binary)],
+    ) {
+        let mut result_map: HashMap<String, HashMap<Binary, Binary>> = HashMap::new();
+        for (contract_addr, request, response) in contract_responses_map.iter() {
+            result_map
+                .entry((**contract_addr).clone())
+                .or_default()
+                .insert((**request).clone(), (**response).clone());
         }
         self.wasm_query_smart_responses = result_map;
     }
@@ -362,7 +376,7 @@ impl WasmMockQuerier {
 
     pub fn with_locked_basset(
         &mut self,
-        borrowers: &[(&String, &[(&String, &AnchorMarketBorrowerInfoResponse)])],
+        borrowers: &[(&String, &[(&String, &AnchorBassetCustodyBorrowerInfo)])],
     ) {
         self.borrowers = array_to_hashmap(borrowers);
     }

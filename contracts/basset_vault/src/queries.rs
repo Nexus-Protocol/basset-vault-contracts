@@ -14,10 +14,7 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Deps, Env, StdResult};
 
 use crate::state::{load_child_contracts_info, load_config};
-use crate::{
-    state::{load_last_rewards_claiming_height, Config},
-    utils::is_anc_rewards_claimable,
-};
+use crate::{state::Config, utils::is_anc_rewards_claimable};
 
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let config: Config = load_config(deps.storage)?;
@@ -151,21 +148,15 @@ pub fn child_contracts_code_id(deps: Deps) -> StdResult<ChildContractsInfoRespon
 
 pub fn is_rewards_claimable(deps: Deps, env: Env) -> StdResult<IsRewardsClaimableResponse> {
     let config: Config = load_config(deps.storage)?;
-    let last_rewards_claiming_height = load_last_rewards_claiming_height(deps.storage)?;
-    let current_height = env.block.height;
     let borrower_info =
         query_borrower_info(deps, &config.anchor_market_contract, &env.contract.address)?;
 
-    let is_rewards_claimable = is_anc_rewards_claimable(
-        current_height,
-        last_rewards_claiming_height,
-        config.claiming_rewards_delay,
-    );
+    let is_rewards_claimable = is_anc_rewards_claimable(borrower_info.pending_rewards);
 
     Ok(IsRewardsClaimableResponse {
         claimable: is_rewards_claimable,
         anc_amount: borrower_info.pending_rewards,
-        last_claiming_height: last_rewards_claiming_height,
-        current_height,
+        last_claiming_height: 0, //legacy field
+        current_height: 0,       //legacy field
     })
 }

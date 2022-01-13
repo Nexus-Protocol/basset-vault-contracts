@@ -1,9 +1,10 @@
-use crate::concat;
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Addr, Binary, Deps, QueryRequest, StdResult, WasmQuery};
+use cosmwasm_std::{to_binary, Addr, Binary, Deps, QueryRequest, StdResult, WasmQuery};
 use cosmwasm_storage::to_length_prefixed;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use crate::querier::AnchorMarketQueryMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct BorrowerInfoResponse {
@@ -29,13 +30,12 @@ pub fn query_borrower_info(
     borrower: &Addr,
 ) -> StdResult<BorrowerInfoResponse> {
     let borrower_info: StdResult<BorrowerInfo> =
-        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
+        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
             contract_addr: anchor_market_contract.to_string(),
-            key: Binary::from(concat(
-                //Anchor use cosmwasm_storage::bucket which add length prefix
-                &to_length_prefixed(b"liability").to_vec(),
-                (deps.api.addr_canonicalize(borrower.as_str())?).as_slice(),
-            )),
+            msg: to_binary(&AnchorMarketQueryMsg::BorrowerInfo {
+                borrower: borrower.to_string(),
+                block_height: None,
+            })?,
         }));
 
     match borrower_info {

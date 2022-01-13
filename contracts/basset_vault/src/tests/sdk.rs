@@ -19,12 +19,12 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::str::FromStr;
 
-use basset_vault::anchor::basset_custody::BorrowerInfo as AnchorMarketBorrowerInfoResponse;
-use basset_vault::anchor::market::BorrowerInfoResponse as AnchorBassetCustodyBorrowerInfo;
+use basset_vault::anchor::basset_custody::BorrowerInfo as AnchorBassetCustodyBorrowerInfo;
+use basset_vault::anchor::market::BorrowerInfoResponse as AnchorMarketBorrowerInfo;
 use basset_vault::basset_vault::Cw20HookMsg;
 use basset_vault::basset_vault_strategy::BorrowerActionResponse;
 use basset_vault::psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg;
-use basset_vault::querier::AnchorMarketEpochStateResponse;
+use basset_vault::querier::{AnchorMarketEpochStateResponse, AnchorMarketQueryMsg};
 use basset_vault::terraswap::AssetInfo;
 use basset_vault::terraswap_factory::ExecuteMsg as TerraswapFactoryExecuteMsg;
 use basset_vault::{
@@ -77,6 +77,7 @@ pub struct Sdk {
     basset_balance: Uint128,
     nasset_supply: Uint128,
     aterra_exchange_rate: Decimal256,
+    anc_pending_rewards: Decimal256,
     borrower_action: BorrowerActionResponse,
 }
 
@@ -127,6 +128,7 @@ impl Sdk {
             basset_balance: Uint128::zero(),
             nasset_supply: Uint128::zero(),
             aterra_exchange_rate: Decimal256::zero(),
+            anc_pending_rewards: Decimal256::zero(),
             borrower_action: BorrowerActionResponse::Nothing {},
         }
     }
@@ -456,7 +458,7 @@ impl Sdk {
             &ANCHOR_MARKET_CONTRACT.to_string(),
             &[(
                 &MOCK_CONTRACT_ADDR.to_string(),
-                &AnchorBassetCustodyBorrowerInfo {
+                &AnchorMarketBorrowerInfo {
                     borrower: MOCK_CONTRACT_ADDR.to_string(),
                     loan_amount: value,
                     pending_rewards: Decimal256::zero(),
@@ -465,9 +467,9 @@ impl Sdk {
         )]);
     }
 
-    pub fn set_tax(&mut self, tax_percent: u64, cap: u128) {
+    pub fn set_tax(&mut self, tax_percent: Decimal, cap: u128) {
         self.deps.querier.with_tax(
-            Decimal::percent(tax_percent),
+            tax_percent,
             &[(&STABLE_DENOM.to_string(), &Uint128::new(cap))],
         );
     }
@@ -486,13 +488,29 @@ impl Sdk {
         self.deps.querier.with_wasm_query_response(&[
             (
                 &BASSET_VAULT_STRATEGY_CONTRACT.to_string(),
+                &to_binary(&0u64).unwrap(), //fake key, cause only one msg for this contract
                 &to_binary(&self.borrower_action).unwrap(),
             ),
             (
                 &ANCHOR_MARKET_CONTRACT.to_string(),
+                &to_binary(&AnchorMarketQueryMsg::EpochState { block_height: None }).unwrap(),
                 &to_binary(&AnchorMarketEpochStateResponse {
                     exchange_rate: self.aterra_exchange_rate,
                     aterra_supply: Uint256::from(1_000_000u64),
+                })
+                .unwrap(),
+            ),
+            (
+                &ANCHOR_MARKET_CONTRACT.to_string(),
+                &to_binary(&AnchorMarketQueryMsg::BorrowerInfo {
+                    borrower: MOCK_CONTRACT_ADDR.to_string(),
+                    block_height: None,
+                })
+                .unwrap(),
+                &to_binary(&AnchorMarketBorrowerInfo {
+                    borrower: MOCK_CONTRACT_ADDR.to_string(),
+                    loan_amount: Uint256::zero(),
+                    pending_rewards: self.anc_pending_rewards,
                 })
                 .unwrap(),
             ),
@@ -504,7 +522,7 @@ impl Sdk {
             &ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
             &[(
                 &MOCK_CONTRACT_ADDR.to_string(),
-                &AnchorMarketBorrowerInfoResponse { balance },
+                &AnchorBassetCustodyBorrowerInfo { balance },
             )],
         )]);
     }
@@ -527,6 +545,11 @@ impl Sdk {
     pub fn set_basset_balance(&mut self, value: Uint256) {
         self.basset_balance = value.into();
         self.set_token_balances();
+    }
+
+    pub fn set_anc_pending_rewards(&mut self, value: Decimal256) {
+        self.anc_pending_rewards = value;
+        self.set_wasm_query_respones();
     }
 
     fn set_token_supplies(&mut self) {
@@ -644,10 +667,9 @@ impl Sdk {
         )
     }
 
-    pub fn user_send_honest_work(&mut self, block_height: u64) -> StdResult<Response<Empty>> {
+    pub fn user_send_honest_work(&mut self) -> StdResult<Response<Empty>> {
         let honest_work_msg = basset_vault::basset_vault::AnyoneMsg::HonestWork {};
-        let mut env = mock_env();
-        env.block.height = block_height;
+        let env = mock_env();
         let info = mock_info(&"addr9999".to_string(), &vec![]);
         crate::contract::execute(
             self.deps.as_mut(),
