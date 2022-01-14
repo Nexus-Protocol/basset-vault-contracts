@@ -621,6 +621,9 @@ mod test {
 
     #[test]
     fn loan_equals_to_aim_borrow_amount() {
+        let anchor_earn_apy = Decimal256::from_str("0.20").unwrap();
+        let anchor_net_apy = Decimal256::from_str("0.05").unwrap();
+        let basset_on_contract_balance = Uint256::zero();
         let borrowed_amount = Uint256::from(48u64);
         let locked_basset_amount = Uint256::from(100u64);
         let basset_max_ltv = Decimal256::from_str("0.6").unwrap();
@@ -636,7 +639,10 @@ mod test {
         // aim_borrow_amount = 100 * 1 * 0,6 * 0,8 = 48 (= borrowed_amount = 48)
 
         let borrower_action = calc_borrower_action(
+            anchor_earn_apy,
+            anchor_net_apy,
             ltv_info,
+            basset_on_contract_balance,
             borrowed_amount,
             locked_basset_amount,
             basset_max_ltv,

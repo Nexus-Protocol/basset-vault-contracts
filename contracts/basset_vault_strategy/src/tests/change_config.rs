@@ -40,6 +40,9 @@ fn fail_to_change_config_if_sender_is_not_governance() {
     let new_oracle_addr = Some("addr9999".to_string());
     let new_basset_token_addr = Some("addr9998".to_string());
     let new_stable_denom = Some("addr9997".to_string());
+    let new_anchor_market_addr = Some("addr9996".to_string());
+    let new_anchor_interest_model_addr = Some("addr9995".to_string());
+    let new_overseer_addr = Some("addr9994".to_string());
     let new_borrow_ltv_max = Some(Decimal256::from_str("0.6").unwrap());
     let new_borrow_ltv_min = Some(Decimal256::from_str("0.4").unwrap());
     let new_borrow_ltv_aim = Some(Decimal256::from_str("0.5").unwrap());
@@ -58,6 +61,9 @@ fn fail_to_change_config_if_sender_is_not_governance() {
             basset_max_ltv: new_basset_max_ltv,
             buffer_part: new_buffer_part,
             price_timeframe: new_price_timeframe,
+            anchor_market_addr: new_anchor_market_addr,
+            anchor_interest_model_addr: new_anchor_interest_model_addr,
+            anchor_overseer_addr: new_overseer_addr,
         },
     };
 
@@ -102,6 +108,9 @@ fn success_to_change_config_if_sender_governance() {
     let new_oracle_addr = "addr9999".to_string();
     let new_basset_token_addr = "addr9998".to_string();
     let new_stable_denom = "addr9997".to_string();
+    let new_anchor_market_addr = "addr9996".to_string();
+    let new_anchor_interest_model_addr = "addr9995".to_string();
+    let new_overseer_addr = "addr9994".to_string();
     let new_borrow_ltv_max = Decimal256::from_str("0.6").unwrap();
     let new_borrow_ltv_min = Decimal256::from_str("0.4").unwrap();
     let new_borrow_ltv_aim = Decimal256::from_str("0.5").unwrap();
@@ -120,6 +129,9 @@ fn success_to_change_config_if_sender_governance() {
             basset_max_ltv: Some(new_basset_max_ltv.clone()),
             buffer_part: Some(new_buffer_part.clone()),
             price_timeframe: Some(new_price_timeframe),
+            anchor_market_addr: Some(new_anchor_market_addr.clone()),
+            anchor_interest_model_addr: Some(new_anchor_interest_model_addr.clone()),
+            anchor_overseer_addr: Some(new_overseer_addr.clone()),
         },
     };
 
@@ -137,4 +149,7 @@ fn success_to_change_config_if_sender_governance() {
     assert_eq!(new_basset_max_ltv, config.get_basset_max_ltv());
     assert_eq!(new_buffer_part, config.get_buffer_part());
     assert_eq!(new_price_timeframe, config.price_timeframe);
+    assert_eq!(new_anchor_market_addr, config.anchor_market_contract);
+    assert_eq!(new_anchor_interest_model_addr, config.anchor_interest_model_contract);
+    assert_eq!(new_overseer_addr, config.anchor_overseer_contract);
 }
