@@ -6,10 +6,10 @@ use crate::{
         NASSET_TOKEN_REWARDS_CONTRACT_ADDR, PSI_TOKEN_ADDR,
     },
 };
+use basset_vault::astroport_pair::Cw20HookMsg as AstroportCw20HookMsg;
 use basset_vault::nasset_token_rewards::{
     AnyoneMsg as NAssetTokenRewardsAnyoneMsg, ExecuteMsg as NAssetTokenRewardsExecuteMsg,
 };
-use basset_vault::terraswap_pair::Cw20HookMsg as TerraswapCw20HookMsg;
 use cosmwasm_std::{to_binary, StdError, Uint128};
 use cosmwasm_std::{CosmosMsg, SubMsg, WasmMsg};
 use cw20::Cw20ExecuteMsg;
@@ -71,7 +71,7 @@ fn distribute_rewards() {
                 msg: to_binary(&Cw20ExecuteMsg::Send {
                     amount: Uint128::from(25u64),
                     contract: NASSET_PSI_SWAP_CONTRACT_ADDR.to_string(),
-                    msg: to_binary(&TerraswapCw20HookMsg::Swap {
+                    msg: to_binary(&AstroportCw20HookMsg::Swap {
                         belief_price: None,
                         max_spread: None,
                         to: Some(COMMUNITY_POOL_CONTRACT_ADDR.to_string()),

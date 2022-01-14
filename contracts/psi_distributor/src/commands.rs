@@ -9,11 +9,11 @@ use crate::state::{
     GovernanceUpdateState,
 };
 use crate::{state::Config, ContractResult};
+use basset_vault::astroport_pair::Cw20HookMsg as AstroportCw20HookMsg;
 use basset_vault::nasset_token_rewards::{
     AnyoneMsg as NAssetTokenRewardsAnyoneMsg, ExecuteMsg as NAssetTokenRewardsExecuteMsg,
 };
 use basset_vault::querier::query_token_balance;
-use basset_vault::terraswap_pair::Cw20HookMsg as TerraswapCw20HookMsg;
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cw20::Cw20ExecuteMsg;
 
@@ -73,7 +73,7 @@ pub fn distribute_rewards(deps: DepsMut, env: Env) -> ContractResult<Response> {
             msg: to_binary(&Cw20ExecuteMsg::Send {
                 amount: rewards_distribution.community_pool.into(),
                 contract: config.nasset_psi_swap_contract_addr.to_string(),
-                msg: to_binary(&TerraswapCw20HookMsg::Swap {
+                msg: to_binary(&AstroportCw20HookMsg::Swap {
                     belief_price: None,
                     max_spread: None,
                     to: Some(config.community_pool_contract.to_string()),

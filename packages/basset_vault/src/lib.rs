@@ -1,4 +1,6 @@
 pub mod anchor;
+pub mod astroport_factory;
+pub mod astroport_pair;
 pub mod basset_vault;
 pub mod basset_vault_strategy;
 pub mod common;
@@ -8,8 +10,6 @@ pub mod nasset_token_rewards;
 pub mod psi_distributor;
 pub mod querier;
 pub mod terraswap;
-pub mod terraswap_factory;
-pub mod terraswap_pair;
 
 // hom many iterations is available for loan repayment
 pub const BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP: u8 = 10;
