@@ -21,12 +21,12 @@ use std::str::FromStr;
 
 use basset_vault::anchor::basset_custody::BorrowerInfo as AnchorBassetCustodyBorrowerInfo;
 use basset_vault::anchor::market::BorrowerInfoResponse as AnchorMarketBorrowerInfo;
+use basset_vault::astroport_factory::{ExecuteMsg as AstroportFactoryExecuteMsg, PairType};
 use basset_vault::basset_vault::Cw20HookMsg;
 use basset_vault::basset_vault_strategy::BorrowerActionResponse;
 use basset_vault::psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg;
 use basset_vault::querier::{AnchorMarketEpochStateResponse, AnchorMarketQueryMsg};
 use basset_vault::terraswap::AssetInfo;
-use basset_vault::terraswap_factory::ExecuteMsg as TerraswapFactoryExecuteMsg;
 use basset_vault::{
     basset_vault::ExecuteMsg,
     nasset_token::InstantiateMsg as NAssetTokenInstantiateMsg,
@@ -56,7 +56,7 @@ pub const ANCHOR_OVERSEER_CONTRACT: &str = "addr0004";
 pub const ANCHOR_TOKEN: &str = "addr0006";
 pub const ANC_STABLE_SWAP_CONTRACT: &str = "addr0008";
 pub const PSI_STABLE_SWAP_CONTRACT: &str = "addr0009";
-pub const TERRASWAP_FACTORY_CONTRACT_ADDR: &str = "addr0014";
+pub const ASTROPORT_FACTORY_CONTRACT_ADDR: &str = "addr0014";
 pub const BASSET_VAULT_STRATEGY_CONTRACT: &str = "addr0012";
 pub const COMMUNITY_POOL_CONTRACT_ADDR: &str = "addr0013";
 pub const NASSET_PSI_SWAP_CONTRACT_ADDR: &str = "addr0019";
@@ -98,7 +98,7 @@ impl Sdk {
             a_custody_basset_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
             anc_stable_swap_addr: ANC_STABLE_SWAP_CONTRACT.to_string(),
             psi_stable_swap_addr: PSI_STABLE_SWAP_CONTRACT.to_string(),
-            ts_factory_addr: TERRASWAP_FACTORY_CONTRACT_ADDR.to_string(),
+            ts_factory_addr: ASTROPORT_FACTORY_CONTRACT_ADDR.to_string(),
             aterra_addr: ATERRA_TOKEN.to_string(),
             psi_addr: PSI_TOKEN.to_string(),
             basset_vs_addr: BASSET_VAULT_STRATEGY_CONTRACT.to_string(),
@@ -267,8 +267,9 @@ impl Sdk {
                 res.messages,
                 vec![SubMsg {
                     msg: WasmMsg::Execute {
-                        contract_addr: TERRASWAP_FACTORY_CONTRACT_ADDR.to_string(),
-                        msg: to_binary(&TerraswapFactoryExecuteMsg::CreatePair {
+                        contract_addr: ASTROPORT_FACTORY_CONTRACT_ADDR.to_string(),
+                        msg: to_binary(&AstroportFactoryExecuteMsg::CreatePair {
+                            pair_type: PairType::Xyk {},
                             asset_infos: [
                                 AssetInfo::Token {
                                     contract_addr: Addr::unchecked(nasset_contract_addr),
@@ -276,7 +277,8 @@ impl Sdk {
                                 AssetInfo::Token {
                                     contract_addr: Addr::unchecked(PSI_TOKEN),
                                 }
-                            ]
+                            ],
+                            init_params: None
                         })
                         .unwrap(),
                         funds: vec![],

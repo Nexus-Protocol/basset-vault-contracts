@@ -9,11 +9,11 @@ use basset_vault::basset_vault::{
 };
 use basset_vault::terraswap::{Asset, AssetInfo};
 use basset_vault::{
+    astroport_pair::{Cw20HookMsg as AstroportCw20HookMsg, ExecuteMsg as AstroportExecuteMsg},
     psi_distributor::{
         AnyoneMsg as PsiDistributorAnyoneMsg, ExecuteMsg as PsiDistributorExecuteMsg,
     },
     querier::AnchorMarketMsg,
-    terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
 };
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::testing::MOCK_CONTRACT_ADDR;
@@ -76,7 +76,7 @@ fn honest_work() {
                     msg: to_binary(&Cw20ExecuteMsg::Send {
                         amount: anc_balance.into(),
                         contract: ANC_STABLE_SWAP_CONTRACT.to_string(),
-                        msg: to_binary(&TerraswapCw20HookMsg::Swap {
+                        msg: to_binary(&AstroportCw20HookMsg::Swap {
                             belief_price: None,
                             max_spread: None,
                             to: None,
@@ -119,7 +119,7 @@ fn honest_work() {
             vec![
                 SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: PSI_STABLE_SWAP_CONTRACT.to_string(),
-                    msg: to_binary(&TerraswapExecuteMsg::Swap {
+                    msg: to_binary(&AstroportExecuteMsg::Swap {
                         offer_asset: swap_asset,
                         max_spread: None,
                         belief_price: None,

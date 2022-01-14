@@ -19,6 +19,7 @@ use crate::{
 };
 use basset_vault::{
     anchor::basset_custody::get_basset_in_custody,
+    astroport_factory::{ExecuteMsg as AstroportFactoryExecuteMsg, PairType},
     basset_vault::{
         AnyoneMsg, ExecuteMsg, GovernanceMsg, InstantiateMsg, MigrateMsg, QueryMsg, YourselfMsg,
     },
@@ -31,7 +32,6 @@ use basset_vault::{
     nasset_token_rewards::InstantiateMsg as NAssetTokenRewardsInstantiateMsg,
     psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg,
     terraswap::AssetInfo,
-    terraswap_factory::ExecuteMsg as TerraswapFactoryExecuteMsg,
 };
 use cw20::MinterResponse;
 use protobuf::Message;
@@ -166,7 +166,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                 .add_submessage(SubMsg::reply_always(
                     CosmosMsg::Wasm(WasmMsg::Execute {
                         contract_addr: psi_distributor_init_info.terraswap_factory_contract_addr,
-                        msg: to_binary(&TerraswapFactoryExecuteMsg::CreatePair {
+                        msg: to_binary(&AstroportFactoryExecuteMsg::CreatePair {
+                            pair_type: PairType::Xyk {},
                             asset_infos: [
                                 AssetInfo::Token {
                                     contract_addr: config.nasset_token,
@@ -175,6 +176,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                                     contract_addr: config.psi_token,
                                 },
                             ],
+                            init_params: None,
                         })?,
                         funds: vec![],
                     }),
@@ -435,7 +437,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 #[entry_point]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> StdResult<Response> {
     let mut config: Config = load_config(deps.storage)?;
-    config.over_loan_balance_value = msg.new_over_loan_balance_value;
+    config.psi_stable_swap_contract = deps.api.addr_validate(&msg.new_psi_stable_swap_addr)?;
+    config.anc_stable_swap_contract = deps.api.addr_validate(&msg.new_anc_stable_swap_addr)?;
     store_config(deps.storage, &config)?;
     Ok(Response::default())
 }

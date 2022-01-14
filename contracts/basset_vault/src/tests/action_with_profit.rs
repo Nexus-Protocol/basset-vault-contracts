@@ -11,12 +11,12 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{to_binary, Coin, Response, Uint128, WasmMsg};
 
 use basset_vault::{
+    astroport_pair::ExecuteMsg as AstroportExecuteMsg,
     psi_distributor::{
         AnyoneMsg as PsiDistributorAnyoneMsg, ExecuteMsg as PsiDistributorExecuteMsg,
     },
     querier::AnchorMarketMsg,
     terraswap::{Asset, AssetInfo},
-    terraswap_pair::ExecuteMsg as TerraswapExecuteMsg,
 };
 
 #[test]
@@ -64,7 +64,7 @@ fn action_with_profit_buy_psi() {
         .add_messages(vec![
             WasmMsg::Execute {
                 contract_addr: PSI_STABLE_SWAP_CONTRACT.to_string(),
-                msg: to_binary(&TerraswapExecuteMsg::Swap {
+                msg: to_binary(&AstroportExecuteMsg::Swap {
                     offer_asset: swap_asset,
                     max_spread: None,
                     belief_price: None,
@@ -161,7 +161,7 @@ fn action_with_profit_split() {
             },
             WasmMsg::Execute {
                 contract_addr: PSI_STABLE_SWAP_CONTRACT.to_string(),
-                msg: to_binary(&TerraswapExecuteMsg::Swap {
+                msg: to_binary(&AstroportExecuteMsg::Swap {
                     offer_asset: swap_asset,
                     max_spread: None,
                     belief_price: None,
