@@ -60,6 +60,7 @@ pub const TERRASWAP_FACTORY_CONTRACT_ADDR: &str = "addr0014";
 pub const BASSET_VAULT_STRATEGY_CONTRACT: &str = "addr0012";
 pub const COMMUNITY_POOL_CONTRACT_ADDR: &str = "addr0013";
 pub const NASSET_PSI_SWAP_CONTRACT_ADDR: &str = "addr0019";
+pub const ANCHOR_BASSET_REWARD_CONTRACT: &str = "addr0020";
 pub const CLAIMING_REWARDS_DELAY: u64 = 1000;
 pub const NASSET_TOKEN_CODE_ID: u64 = 10u64;
 pub const NASSET_TOKEN_CONFIG_HOLDER_CODE_ID: u64 = 11u64;
@@ -96,6 +97,7 @@ impl Sdk {
             a_market_addr: ANCHOR_MARKET_CONTRACT.to_string(),
             a_overseer_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
             a_custody_basset_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+            a_basset_reward_addr: ANCHOR_BASSET_REWARD_CONTRACT.to_string(),
             anc_stable_swap_addr: ANC_STABLE_SWAP_CONTRACT.to_string(),
             psi_stable_swap_addr: PSI_STABLE_SWAP_CONTRACT.to_string(),
             ts_factory_addr: TERRASWAP_FACTORY_CONTRACT_ADDR.to_string(),

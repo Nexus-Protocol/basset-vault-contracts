@@ -11,7 +11,7 @@ use crate::{
         NASSET_PSI_SWAP_CONTRACT_ADDR, NASSET_TOKEN_ADDR, NASSET_TOKEN_CODE_ID,
         NASSET_TOKEN_REWARDS_CODE_ID, OVER_LOAN_BALANCE_VALUE, PSI_DISTRIBUTOR_CODE_ID,
         PSI_DISTRIBUTOR_CONTRACT, PSI_STABLE_SWAP_CONTRACT, PSI_TOKEN, STABLE_DENOM, TAX_RATE,
-        TERRASWAP_FACTORY_CONTRACT_ADDR,
+        TERRASWAP_FACTORY_CONTRACT_ADDR, ANCHOR_BASSET_REWARD_CONTRACT,
     },
 };
 
@@ -33,6 +33,7 @@ fn proper_initialization() {
             anchor_overseer_contract: Addr::unchecked(ANCHOR_OVERSEER_CONTRACT),
             anchor_market_contract: Addr::unchecked(ANCHOR_MARKET_CONTRACT),
             anchor_custody_basset_contract: Addr::unchecked(ANCHOR_CUSTODY_BASSET_CONTRACT),
+            anchor_basset_reward_contract: Addr::unchecked(ANCHOR_BASSET_REWARD_CONTRACT),
             anc_stable_swap_contract: Addr::unchecked(ANC_STABLE_SWAP_CONTRACT),
             psi_stable_swap_contract: Addr::unchecked(PSI_STABLE_SWAP_CONTRACT),
             basset_token: Addr::unchecked(BASSET_TOKEN_ADDR),
