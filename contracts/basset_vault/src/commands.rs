@@ -637,8 +637,8 @@ pub(crate) fn withdraw_all_logic(
     Ok(response)
 }
 
-/// Anyone can execute `claim_reward` function to claim ANC and bAsset holding rewards 
-pub fn claim_reward(deps: DepsMut, env: Env) -> StdResult<Response> {
+/// Anyone can execute `claim_rewards` function to claim ANC and bAsset holding rewards 
+pub fn claim_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
     let config: Config = load_config(deps.storage)?;
 
     let borrower_info = query_borrower_info(

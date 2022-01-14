@@ -362,7 +362,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                 commands::rebalance(deps, env, &config, basset_in_custody, None)
             }
 
-            AnyoneMsg::HonestWork {} => commands::claim_reward(deps, env),
+            AnyoneMsg::HonestWork {} => commands::claim_rewards(deps, env),
 
             AnyoneMsg::ClaimRemainder {} => commands::claim_remainded_stables(deps.as_ref(), env),
 
