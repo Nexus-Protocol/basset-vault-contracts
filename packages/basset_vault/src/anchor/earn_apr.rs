@@ -23,7 +23,7 @@ enum AnchorOverseerQueryMsg {
     // We don't use other cases
 }
 
-fn calculate_anchor_earn_apy(deposit_rate: Decimal256) -> Decimal256 {
+fn calculate_anchor_earn_apr(deposit_rate: Decimal256) -> Decimal256 {
     deposit_rate * Decimal256::from_uint256(NUMBER_OF_BLOCKS_PER_YEAR)
 }
 
@@ -42,8 +42,8 @@ pub fn query_anchor_earn_apr(
     anchor_overseer_contract: &Addr,
 ) -> StdResult<Decimal256> {
     let epoch_state = query_epoch_state(&deps.querier, anchor_overseer_contract)?;
-    let apy = calculate_anchor_earn_apy(epoch_state.deposit_rate);
-    Ok(apy)
+    let apr = calculate_anchor_earn_apr(epoch_state.deposit_rate);
+    Ok(apr)
 }
 
 #[cfg(test)]
@@ -52,9 +52,9 @@ mod test {
     use std::str::FromStr;
 
     #[test]
-    fn test_calculate_anchor_earn_apy() {
+    fn test_calculate_anchor_earn_apr() {
         let deposit_rate = Decimal256::from_str("0.000000041734138975").unwrap();
-        let apy = calculate_anchor_earn_apy(deposit_rate);
-        assert_eq!(apy, Decimal256::from_str("0.19434795572016975").unwrap());
+        let apr = calculate_anchor_earn_apr(deposit_rate);
+        assert_eq!(apr, Decimal256::from_str("0.19434795572016975").unwrap());
     }
 }
