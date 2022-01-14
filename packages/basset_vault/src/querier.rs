@@ -177,3 +177,40 @@ pub enum AnchorBassetRewardMsg {
         recipient: Option<String>,
     }
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AnchorBassetRewardQueryMsg {
+    Holder {
+        address: String,
+    },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct HolderResponse {
+    pub pending_rewards: Decimal256,
+
+    // These fields aren't used
+    //
+    // pub address: String,
+    // pub balance: Uint128,
+    // pub index: Decimal,
+}
+
+pub fn query_holding_info(
+    deps: Deps,
+    anchor_basset_reward_contract: &Addr,
+    holder: &Addr,
+) -> StdResult<HolderResponse> {
+    let holder_info: StdResult<HolderResponse> =
+        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+            contract_addr: anchor_basset_reward_contract.to_string(),
+            msg: to_binary(&AnchorBassetRewardQueryMsg::Holder {
+                address: holder.to_string(),
+            })?,
+        }));
+
+    Ok(holder_info
+        .unwrap_or(HolderResponse { pending_rewards: Decimal256::zero() }))
+}

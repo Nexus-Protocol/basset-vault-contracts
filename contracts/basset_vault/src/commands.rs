@@ -9,7 +9,7 @@ use crate::{
     tax_querier::get_tax_info,
     utils::{
         calc_after_borrow_action, get_repay_loan_action, is_anc_rewards_claimable,
-        split_profit_to_handle_interest, ActionWithProfit,
+        split_profit_to_handle_interest, ActionWithProfit, is_holding_rewards_claimable,
     },
     SubmsgIds,
 };
@@ -20,7 +20,7 @@ use basset_vault::{
     basset_vault_strategy::{query_borrower_action, BorrowerActionResponse},
     querier::{
         query_aterra_state, query_balance, query_supply, query_token_balance, AnchorCustodyCw20Msg,
-        AnchorCustodyMsg, AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg, AnchorBassetRewardMsg,
+        AnchorCustodyMsg, AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg, AnchorBassetRewardMsg, query_holding_info,
     },
     terraswap::{Asset, AssetInfo},
     terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
@@ -640,17 +640,6 @@ pub(crate) fn withdraw_all_logic(
 /// Anyone can execute `claim_reward` function to claim ANC and bAsset holding rewards 
 pub fn claim_reward(deps: DepsMut, env: Env) -> StdResult<Response> {
     let config: Config = load_config(deps.storage)?;
-    let last_rewards_claiming_height = load_last_rewards_claiming_height(deps.as_ref().storage)?;
-    let current_height = env.block.height;
-
-    // TODO
-    if !is_anc_rewards_claimable(
-        current_height,
-        last_rewards_claiming_height,
-        config.claiming_rewards_delay,
-    ) {
-        return Err(StdError::generic_err("claiming too often"));
-    }
 
     let borrower_info = query_borrower_info(
         deps.as_ref(),
@@ -658,10 +647,23 @@ pub fn claim_reward(deps: DepsMut, env: Env) -> StdResult<Response> {
         &env.contract.address,
     )?;
 
-    Ok(Response::new()
-        .add_messages(claim_anc_rewards_messages(env, &config)?)
-        .add_submessage(claim_basset_holding_reward_message(&config)?)
-        .add_attribute("action", "claim_reward"))
+    let holding_info = query_holding_info(
+        deps.as_ref(),
+        &config.anchor_market_contract,
+        &env.contract.address,
+    )?;
+
+    let mut response = Response::new();
+
+    if is_anc_rewards_claimable(borrower_info.pending_rewards) {
+        response = response.add_messages(claim_anc_rewards_messages(env, &config)?);
+    }
+
+    if is_holding_rewards_claimable(holding_info.pending_rewards) {
+        response = response.add_submessage(claim_basset_holding_reward_message(&config)?);
+    }
+
+    Ok(response.add_attribute("action", "claim_reward"))
 }
 
 /// Claim ANC rewards, swap ANC => UST token, swap

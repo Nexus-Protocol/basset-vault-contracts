@@ -2,7 +2,7 @@ use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{to_binary, Coin, CosmosMsg, Response, StdResult, SubMsg, Uint128, WasmMsg};
 
 use crate::tax_querier::TaxInfo;
-use crate::SubmsgIds;
+use crate::{SubmsgIds, MIN_HOLDING_REWARDS_TO_CLAIM};
 use crate::{state::Config, MIN_ANC_REWARDS_TO_CLAIM};
 use basset_vault::{
     psi_distributor::{
@@ -474,6 +474,10 @@ pub fn split_profit_to_handle_interest(
 
 pub fn is_anc_rewards_claimable(pending_rewards: Decimal256) -> bool {
     pending_rewards >= Decimal256::from_uint256(MIN_ANC_REWARDS_TO_CLAIM)
+}
+
+pub fn is_holding_rewards_claimable(pending_rewards: Decimal256) -> bool {
+    pending_rewards >= Decimal256::from_uint256(MIN_HOLDING_REWARDS_TO_CLAIM)
 }
 
 #[cfg(test)]
