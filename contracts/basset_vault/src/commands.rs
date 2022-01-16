@@ -419,7 +419,6 @@ pub fn rebalance(
             amount,
             advised_buffer_size,
         } => {
-            store_aim_buffer_size(deps.storage, &advised_buffer_size)?;
             let repaying_loan_state = RepayingLoanState {
                 to_repay_amount: amount,
                 aim_buffer_size: advised_buffer_size,
