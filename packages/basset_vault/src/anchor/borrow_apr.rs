@@ -2,6 +2,7 @@ use super::market::query_market_state;
 use crate::querier::query_balance;
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{StdResult, Deps, Addr, QueryRequest, WasmQuery, to_binary, QuerierWrapper};
+use schemars::JsonSchema;
 use serde::{Serialize, Deserialize};
 use super::NUMBER_OF_BLOCKS_PER_YEAR;
 
@@ -40,7 +41,8 @@ fn calculate_anchor_borrow_net_apr(
     net_arp
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 enum InterestModelQueryMsg {
     BorrowRate {
         market_balance: Uint256,
@@ -52,7 +54,8 @@ enum InterestModelQueryMsg {
     // Config {},
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct BorrowRateResponse {
     pub rate: Decimal256,
 }
