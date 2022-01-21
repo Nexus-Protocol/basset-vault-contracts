@@ -1,10 +1,12 @@
 use super::market::query_market_state;
 use crate::querier::query_balance;
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{StdResult, Deps, Addr, QueryRequest, WasmQuery, to_binary, QuerierWrapper};
+use cosmwasm_std::{StdResult, Deps, Addr, QueryRequest, WasmQuery, to_binary, QuerierWrapper, Uint128};
 use schemars::JsonSchema;
 use serde::{Serialize, Deserialize};
 use super::NUMBER_OF_BLOCKS_PER_YEAR;
+use crate::terraswap_pair::{QueryMsg as TerraswapPairQueryMsg, SimulationResponse};
+use crate::terraswap::{Asset, AssetInfo};
 
 fn calculate_anchor_borrow_distribution_apr(
     anc_price: Decimal256,
@@ -79,11 +81,36 @@ fn query_borrow_rate(
     }))
 }
 
+fn query_anc_price(
+    querier: &QuerierWrapper,
+    anchor_token_contract: Addr,
+    anc_ust_swap_contract: &Addr,
+) -> StdResult<Decimal256> {
+    let one_anc = Uint128::from(1_000_000_u64);
+
+    let simulation: SimulationResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+        contract_addr: anc_ust_swap_contract.to_string(),
+        msg: to_binary(&TerraswapPairQueryMsg::Simulation {
+            offer_asset: Asset {
+                info: AssetInfo::Token {
+                    contract_addr: anchor_token_contract,
+                },
+                amount: one_anc,
+            }
+        })?
+    }))?;
+
+    let return_amount = Uint256::from(simulation.return_amount);
+
+    Ok(Decimal256::from_ratio(return_amount, 1_000_000))
+}
+
 pub fn query_anchor_borrow_net_apr(
     deps: Deps,
     anchor_market_contract: &Addr,
     anchor_interest_model_contract: &Addr,
-    anc_price: Decimal256,
+    anchor_token_contract: Addr,
+    anc_ust_swap_contract: &Addr,
     stable_denom: String,
 ) -> StdResult<Decimal256> {
     let market_state = query_market_state(deps, anchor_market_contract)?;
@@ -96,6 +123,8 @@ pub fn query_anchor_borrow_net_apr(
         market_state.total_liabilities,
         market_state.total_reserves,
     )?;
+
+    let anc_price = query_anc_price(&deps.querier, anchor_token_contract, anc_ust_swap_contract)?;
 
     let net_apr = calculate_anchor_borrow_net_apr(
         anc_price,

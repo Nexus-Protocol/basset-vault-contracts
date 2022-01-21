@@ -96,7 +96,8 @@ pub fn borrower_action(
         deps,
         &config.anchor_market_contract,
         &config.anchor_interest_model_contract,
-        oracle_price.rate,
+        config.anchor_token.clone(),
+        &config.anc_ust_swap_contract,
         config.stable_denom.clone(),
     )?;
 

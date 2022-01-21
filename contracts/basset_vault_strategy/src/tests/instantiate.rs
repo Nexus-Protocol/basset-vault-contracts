@@ -15,7 +15,9 @@ fn proper_initialization() {
         anchor_market_addr: "addr0002".to_string(),
         anchor_interest_model_addr: "addr0003".to_string(),
         anchor_overseer_addr: "addr0004".to_string(),
-        basset_token_addr: "addr0005".to_string(),
+        anchor_token_addr: "addr0005".to_string(),
+        anc_ust_swap_addr: "addr0006".to_string(),
+        basset_token_addr: "addr0007".to_string(),
         stable_denom: "uust".to_string(),
         borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
         borrow_ltv_min: Decimal256::from_str("0.75").unwrap(),
@@ -33,6 +35,11 @@ fn proper_initialization() {
     let config: Config = load_config(&deps.storage).unwrap();
     assert_eq!(msg.governance_contract_addr, config.governance_contract);
     assert_eq!(msg.oracle_contract_addr, config.oracle_contract);
+    assert_eq!(msg.anchor_market_addr, config.anchor_market_contract);
+    assert_eq!(msg.anchor_interest_model_addr, config.anchor_interest_model_contract);
+    assert_eq!(msg.anchor_overseer_addr, config.anchor_overseer_contract);
+    assert_eq!(msg.anchor_token_addr, config.anchor_token);
+    assert_eq!(msg.anc_ust_swap_addr, config.anc_ust_swap_contract);
     assert_eq!(msg.basset_token_addr, config.basset_token);
     assert_eq!(msg.stable_denom, config.stable_denom);
     assert_eq!(msg.borrow_ltv_max, config.get_borrow_ltv_max());
