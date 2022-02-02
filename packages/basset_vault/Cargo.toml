@@ -13,6 +13,7 @@ documentation = "todo"
 # for quicker tests, cargo test --lib
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
+integration_tests_build = []
 
 [dependencies]
 cw20 = { version = "0.8.1" }

@@ -71,6 +71,8 @@ pub enum QueryMsg {
         borrowed_amount: Uint256,
         locked_basset_amount: Uint256,
     },
+    #[cfg(feature = "integration_tests_build")]
+    AnchorApr {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

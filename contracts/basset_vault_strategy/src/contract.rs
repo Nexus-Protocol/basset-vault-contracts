@@ -125,6 +125,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             borrowed_amount,
             locked_basset_amount,
         )?),
+        #[cfg(feature = "integration_tests_build")]
+        QueryMsg::AnchorApr {} => to_binary(&queries::test_anchor_apr_calculation::calculate(deps, env)?),
     }
 }
 

@@ -189,6 +189,41 @@ fn calc_borrower_action(
     }
 }
 
+#[cfg(feature = "integration_tests_build")]
+pub mod test_anchor_apr_calculation {
+    use serde::{Serialize, Deserialize};
+    use super::*;
+
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+    pub struct AnchorApr {
+        pub anchor_earn_apr: Decimal256,
+        pub anchor_borrow_apr: Decimal256,
+    }
+
+    pub fn calculate(deps: Deps, _env: Env) -> StdResult<AnchorApr> {
+        let config: Config = load_config(deps.storage)?;
+
+        let anchor_earn_apr = basset_vault::anchor::earn_apr::query_anchor_earn_apr(
+            deps,
+            &config.anchor_overseer_contract
+        )?;
+    
+        let anchor_borrow_apr = basset_vault::anchor::borrow_apr::query_anchor_borrow_net_apr(
+            deps,
+            &config.anchor_market_contract,
+            &config.anchor_interest_model_contract,
+            config.anchor_token.clone(),
+            &config.anc_ust_swap_contract,
+            config.stable_denom.clone(),
+        )?;
+
+        Ok(AnchorApr {
+            anchor_earn_apr,
+            anchor_borrow_apr,
+        })
+    }
+}
+
 #[cfg(test)]
 mod test {
     use basset_vault::basset_vault_strategy::BorrowerActionResponse;
