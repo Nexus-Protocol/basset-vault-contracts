@@ -1,10 +1,11 @@
 use cosmwasm_bignumber::Decimal256;
 use cosmwasm_std::{Deps, Addr, StdResult, QuerierWrapper, QueryRequest, WasmQuery, to_binary};
+use schemars::JsonSchema;
 use serde::{Serialize, Deserialize};
 use super::NUMBER_OF_BLOCKS_PER_YEAR;
 
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 struct EpochState {
     deposit_rate: Decimal256,
 
@@ -16,7 +17,8 @@ struct EpochState {
     // last_executed_height: u64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 enum AnchorOverseerQueryMsg {
     EpochState {},
 
