@@ -66,7 +66,16 @@ pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
         basset_in_custody,
     )?;
 
-    let response = match borrower_action {
+    borrower_action_to_response(borrower_action, deps, env, &config)
+}
+
+fn borrower_action_to_response(
+    action: BorrowerActionResponse,
+    deps: Deps,
+    env: Env,
+    config: &Config
+) -> StdResult<RebalanceResponse> {
+    let response = match action {
         BorrowerActionResponse::Nothing {} => RebalanceResponse::Nothing {},
         BorrowerActionResponse::Repay {
             amount,
@@ -83,7 +92,7 @@ pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
             let anchor_market_balance = query_balance(
                 &deps.querier,
                 &config.anchor_market_contract,
-                config.stable_denom,
+                config.stable_denom.clone(),
             )?;
             let anchor_market_config = query_market_config(deps, &config.anchor_market_contract)?;
             let is_borrowing_possible = assert_max_borrow_factor(
@@ -99,10 +108,12 @@ pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
                 is_possible: is_borrowing_possible,
             }
         },
-        BorrowerActionResponse::DepositAll {} => RebalanceResponse::DepositAll {},
+        BorrowerActionResponse::Deposit { deposit_amount, action_after } => RebalanceResponse::Deposit {
+            deposit_amount,
+            action_after: Box::new(borrower_action_to_response(*action_after, deps, env, config)?)
+        },
         BorrowerActionResponse::WithdrawAll {} => RebalanceResponse::WithdrawAll {},
     };
-
     Ok(response)
 }
 

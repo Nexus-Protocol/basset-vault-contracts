@@ -103,7 +103,11 @@ pub enum BorrowerActionResponse {
         amount: Uint256,
         advised_buffer_size: Uint256,
     },
-    DepositAll {},
+    Deposit {
+        deposit_amount: Uint256,
+        // We need to rebalance again after deposit
+        action_after: Box<BorrowerActionResponse>,
+    },
     WithdrawAll {},
 }
 
@@ -124,6 +128,17 @@ impl BorrowerActionResponse {
 
     pub fn nothing() -> Self {
         BorrowerActionResponse::Nothing {}
+    }
+
+    pub fn deposit(deposit_amount: Uint256, action_after: BorrowerActionResponse) -> Self {
+        BorrowerActionResponse::Deposit {
+            deposit_amount,
+            action_after: Box::new(action_after),
+        }
+    }
+
+    pub fn withdraw_all() -> Self {
+        BorrowerActionResponse::WithdrawAll {}
     }
 }
 

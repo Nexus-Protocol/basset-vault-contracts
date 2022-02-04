@@ -286,13 +286,15 @@ pub fn withdraw_basset(
         &env.contract.address,
     )?;
 
-    let basset_balance: Uint256 = query_token_balance(
+    let basset_on_contract_balance: Uint256 = query_token_balance(
         deps.as_ref(),
         &config.basset_token,
         &env.contract.address,
     ).into();
-    
-    if (basset_in_custody + basset_balance).is_zero() {
+
+    let total_basset_balance = basset_in_custody + basset_on_contract_balance;
+
+    if total_basset_balance.is_zero() {
         //interesting case - user owns some nAsset, but bAsset balance is zero
         //what we can do here:
         //1. Burn his nAsset, cause they do not have value in that context
@@ -310,7 +312,7 @@ pub fn withdraw_basset(
 
     let nasset_token_supply = query_supply(&deps.querier, &config.nasset_token)?;
 
-    let basset_to_withdraw: Uint256 = (basset_in_custody + basset_balance) * nasset_to_withdraw_amount
+    let basset_to_withdraw: Uint256 = total_basset_balance * nasset_to_withdraw_amount
         / Decimal256::from_uint256(Uint256::from(nasset_token_supply));
 
     let mut response = Response::new();
@@ -323,15 +325,18 @@ pub fn withdraw_basset(
     // 2. unlock basset from anchor_overseer
     // 3. withdraw basset from anchor_custody
     //
-    if basset_balance < basset_to_withdraw {
-        let needed_additional_amount = basset_to_withdraw - basset_balance;
+    if basset_on_contract_balance < basset_to_withdraw {
+        let needed_additional_amount = basset_to_withdraw - basset_on_contract_balance;
+
+        // Amount of basset in custody we are going to have after rebalance
+        let new_basset_in_custody = basset_in_custody - needed_additional_amount;
 
         response = rebalance(
             deps,
             env,
             &config,
-            basset_in_custody,
-            Some(needed_additional_amount),
+            Uint256::zero(), // all bassets on balance will be withdrawed
+            new_basset_in_custody,
         )?;
     
         response
@@ -386,21 +391,20 @@ pub fn withdraw_basset(
 }
 
 /// Executor: anyone
+/// 
+/// Rebalances according to provided basset balances.
+/// 
+/// # Trick
+/// 
+/// You can provide balances that are less than actual
+/// if you want to withdraw difference after
 pub fn rebalance(
     deps: DepsMut,
     env: Env,
     config: &Config,
+    basset_on_contract_balance: Uint256,
     basset_in_custody: Uint256,
-    basset_to_withdraw: Option<Uint256>,
 ) -> StdResult<Response> {
-    let basset_on_contract_balance = query_token_balance(
-        deps.as_ref(),
-        &config.basset_token,
-        &env.contract.address
-    );
-    
-    let basset_in_custody = basset_in_custody - basset_to_withdraw.unwrap_or_default();
-
     let borrower_info: BorrowerInfoResponse = query_borrower_info(
         deps.as_ref(),
         &config.anchor_market_contract,
@@ -416,6 +420,15 @@ pub fn rebalance(
         basset_in_custody,
     )?;
 
+    handle_borrower_action(deps, env, config, borrower_action)
+}
+
+fn handle_borrower_action(
+    deps: DepsMut,
+    env: Env,
+    config: &Config,
+    borrower_action: BorrowerActionResponse,
+) -> StdResult<Response> {
     match borrower_action {
         BorrowerActionResponse::Nothing {} => {
             //maybe it is better to return error here, but
@@ -444,9 +457,9 @@ pub fn rebalance(
             repay_logic(deps, env, config, repaying_loan_state)
         }
 
-        BorrowerActionResponse::DepositAll {} => deposit_all_logic(deps, env, config),
+        BorrowerActionResponse::Deposit { deposit_amount, action_after } => deposit_logic(deps, env, config, deposit_amount, *action_after),
 
-        BorrowerActionResponse::WithdrawAll {} => withdraw_all_logic(deps, env, config, borrower_info),
+        BorrowerActionResponse::WithdrawAll {} => withdraw_all_logic(deps, env, config),
     }
 }
 
@@ -538,49 +551,41 @@ pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Respons
     repay_logic(deps, env, &config, repaying_loan_state)
 }
 
-pub(crate) fn deposit_all_logic(
+pub(crate) fn deposit_logic(
     deps: DepsMut,
     env: Env,
     config: &Config,
+    deposit_amount: Uint256,
+    action_after: BorrowerActionResponse,
 ) -> StdResult<Response> {
-    let basset_on_contract_balance = query_token_balance(
-        deps.as_ref(),
-        &config.basset_token,
-        &env.contract.address
-    );
+    let deposit_messages = [
+        SubMsg::new(WasmMsg::Execute {
+            contract_addr: config.basset_token.to_string(),
+            msg: to_binary(&Cw20ExecuteMsg::Send {
+                contract: config.anchor_custody_basset_contract.to_string(),
+                amount: deposit_amount.into(),
+                msg: to_binary(&AnchorCustodyCw20Msg::DepositCollateral {})?,
+            })?,
+            funds: vec![],
+        }),
+        SubMsg::new(WasmMsg::Execute {
+            contract_addr: config.anchor_overseer_contract.to_string(),
+            msg: to_binary(&AnchorOverseerMsg::LockCollateral {
+                collaterals: vec![(config.basset_token.to_string(), deposit_amount)],
+            })?,
+            funds: vec![],
+        }),
+    ];
 
-    // 1. send basset to anchor_custody contract
-    // 2. lock basset
-    // 3. Call rebalance again, with a new state
-    Ok(Response::new()
-        .add_messages(vec![
-            WasmMsg::Execute {
-                contract_addr: config.basset_token.to_string(),
-                msg: to_binary(&Cw20ExecuteMsg::Send {
-                    contract: config.anchor_custody_basset_contract.to_string(),
-                    amount: basset_on_contract_balance,
-                    msg: to_binary(&AnchorCustodyCw20Msg::DepositCollateral {})?,
-                })?,
-                funds: vec![],
-            },
-            WasmMsg::Execute {
-                contract_addr: config.anchor_overseer_contract.to_string(),
-                msg: to_binary(&AnchorOverseerMsg::LockCollateral {
-                    collaterals: vec![(config.basset_token.to_string(), basset_on_contract_balance.into())],
-                })?,
-                funds: vec![],
-            },
-            WasmMsg::Execute {
-                contract_addr: env.contract.address.to_string(),
-                msg: to_binary(&ExecuteMsg::Anyone {
-                    anyone_msg: AnyoneMsg::Rebalance {},
-                })?,
-                funds: vec![],
-            },
-        ])
+    let mut action_after_response = handle_borrower_action(deps, env, config, action_after)?;
+
+    for (i, deposit_msg) in std::array::IntoIter::new(deposit_messages).enumerate() {
+        action_after_response.messages.insert(i, deposit_msg);
+    }
+
+    Ok(action_after_response
         .add_attributes(vec![
-            ("action", "deposit_all"),
-            ("amount", &basset_on_contract_balance.to_string()),
+            ("deposited_amount", &deposit_amount.to_string()),
         ]))
 }
 
@@ -588,8 +593,13 @@ pub(crate) fn withdraw_all_logic(
     deps: DepsMut,
     env: Env,
     config: &Config,
-    borrower_info: BorrowerInfoResponse,
 ) -> StdResult<Response> {
+    let borrower_info: BorrowerInfoResponse = query_borrower_info(
+        deps.as_ref(),
+        &config.anchor_market_contract,
+        &env.contract.address,
+    )?;
+
     let aterra_balance = query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address);
 
     let basset_in_custody = get_basset_in_custody(

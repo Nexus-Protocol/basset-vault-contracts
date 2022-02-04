@@ -1,3 +1,4 @@
+use basset_vault::querier::query_token_balance;
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
     Response, StdError, StdResult, SubMsg, WasmMsg,
@@ -352,6 +353,12 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             AnyoneMsg::Rebalance {} => {
                 let config = load_config(deps.storage)?;
 
+                let basset_on_contract_balance = query_token_balance(
+                    deps.as_ref(),
+                    &config.basset_token,
+                    &env.contract.address
+                ).into();
+
                 // basset balance in custody contract
                 let basset_in_custody = get_basset_in_custody(
                     deps.as_ref(),
@@ -359,7 +366,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                     &env.contract.address.clone(),
                 )?;
 
-                commands::rebalance(deps, env, &config, basset_in_custody, None)
+                commands::rebalance(deps, env, &config, basset_on_contract_balance, basset_in_custody)
             }
 
             AnyoneMsg::HonestWork {} => commands::claim_rewards(deps, env),

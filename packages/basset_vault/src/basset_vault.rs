@@ -158,7 +158,11 @@ pub enum RebalanceResponse {
         amount: Uint256,
         advised_buffer_size: Uint256,
     },
-    DepositAll {},
+    Deposit {
+        deposit_amount: Uint256,
+        // We need to rebalance again after deposit
+        action_after: Box<RebalanceResponse>,
+    },
     WithdrawAll {},
 }
 

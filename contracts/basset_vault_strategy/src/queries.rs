@@ -139,19 +139,42 @@ fn calc_borrower_action(
     let profit_threshold = Decimal256::zero();
     let anchor_has_profit = anchor_apr > profit_threshold;
 
-    if anchor_has_profit == false {
+    if !anchor_has_profit {
         // Withdraw all if there are anything to withdraw
         if locked_basset_amount != Uint256::zero() {
-            return BorrowerActionResponse::WithdrawAll {};
+            return BorrowerActionResponse::withdraw_all();
         } else {
             return BorrowerActionResponse::nothing();
         }
     }
 
     if basset_on_contract_balance != Uint256::zero() {
-        return BorrowerActionResponse::DepositAll {};
+        let action_after = calc_borrower_action_on_profitable_anchor(
+            ltv_info,
+            borrowed_amount,
+            basset_on_contract_balance, // locked_basset_amount after deposit,
+            basset_max_ltv,
+            buffer_part,
+        );
+        BorrowerActionResponse::deposit(basset_on_contract_balance, action_after)
+    } else {
+        calc_borrower_action_on_profitable_anchor(
+            ltv_info,
+            borrowed_amount,
+            locked_basset_amount,
+            basset_max_ltv,
+            buffer_part,
+        )
     }
+}
 
+fn calc_borrower_action_on_profitable_anchor(
+    ltv_info: LTVInfo, 
+    borrowed_amount: Uint256,
+    locked_basset_amount: Uint256,
+    basset_max_ltv: Decimal256,
+    buffer_part: Decimal256,
+) -> BorrowerActionResponse {
     //repay loan if you can't manage it
     if ltv_info.basset_price == Decimal256::zero() || locked_basset_amount == Uint256::zero() {
         if borrowed_amount > Uint256::zero() {
