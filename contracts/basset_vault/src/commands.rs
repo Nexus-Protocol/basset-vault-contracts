@@ -221,8 +221,7 @@ pub fn deposit_basset(
         basset_on_contract_balance
     } else {
         // 'nasset_supply' can't be zero here, cause we already mint some for first farmer
-        let user_share = Decimal256::from_uint256(deposited_basset) / Decimal256::from_uint256(basset_balance);
-        nasset_supply * user_share / (Decimal256::one() - user_share)
+        nasset_supply * Decimal256::from_uint256(deposited_basset) / Decimal256::from_uint256(basset_balance - deposited_basset)
     };
 
     // 1. Mint nasset
