@@ -189,21 +189,21 @@ pub fn deposit_basset(
         &env.contract.address,
     )?;
 
-    let basset_on_contract_balance = query_token_balance(
+    let basset_in_contract_address = query_token_balance(
         deps.as_ref(),
         &config.basset_token,
         &env.contract.address
     )
     .into();
 
-    if basset_on_contract_balance == Uint256::zero() {
+    if basset_in_contract_address == Uint256::zero() {
         //impossible because 'farmer' already sent some basset
         return Err(StdError::generic_err(
             "basset balance is zero (impossible case)".to_string(),
         ));
     }
 
-    let basset_balance: Uint256 = basset_in_custody + basset_on_contract_balance;
+    let basset_balance: Uint256 = basset_in_custody + basset_in_contract_address;
 
     if (basset_balance - deposited_basset).is_zero() && !nasset_supply.is_zero() {
         //read comments in 'withdraw_basset' function for a reason to return error here
@@ -218,7 +218,7 @@ pub fn deposit_basset(
     // user_share = (deposited_basset / total_basset)
     // nAsset_to_mint = nAsset_supply * user_share / (1 - user_share)
     let nasset_to_mint = if is_first_depositor {
-        basset_on_contract_balance
+        basset_in_contract_address
     } else {
         // 'nasset_supply' can't be zero here, cause we already mint some for first farmer
         nasset_supply * Decimal256::from_uint256(deposited_basset) / Decimal256::from_uint256(basset_balance - deposited_basset)
@@ -285,13 +285,13 @@ pub fn withdraw_basset(
         &env.contract.address,
     )?;
 
-    let basset_on_contract_balance: Uint256 = query_token_balance(
+    let basset_in_contract_address: Uint256 = query_token_balance(
         deps.as_ref(),
         &config.basset_token,
         &env.contract.address,
     ).into();
 
-    let total_basset_balance = basset_in_custody + basset_on_contract_balance;
+    let total_basset_balance = basset_in_custody + basset_in_contract_address;
 
     if total_basset_balance.is_zero() {
         //interesting case - user owns some nAsset, but bAsset balance is zero
@@ -324,8 +324,8 @@ pub fn withdraw_basset(
     // 2. unlock basset from anchor_overseer
     // 3. withdraw basset from anchor_custody
     //
-    if basset_on_contract_balance < basset_to_withdraw {
-        let needed_additional_amount = basset_to_withdraw - basset_on_contract_balance;
+    if basset_in_contract_address < basset_to_withdraw {
+        let needed_additional_amount = basset_to_withdraw - basset_in_contract_address;
 
         // Amount of basset in custody we are going to have after rebalance
         let new_basset_in_custody = basset_in_custody - needed_additional_amount;
@@ -405,7 +405,7 @@ pub fn rebalance(
     deps: DepsMut,
     env: Env,
     config: &Config,
-    basset_on_contract_balance: Uint256,
+    basset_in_contract_address: Uint256,
     basset_in_custody: Uint256,
 ) -> StdResult<Response> {
     let borrower_info: BorrowerInfoResponse = query_borrower_info(
@@ -418,7 +418,7 @@ pub fn rebalance(
     let borrower_action = query_borrower_action(
         deps.as_ref(),
         &config.basset_vault_strategy_contract,
-        basset_on_contract_balance.into(),
+        basset_in_contract_address.into(),
         borrowed_ust,
         basset_in_custody,
     )?;

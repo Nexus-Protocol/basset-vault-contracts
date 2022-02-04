@@ -41,7 +41,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
     let config: Config = load_config(deps.storage)?;
 
-    let basset_on_contract_balance = query_token_balance(
+    let basset_in_contract_address = query_token_balance(
         deps,
         &config.basset_token,
         &env.contract.address
@@ -61,7 +61,7 @@ pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
     let borrower_action = query_borrower_action(
         deps,
         &config.basset_vault_strategy_contract,
-        basset_on_contract_balance.into(),
+        basset_in_contract_address.into(),
         borrowed_ust,
         basset_in_custody,
     )?;

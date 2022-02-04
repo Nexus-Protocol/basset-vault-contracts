@@ -353,7 +353,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             AnyoneMsg::Rebalance {} => {
                 let config = load_config(deps.storage)?;
 
-                let basset_on_contract_balance = query_token_balance(
+                let basset_in_contract_address = query_token_balance(
                     deps.as_ref(),
                     &config.basset_token,
                     &env.contract.address
@@ -366,7 +366,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                     &env.contract.address.clone(),
                 )?;
 
-                commands::rebalance(deps, env, &config, basset_on_contract_balance, basset_in_custody)
+                commands::rebalance(deps, env, &config, basset_in_contract_address, basset_in_custody)
             }
 
             AnyoneMsg::HonestWork {} => commands::claim_rewards(deps, env),

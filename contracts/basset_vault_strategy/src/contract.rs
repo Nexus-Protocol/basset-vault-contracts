@@ -115,13 +115,13 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&queries::query_config(deps)?),
         QueryMsg::BorrowerAction {
-            basset_on_contract_balance, 
+            basset_in_contract_address, 
             borrowed_amount,
             locked_basset_amount,
         } => to_binary(&queries::borrower_action(
             deps,
             env,
-            basset_on_contract_balance,
+            basset_in_contract_address,
             borrowed_amount,
             locked_basset_amount,
         )?),
