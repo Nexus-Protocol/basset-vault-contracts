@@ -355,7 +355,7 @@ pub fn withdraw_basset(
             .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.anchor_overseer_contract.to_string(),
                 msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
-                    collaterals: vec![(config.basset_token.to_string(), needed_additional_amount)],
+                    collaterals: vec![(config.basset_token.to_string(), additional_basset_needed)],
                 })?,
                 funds: vec![],
             })));
@@ -365,7 +365,7 @@ pub fn withdraw_basset(
             .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.anchor_custody_basset_contract.to_string(),
                 msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
-                    amount: Some(needed_additional_amount),
+                    amount: Some(additional_basset_needed),
                 })?,
                 funds: vec![],
             })));
