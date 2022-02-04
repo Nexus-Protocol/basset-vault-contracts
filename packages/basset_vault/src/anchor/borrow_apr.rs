@@ -5,7 +5,7 @@ use cosmwasm_std::{StdResult, Deps, Addr, QueryRequest, WasmQuery, to_binary, Qu
 use schemars::JsonSchema;
 use serde::{Serialize, Deserialize};
 use super::NUMBER_OF_BLOCKS_PER_YEAR;
-use crate::terraswap_pair::{QueryMsg as TerraswapPairQueryMsg, SimulationResponse};
+use crate::astroport_pair::{QueryMsg as AstroportPairQueryMsg, SimulationResponse};
 use crate::terraswap::{Asset, AssetInfo};
 
 fn calculate_anchor_borrow_distribution_apr(
@@ -90,7 +90,7 @@ fn query_anc_price(
 
     let simulation: SimulationResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: anc_ust_swap_contract.to_string(),
-        msg: to_binary(&TerraswapPairQueryMsg::Simulation {
+        msg: to_binary(&AstroportPairQueryMsg::Simulation {
             offer_asset: Asset {
                 info: AssetInfo::Token {
                     contract_addr: anchor_token_contract,
