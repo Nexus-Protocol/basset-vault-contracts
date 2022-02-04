@@ -16,6 +16,7 @@ use crate::{
 use basset_vault::{
     anchor::basset_custody::get_basset_in_custody,
     anchor::market::{query_borrower_info, BorrowerInfoResponse},
+    astroport_pair::{Cw20HookMsg as AstroportCw20HookMsg, ExecuteMsg as AstroportExecuteMsg},
     basset_vault::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, YourselfMsg},
     basset_vault_strategy::{query_borrower_action, BorrowerActionResponse},
     querier::{
@@ -23,7 +24,6 @@ use basset_vault::{
         AnchorCustodyMsg, AnchorMarketCw20Msg, AnchorMarketMsg, AnchorOverseerMsg, AnchorBassetRewardMsg, query_holding_info,
     },
     terraswap::{Asset, AssetInfo},
-    terraswap_pair::{Cw20HookMsg as TerraswapCw20HookMsg, ExecuteMsg as TerraswapExecuteMsg},
     BASSET_VAULT_LOAN_REPAYMENT_MAX_RECURSION_DEEP,
 };
 use cosmwasm_bignumber::{Decimal256, Uint256};
@@ -459,7 +459,6 @@ fn handle_borrower_action(
             amount,
             advised_buffer_size,
         } => {
-            store_aim_buffer_size(deps.storage, &advised_buffer_size)?;
             let repaying_loan_state = RepayingLoanState {
                 to_repay_amount: amount,
                 aim_buffer_size: advised_buffer_size,
@@ -727,7 +726,7 @@ pub fn swap_anc(deps: DepsMut, env: Env) -> StdResult<Response> {
                 msg: to_binary(&Cw20ExecuteMsg::Send {
                     amount: anc_amount,
                     contract: config.anc_stable_swap_contract.to_string(),
-                    msg: to_binary(&TerraswapCw20HookMsg::Swap {
+                    msg: to_binary(&AstroportCw20HookMsg::Swap {
                         belief_price: None,
                         max_spread: None,
                         to: None,
@@ -854,7 +853,7 @@ pub fn buy_psi_on_remainded_stable_coins(
         Ok(Response::new()
             .add_message(WasmMsg::Execute {
                 contract_addr: config.psi_stable_swap_contract.to_string(),
-                msg: to_binary(&TerraswapExecuteMsg::Swap {
+                msg: to_binary(&AstroportExecuteMsg::Swap {
                     offer_asset: swap_asset,
                     max_spread: None,
                     belief_price: None,

@@ -5,12 +5,12 @@ use crate::tax_querier::TaxInfo;
 use crate::{SubmsgIds, MIN_HOLDING_REWARDS_TO_CLAIM};
 use crate::{state::Config, MIN_ANC_REWARDS_TO_CLAIM};
 use basset_vault::{
+    astroport_pair::ExecuteMsg as AstroportExecuteMsg,
     psi_distributor::{
         AnyoneMsg as PsiDistributorAnyoneMsg, ExecuteMsg as PsiDistributorExecuteMsg,
     },
     querier::{AnchorMarketCw20Msg, AnchorMarketMsg},
     terraswap::{Asset, AssetInfo},
-    terraswap_pair::ExecuteMsg as TerraswapExecuteMsg,
 };
 use cw20::Cw20ExecuteMsg;
 
@@ -356,7 +356,7 @@ impl ActionWithProfit {
                     .add_messages(vec![
                         WasmMsg::Execute {
                             contract_addr: config.psi_stable_swap_contract.to_string(),
-                            msg: to_binary(&TerraswapExecuteMsg::Swap {
+                            msg: to_binary(&AstroportExecuteMsg::Swap {
                                 offer_asset: swap_asset,
                                 max_spread: None,
                                 belief_price: None,
@@ -406,7 +406,7 @@ impl ActionWithProfit {
                         },
                         WasmMsg::Execute {
                             contract_addr: config.psi_stable_swap_contract.to_string(),
-                            msg: to_binary(&TerraswapExecuteMsg::Swap {
+                            msg: to_binary(&AstroportExecuteMsg::Swap {
                                 offer_asset: swap_asset,
                                 max_spread: None,
                                 belief_price: None,

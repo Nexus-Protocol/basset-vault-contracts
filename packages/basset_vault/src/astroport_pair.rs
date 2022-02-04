@@ -14,6 +14,8 @@ pub enum ExecuteMsg {
     ProvideLiquidity {
         assets: [Asset; 2],
         slippage_tolerance: Option<Decimal>,
+        auto_stake: Option<bool>,
+        receiver: Option<String>,
     },
     /// Swap an offer asset to the other
     Swap {
