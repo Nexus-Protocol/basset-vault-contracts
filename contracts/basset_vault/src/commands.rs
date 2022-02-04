@@ -310,7 +310,7 @@ pub fn withdraw_basset(
 
     let nasset_token_supply = query_supply(&deps.querier, &config.nasset_token)?;
 
-    let basset_to_withdraw: Uint256 = basset_in_custody * nasset_to_withdraw_amount
+    let basset_to_withdraw: Uint256 = (basset_in_custody + basset_balance) * nasset_to_withdraw_amount
         / Decimal256::from_uint256(Uint256::from(nasset_token_supply));
 
     let mut response = Response::new();
