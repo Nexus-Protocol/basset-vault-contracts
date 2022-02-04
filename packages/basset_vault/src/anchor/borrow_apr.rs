@@ -24,12 +24,18 @@ fn calculate_anchor_borrow_interest_apr(borrow_rate: Decimal256) -> Decimal256 {
     apr
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct BorrowNetApr {
+    pub distribution_apr: Decimal256,
+    pub interest_apr: Decimal256,
+}
+
 fn calculate_anchor_borrow_net_apr(
     anc_price: Decimal256,
     anc_emission_rate: Decimal256,
     total_liabilities: Decimal256,
     borrow_rate: Decimal256,
-) -> Decimal256 {
+) -> BorrowNetApr {
     let distribution_apr = calculate_anchor_borrow_distribution_apr(
         anc_price,
         anc_emission_rate,
@@ -38,9 +44,10 @@ fn calculate_anchor_borrow_net_apr(
 
     let interest_apr = calculate_anchor_borrow_interest_apr(borrow_rate);
 
-    let net_arp = distribution_apr - interest_apr;
-
-    net_arp
+    BorrowNetApr {
+        distribution_apr,
+        interest_apr,
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -112,7 +119,7 @@ pub fn query_anchor_borrow_net_apr(
     anchor_token_contract: Addr,
     anc_ust_swap_contract: &Addr,
     stable_denom: String,
-) -> StdResult<Decimal256> {
+) -> StdResult<BorrowNetApr> {
     let market_state = query_market_state(deps, anchor_market_contract)?;
 
     let borrow_rate = query_borrow_rate(
@@ -173,6 +180,16 @@ mod test {
         let total_liabilities = Decimal256::from_str("682703198917970.293507449953151794").unwrap();
         let borrow_rate = Decimal256::from_str("0.000000047824728815").unwrap();
         let apr = calculate_anchor_borrow_net_apr(anc_price, anc_emission_rate, total_liabilities, borrow_rate);
-        assert_eq!(apr, Decimal256::from_str("0.18171018096411829").unwrap());
+        assert_eq!(apr.distribution_apr - apr.interest_apr, Decimal256::from_str("0.18171018096411829").unwrap());
+    }
+
+    #[test]
+    fn test_calculate_anchor_borrow_net_apr2() {
+        let anc_price = Decimal256::from_str("2.909").unwrap();
+        let anc_emission_rate = Decimal256::from_str("20381363.85157231012364762").unwrap();
+        let total_liabilities = Decimal256::from_str("682703198917970.293507449953151794").unwrap();
+        let borrow_rate = Decimal256::from_str("1.0").unwrap(); // high borrow rate to make borrow apr negative
+        let apr = calculate_anchor_borrow_net_apr(anc_price, anc_emission_rate, total_liabilities, borrow_rate);
+        assert!(apr.distribution_apr < apr.interest_apr);
     }
 }
