@@ -333,10 +333,10 @@ pub fn withdraw_basset(
     // 3. withdraw basset from anchor_custody
     //
     if basset_in_contract_address < basset_to_withdraw {
-        let needed_additional_amount = basset_to_withdraw - basset_in_contract_address;
+        let additional_basset_needed = basset_to_withdraw - basset_in_contract_address;
 
         // Amount of basset in custody we are going to have after rebalance
-        let new_basset_in_custody = basset_in_custody - needed_additional_amount;
+        let new_basset_in_custody = basset_in_custody - additional_basset_needed;
 
         response = rebalance(
             deps,
