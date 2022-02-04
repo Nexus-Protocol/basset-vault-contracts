@@ -338,6 +338,10 @@ pub fn withdraw_basset(
             Uint256::zero(), // all bassets on balance will be withdrawed
             new_basset_in_custody,
         )?;
+
+        // After rebalance basset in custody is either repayed
+        // or withdrawed, which also does repay for the whole borrow,
+        // so we can withdraw from custody additional needed amount
     
         response
             .messages
@@ -459,7 +463,7 @@ fn handle_borrower_action(
 
         BorrowerActionResponse::Deposit { deposit_amount, action_after } => deposit_logic(deps, env, config, deposit_amount, *action_after),
 
-        BorrowerActionResponse::WithdrawAll {} => withdraw_all_logic(deps, env, config),
+        BorrowerActionResponse::WithdrawAll { withdraw_amount } => withdraw_all_logic(deps, env, config, withdraw_amount),
     }
 }
 
@@ -593,6 +597,7 @@ pub(crate) fn withdraw_all_logic(
     deps: DepsMut,
     env: Env,
     config: &Config,
+    withdraw_amount: Uint256,
 ) -> StdResult<Response> {
     let borrower_info: BorrowerInfoResponse = query_borrower_info(
         deps.as_ref(),
@@ -601,12 +606,6 @@ pub(crate) fn withdraw_all_logic(
     )?;
 
     let aterra_balance = query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address);
-
-    let basset_in_custody = get_basset_in_custody(
-        deps.as_ref(),
-        &config.anchor_custody_basset_contract,
-        &env.contract.address,
-    )?;
 
     // 1. call `repay` logic, it will sell aterra and repay loan
     // 2. unlock basset from anchor_overseer
@@ -618,14 +617,15 @@ pub(crate) fn withdraw_all_logic(
         aim_buffer_size: Uint256::zero(),
         ..RepayingLoanState::default()
     };
-    let rebalance_response = repay_logic(deps, env, config, repaying_loan_state)?;
 
-    let response = rebalance_response
+    let repay = repay_logic(deps, env, config, repaying_loan_state)?;
+
+    let response = repay
         .add_message(
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.anchor_overseer_contract.to_string(),
                 msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
-                    collaterals: vec![(config.basset_token.to_string(), basset_in_custody)],
+                    collaterals: vec![(config.basset_token.to_string(), withdraw_amount)],
                 })?,
                 funds: vec![],
             })
@@ -634,14 +634,14 @@ pub(crate) fn withdraw_all_logic(
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: config.anchor_custody_basset_contract.to_string(),
                 msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
-                    amount: Some(basset_in_custody),
+                    amount: Some(withdraw_amount),
                 })?,
                 funds: vec![],
             })
         )
         .add_attributes(vec![
             ("action", "withdraw_all"),
-            ("amount", &aterra_balance.to_string()),
+            ("amount", &withdraw_amount.to_string()),
         ]);
 
     Ok(response)

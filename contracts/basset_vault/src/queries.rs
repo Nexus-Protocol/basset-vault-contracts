@@ -112,7 +112,7 @@ fn borrower_action_to_response(
             deposit_amount,
             action_after: Box::new(borrower_action_to_response(*action_after, deps, env, config)?)
         },
-        BorrowerActionResponse::WithdrawAll {} => RebalanceResponse::WithdrawAll {},
+        BorrowerActionResponse::WithdrawAll { withdraw_amount } => RebalanceResponse::WithdrawAll { withdraw_amount },
     };
     Ok(response)
 }

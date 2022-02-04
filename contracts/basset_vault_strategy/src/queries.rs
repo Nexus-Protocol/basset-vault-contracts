@@ -142,7 +142,10 @@ fn calc_borrower_action(
     if !anchor_has_profit {
         // Withdraw all if there are anything to withdraw
         if locked_basset_amount != Uint256::zero() {
-            return BorrowerActionResponse::withdraw_all();
+            // If the actual `locked_basset_amount`
+            // is more than provided `locked_basset_amount`,
+            // withdraw logic still repay all actual borrowed amount
+            return BorrowerActionResponse::withdraw_all(locked_basset_amount);
         } else {
             return BorrowerActionResponse::nothing();
         }

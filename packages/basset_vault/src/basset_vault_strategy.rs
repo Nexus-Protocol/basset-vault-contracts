@@ -105,10 +105,15 @@ pub enum BorrowerActionResponse {
     },
     Deposit {
         deposit_amount: Uint256,
-        // We need to rebalance again after deposit
+        /// We need to rebalance again after deposit
         action_after: Box<BorrowerActionResponse>,
     },
-    WithdrawAll {},
+    WithdrawAll {
+        /// It might be strange that withdraw **all** contains amount,
+        /// but since rebalance can be called with not actual balance but aim balance,
+        /// we can't query it directly
+        withdraw_amount: Uint256,
+    },
 }
 
 impl BorrowerActionResponse {
@@ -137,8 +142,10 @@ impl BorrowerActionResponse {
         }
     }
 
-    pub fn withdraw_all() -> Self {
-        BorrowerActionResponse::WithdrawAll {}
+    pub fn withdraw_all(withdraw_amount: Uint256) -> Self {
+        BorrowerActionResponse::WithdrawAll {
+            withdraw_amount
+        }
     }
 }
 

@@ -160,10 +160,15 @@ pub enum RebalanceResponse {
     },
     Deposit {
         deposit_amount: Uint256,
-        // We need to rebalance again after deposit
+        /// We need to rebalance again after deposit
         action_after: Box<RebalanceResponse>,
     },
-    WithdrawAll {},
+    WithdrawAll {
+        /// It might be strange that withdraw **all** contains amount,
+        /// but since rebalance can be called with not actual balance but aim balance,
+        /// we can't query it directly
+        withdraw_amount: Uint256,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
