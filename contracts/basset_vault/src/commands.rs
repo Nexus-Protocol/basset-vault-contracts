@@ -589,7 +589,7 @@ pub(crate) fn deposit_logic(
 
     let mut action_after_response = handle_borrower_action(deps, env, config, action_after)?;
 
-    for (i, deposit_msg) in std::array::IntoIter::new(deposit_messages).enumerate() {
+    for (i, deposit_msg) in std::iter::IntoIterator::into_iter(deposit_messages).enumerate() {
         action_after_response.messages.insert(i, deposit_msg);
     }
 
@@ -610,8 +610,6 @@ pub(crate) fn withdraw_all_logic(
         &config.anchor_market_contract,
         &env.contract.address,
     )?;
-
-    let aterra_balance = query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address);
 
     // 1. call `repay` logic, it will sell aterra and repay loan
     // 2. unlock basset from anchor_overseer
