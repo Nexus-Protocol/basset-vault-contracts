@@ -229,7 +229,7 @@ pub fn deposit_basset(
         basset_in_contract_address
     } else {
         // 'nasset_supply' can't be zero here, cause we already mint some for first farmer
-        nasset_supply * Decimal256::from_uint256(deposited_basset) / Decimal256::from_uint256(basset_balance - deposited_basset)
+        nasset_supply * deposited_basset / Decimal256::from_uint256(basset_balance - deposited_basset)
     };
 
     // 1. Mint nasset
