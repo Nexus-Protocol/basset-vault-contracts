@@ -1,7 +1,7 @@
 use super::market::query_market_state;
 use crate::querier::query_balance;
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{StdResult, Deps, Addr, QueryRequest, WasmQuery, to_binary, QuerierWrapper, Uint128};
+use cosmwasm_std::{StdResult, Deps, Addr, QueryRequest, WasmQuery, to_binary, QuerierWrapper, Uint128, StdError};
 use schemars::JsonSchema;
 use serde::{Serialize, Deserialize};
 use super::NUMBER_OF_BLOCKS_PER_YEAR;
@@ -12,10 +12,13 @@ fn calculate_anchor_borrow_distribution_apr(
     anc_price: Decimal256,
     anc_emission_rate: Decimal256,
     total_liabilities: Decimal256,
-) -> Decimal256 {
+) -> StdResult<Decimal256> {
+    if total_liabilities.is_zero() {
+        return Err(StdError::generic_err("Total liabilities is zero"));
+    }
     let blocks_per_year = Decimal256::from_uint256(NUMBER_OF_BLOCKS_PER_YEAR);
     let apr = anc_emission_rate * anc_price * blocks_per_year / total_liabilities;
-    apr
+    Ok(apr)
 }
 
 fn calculate_anchor_borrow_interest_apr(borrow_rate: Decimal256) -> Decimal256 {
@@ -35,19 +38,19 @@ fn calculate_anchor_borrow_net_apr(
     anc_emission_rate: Decimal256,
     total_liabilities: Decimal256,
     borrow_rate: Decimal256,
-) -> BorrowNetApr {
+) -> StdResult<BorrowNetApr> {
     let distribution_apr = calculate_anchor_borrow_distribution_apr(
         anc_price,
         anc_emission_rate,
         total_liabilities,
-    );
+    )?;
 
     let interest_apr = calculate_anchor_borrow_interest_apr(borrow_rate);
 
-    BorrowNetApr {
+    Ok(BorrowNetApr {
         distribution_apr,
         interest_apr,
-    }
+    })
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -138,7 +141,7 @@ pub fn query_anchor_borrow_net_apr(
         market_state.anc_emission_rate,
         market_state.total_liabilities,
         borrow_rate.rate,
-    );
+    )?;
 
     Ok(net_apr)
 }
@@ -153,7 +156,7 @@ mod test {
         let anc_price = Decimal256::from_str("2.909").unwrap();
         let anc_emission_rate = Decimal256::from_str("20381363.85157231012364762").unwrap();
         let total_liabilities = Decimal256::from_str("682703198917970.293507449953151794").unwrap();
-        let apr = calculate_anchor_borrow_distribution_apr(anc_price, anc_emission_rate, total_liabilities);
+        let apr = calculate_anchor_borrow_distribution_apr(anc_price, anc_emission_rate, total_liabilities).unwrap();
         assert_eq!(apr, Decimal256::from_str("0.40442085635709844").unwrap());
     }
 
@@ -162,8 +165,17 @@ mod test {
         let anc_price = Decimal256::from_str("3.95").unwrap();
         let anc_emission_rate = Decimal256::from_str("20381363.85157231012364762").unwrap();
         let total_liabilities = Decimal256::from_str("1648733099209250.164427424496482224").unwrap();
-        let apr = calculate_anchor_borrow_distribution_apr(anc_price, anc_emission_rate, total_liabilities);
+        let apr = calculate_anchor_borrow_distribution_apr(anc_price, anc_emission_rate, total_liabilities).unwrap();
         assert_eq!(apr, Decimal256::from_str("0.227388501644376033").unwrap());
+    }
+
+    #[test]
+    fn test_calculate_anchor_borrow_distribution_apr3() {
+        let anc_price = Decimal256::from_str("3.95").unwrap();
+        let anc_emission_rate = Decimal256::from_str("20381363.85157231012364762").unwrap();
+        let total_liabilities = Decimal256::from_str("0.0").unwrap();
+        let apr = calculate_anchor_borrow_distribution_apr(anc_price, anc_emission_rate, total_liabilities);
+        assert_eq!(apr.unwrap_err().to_string(), "Generic error: Total liabilities is zero");
     }
 
     #[test]
@@ -179,7 +191,7 @@ mod test {
         let anc_emission_rate = Decimal256::from_str("20381363.85157231012364762").unwrap();
         let total_liabilities = Decimal256::from_str("682703198917970.293507449953151794").unwrap();
         let borrow_rate = Decimal256::from_str("0.000000047824728815").unwrap();
-        let apr = calculate_anchor_borrow_net_apr(anc_price, anc_emission_rate, total_liabilities, borrow_rate);
+        let apr = calculate_anchor_borrow_net_apr(anc_price, anc_emission_rate, total_liabilities, borrow_rate).unwrap();
         assert_eq!(apr.distribution_apr - apr.interest_apr, Decimal256::from_str("0.18171018096411829").unwrap());
     }
 
@@ -189,7 +201,7 @@ mod test {
         let anc_emission_rate = Decimal256::from_str("20381363.85157231012364762").unwrap();
         let total_liabilities = Decimal256::from_str("682703198917970.293507449953151794").unwrap();
         let borrow_rate = Decimal256::from_str("1.0").unwrap(); // high borrow rate to make borrow apr negative
-        let apr = calculate_anchor_borrow_net_apr(anc_price, anc_emission_rate, total_liabilities, borrow_rate);
+        let apr = calculate_anchor_borrow_net_apr(anc_price, anc_emission_rate, total_liabilities, borrow_rate).unwrap();
         assert!(apr.distribution_apr < apr.interest_apr);
     }
 }
