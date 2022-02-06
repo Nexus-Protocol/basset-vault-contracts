@@ -63,6 +63,51 @@ impl LTVInfo {
     }
 }
 
+struct AnchorApr {
+    earn: Decimal256,
+    borrow: BorrowNetApr,
+}
+
+fn query_anchor_apr(deps: Deps, config: &Config) -> StdResult<AnchorApr> {
+    let earn = basset_vault::anchor::earn_apr::query_anchor_earn_apr(
+        deps,
+        &config.anchor_overseer_contract,
+    )?;
+
+    let borrow = basset_vault::anchor::borrow_apr::query_anchor_borrow_net_apr(
+        deps,
+        &config.anchor_market_contract,
+        &config.anchor_interest_model_contract,
+        config.anchor_token.clone(),
+        &config.anc_ust_swap_contract,
+        config.stable_denom.clone(),
+    )?;
+
+    Ok(AnchorApr { earn, borrow })
+}
+
+impl AnchorApr {
+    fn is_profitable(&self, buffer_part: Decimal256) -> bool {
+        let deposited_part = Decimal256::one() - buffer_part;
+        let earn_of_deposited_part = self.earn * deposited_part;
+
+        let distr = self.borrow.distribution_apr;
+        let interest = self.borrow.interest_apr;
+
+        // The ideal formulae would be:
+        //
+        // borrow_apr = distr_apr - interest_apr
+        // apr = earn_apr + borrow_apr
+        // anchor_has_profit = apr > 0
+        //
+        // But `Decimal256` does not support negative numbers, so we do the following hacks:
+        //
+        // anchor_has_profit = distribution_apr + borrow_apr - interest_apr > 0
+        //                   = distribution_apr + borrow_apr > interest_apr
+        distr + earn_of_deposited_part > interest
+    }
+}
+
 pub fn borrower_action(
     deps: Deps,
     env: Env,
@@ -88,19 +133,7 @@ pub fn borrower_action(
         env.block.time,
     );
 
-    let anchor_earn_apr = basset_vault::anchor::earn_apr::query_anchor_earn_apr(
-        deps,
-        &config.anchor_overseer_contract,
-    )?;
-
-    let anchor_net_apr = basset_vault::anchor::borrow_apr::query_anchor_borrow_net_apr(
-        deps,
-        &config.anchor_market_contract,
-        &config.anchor_interest_model_contract,
-        config.anchor_token.clone(),
-        &config.anc_ust_swap_contract,
-        config.stable_denom.clone(),
-    )?;
+    let anchor_apr = query_anchor_apr(deps, &config);
 
     let buffer_part = config.get_buffer_part();
 
@@ -111,8 +144,7 @@ pub fn borrower_action(
     }
 
     let response = calc_borrower_action(
-        anchor_earn_apr,
-        anchor_net_apr,
+        anchor_apr,
         ltv_info,
         basset_in_contract_address,
         borrowed_amount,
@@ -125,8 +157,7 @@ pub fn borrower_action(
 }
 
 fn calc_borrower_action(
-    anchor_earn_apr: Decimal256,
-    anchor_borrow_net_apr: BorrowNetApr,
+    anchor_apr: StdResult<AnchorApr>,
     ltv_info: LTVInfo,
     basset_in_contract_address: Uint256,
     borrowed_amount: Uint256,
@@ -134,23 +165,9 @@ fn calc_borrower_action(
     basset_max_ltv: Decimal256,
     buffer_part: Decimal256,
 ) -> BorrowerActionResponse {
-    let deposited_part = Decimal256::one() - buffer_part;
-    let anchor_earn_apr_of_deposited_part = anchor_earn_apr * deposited_part;
-
-    // The ideal formulae would be:
-    //
-    // borrow_apr = distribution_apr - interest_apr
-    // apr = earn_apr + borrow_apr
-    // anchor_has_profit = apr > profit_threshold
-    //
-    // But `Decimal256` does not support negative numbers, so we do the following hacks:
-    //
-    // anchor_has_profit = distribution_apr + borrow_apr - interest_apr > profit_threshold
-    //                   = distribution_apr + borrow_apr > profit_threshold + interest_apr
-    let profit_threshold = Decimal256::zero();
-    let anchor_has_profit = (anchor_borrow_net_apr.distribution_apr
-        + anchor_earn_apr_of_deposited_part)
-        > (profit_threshold + anchor_borrow_net_apr.interest_apr);
+    let anchor_has_profit = anchor_apr
+        .map(|a| a.is_profitable(buffer_part))
+        .unwrap_or(false); // TODO: fallback option, withdraw or not?
 
     if !anchor_has_profit {
         // Withdraw all if there are anything to withdraw
@@ -275,14 +292,16 @@ mod test {
 
     use crate::{price::PriceResponse, queries::LTVInfo};
 
-    use super::calc_borrower_action;
+    use super::{calc_borrower_action, AnchorApr};
 
     #[test]
     fn repay_loan() {
-        let anchor_earn_apr = Decimal256::from_str("0.20").unwrap();
-        let anchor_borrow_net_apr = BorrowNetApr {
-            distribution_apr: Decimal256::from_str("0.10").unwrap(),
-            interest_apr: Decimal256::from_str("0.05").unwrap(),
+        let anchor_apr = AnchorApr {
+            earn: Decimal256::from_str("0.20").unwrap(),
+            borrow: BorrowNetApr {
+                distribution_apr: Decimal256::from_str("0.10").unwrap(),
+                interest_apr: Decimal256::from_str("0.05").unwrap(),
+            },
         };
         let basset_in_contract_address = Uint256::zero();
         let borrowed_amount = Uint256::from(519_750u64);
@@ -301,8 +320,7 @@ mod test {
         //to_repay = (0.9 - 0.8) * 577_500 = 57_750
         //buffer_size = 0.018 * 577_500 = 10_395
         let borrower_action = calc_borrower_action(
-            anchor_earn_apr,
-            anchor_borrow_net_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -318,10 +336,12 @@ mod test {
 
     #[test]
     fn borrow_more() {
-        let anchor_earn_apr = Decimal256::from_str("0.20").unwrap();
-        let anchor_borrow_net_apr = BorrowNetApr {
-            distribution_apr: Decimal256::from_str("0.10").unwrap(),
-            interest_apr: Decimal256::from_str("0.05").unwrap(),
+        let anchor_apr = AnchorApr {
+            earn: Decimal256::from_str("0.20").unwrap(),
+            borrow: BorrowNetApr {
+                distribution_apr: Decimal256::from_str("0.10").unwrap(),
+                interest_apr: Decimal256::from_str("0.05").unwrap(),
+            },
         };
         let basset_in_contract_address = Uint256::zero();
         let borrowed_amount = Uint256::from(346_500u64);
@@ -340,8 +360,7 @@ mod test {
         //to_borrow =  (0.8 - 0.6) * 577_500 = 115_500
         //buffer_size = 0.018 * 577_500 = 10_395
         let borrower_action = calc_borrower_action(
-            anchor_earn_apr,
-            anchor_borrow_net_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -357,10 +376,12 @@ mod test {
 
     #[test]
     fn nothing_on_aim_borrow_amount_equals_zero() {
-        let anchor_earn_apr = Decimal256::from_str("0.20").unwrap();
-        let anchor_borrow_net_apr = BorrowNetApr {
-            distribution_apr: Decimal256::from_str("0.10").unwrap(),
-            interest_apr: Decimal256::from_str("0.05").unwrap(),
+        let anchor_apr = AnchorApr {
+            earn: Decimal256::from_str("0.20").unwrap(),
+            borrow: BorrowNetApr {
+                distribution_apr: Decimal256::from_str("0.10").unwrap(),
+                interest_apr: Decimal256::from_str("0.05").unwrap(),
+            },
         };
         let basset_in_contract_address = Uint256::zero();
         let borrowed_amount = Uint256::zero();
@@ -375,8 +396,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
-            anchor_earn_apr,
-            anchor_borrow_net_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -389,10 +409,12 @@ mod test {
 
     #[test]
     fn do_nothing() {
-        let anchor_earn_apr = Decimal256::from_str("0.20").unwrap();
-        let anchor_borrow_net_apr = BorrowNetApr {
-            distribution_apr: Decimal256::from_str("0.10").unwrap(),
-            interest_apr: Decimal256::from_str("0.05").unwrap(),
+        let anchor_apr = AnchorApr {
+            earn: Decimal256::from_str("0.20").unwrap(),
+            borrow: BorrowNetApr {
+                distribution_apr: Decimal256::from_str("0.10").unwrap(),
+                interest_apr: Decimal256::from_str("0.05").unwrap(),
+            },
         };
         let basset_in_contract_address = Uint256::zero();
         let borrowed_amount = Uint256::from(473_550u64);
@@ -410,8 +432,7 @@ mod test {
         //ltv = 473_550 / 577_500 = 0.82
         //0.75 < 0.82 < 0.85 => do nothing
         let borrower_action = calc_borrower_action(
-            anchor_earn_apr,
-            anchor_borrow_net_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -424,10 +445,12 @@ mod test {
 
     #[test]
     fn locked_amount_is_zero_and_borrowed_zero() {
-        let anchor_earn_apr = Decimal256::from_str("0.20").unwrap();
-        let anchor_borrow_net_apr = BorrowNetApr {
-            distribution_apr: Decimal256::from_str("0.10").unwrap(),
-            interest_apr: Decimal256::from_str("0.05").unwrap(),
+        let anchor_apr = AnchorApr {
+            earn: Decimal256::from_str("0.20").unwrap(),
+            borrow: BorrowNetApr {
+                distribution_apr: Decimal256::from_str("0.10").unwrap(),
+                interest_apr: Decimal256::from_str("0.05").unwrap(),
+            },
         };
         let basset_in_contract_address = Uint256::zero();
         let borrowed_amount = Uint256::zero();
@@ -442,8 +465,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
-            anchor_earn_apr,
-            anchor_borrow_net_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -456,10 +478,12 @@ mod test {
 
     #[test]
     fn locked_amount_is_zero_and_borrowed_not_zero() {
-        let anchor_earn_apr = Decimal256::from_str("0.20").unwrap();
-        let anchor_borrow_net_apr = BorrowNetApr {
-            distribution_apr: Decimal256::from_str("0.10").unwrap(),
-            interest_apr: Decimal256::from_str("0.05").unwrap(),
+        let anchor_apr = AnchorApr {
+            earn: Decimal256::from_str("0.20").unwrap(),
+            borrow: BorrowNetApr {
+                distribution_apr: Decimal256::from_str("0.10").unwrap(),
+                interest_apr: Decimal256::from_str("0.05").unwrap(),
+            },
         };
         let basset_in_contract_address = Uint256::zero();
         let borrowed_amount = Uint256::from(473_550u64);
@@ -474,8 +498,7 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let borrower_action = calc_borrower_action(
-            anchor_earn_apr,
-            anchor_borrow_net_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -491,10 +514,12 @@ mod test {
 
     #[test]
     fn collateral_value_is_low_and_borrowed_zero() {
-        let anchor_earn_apr = Decimal256::from_str("0.20").unwrap();
-        let anchor_borrow_net_apr = BorrowNetApr {
-            distribution_apr: Decimal256::from_str("0.10").unwrap(),
-            interest_apr: Decimal256::from_str("0.05").unwrap(),
+        let anchor_apr = AnchorApr {
+            earn: Decimal256::from_str("0.20").unwrap(),
+            borrow: BorrowNetApr {
+                distribution_apr: Decimal256::from_str("0.10").unwrap(),
+                interest_apr: Decimal256::from_str("0.05").unwrap(),
+            },
         };
         let basset_in_contract_address = Uint256::zero();
         let borrowed_amount = Uint256::zero();
@@ -509,8 +534,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
-            anchor_earn_apr,
-            anchor_borrow_net_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -523,10 +547,12 @@ mod test {
 
     #[test]
     fn collateral_value_is_low_and_borrowed_not_zero() {
-        let anchor_earn_apr = Decimal256::from_str("0.20").unwrap();
-        let anchor_borrow_net_apr = BorrowNetApr {
-            distribution_apr: Decimal256::from_str("0.10").unwrap(),
-            interest_apr: Decimal256::from_str("0.05").unwrap(),
+        let anchor_apr = AnchorApr {
+            earn: Decimal256::from_str("0.20").unwrap(),
+            borrow: BorrowNetApr {
+                distribution_apr: Decimal256::from_str("0.10").unwrap(),
+                interest_apr: Decimal256::from_str("0.05").unwrap(),
+            },
         };
         let basset_in_contract_address = Uint256::zero();
         let borrowed_amount = Uint256::from(10_000u64);
@@ -541,8 +567,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
-            anchor_earn_apr,
-            anchor_borrow_net_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -558,10 +583,12 @@ mod test {
 
     #[test]
     fn borrowed_amount_is_zero() {
-        let anchor_earn_apr = Decimal256::from_str("0.20").unwrap();
-        let anchor_borrow_net_apr = BorrowNetApr {
-            distribution_apr: Decimal256::from_str("0.10").unwrap(),
-            interest_apr: Decimal256::from_str("0.05").unwrap(),
+        let anchor_apr = AnchorApr {
+            earn: Decimal256::from_str("0.20").unwrap(),
+            borrow: BorrowNetApr {
+                distribution_apr: Decimal256::from_str("0.10").unwrap(),
+                interest_apr: Decimal256::from_str("0.05").unwrap(),
+            },
         };
         let basset_in_contract_address = Uint256::zero();
         let borrowed_amount = Uint256::zero();
@@ -580,8 +607,7 @@ mod test {
         //to_borrow = (0.8 - 0.0) * 577_500 = 462_000
         //buffer_size = 0.018 * 577_500 = 10_395
         let borrower_action = calc_borrower_action(
-            anchor_earn_apr,
-            anchor_borrow_net_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -597,10 +623,12 @@ mod test {
 
     #[test]
     fn asset_price_is_zero() {
-        let anchor_earn_apr = Decimal256::from_str("0.20").unwrap();
-        let anchor_borrow_net_apr = BorrowNetApr {
-            distribution_apr: Decimal256::from_str("0.10").unwrap(),
-            interest_apr: Decimal256::from_str("0.05").unwrap(),
+        let anchor_apr = AnchorApr {
+            earn: Decimal256::from_str("0.20").unwrap(),
+            borrow: BorrowNetApr {
+                distribution_apr: Decimal256::from_str("0.10").unwrap(),
+                interest_apr: Decimal256::from_str("0.05").unwrap(),
+            },
         };
         let basset_in_contract_address = Uint256::zero();
         let borrowed_amount = Uint256::from(473_550u64);
@@ -615,8 +643,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
-            anchor_earn_apr,
-            anchor_borrow_net_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -729,10 +756,12 @@ mod test {
 
     #[test]
     fn loan_equals_to_aim_borrow_amount() {
-        let anchor_earn_apr = Decimal256::from_str("0.20").unwrap();
-        let anchor_borrow_net_apr = BorrowNetApr {
-            distribution_apr: Decimal256::from_str("0.10").unwrap(),
-            interest_apr: Decimal256::from_str("0.05").unwrap(),
+        let anchor_apr = AnchorApr {
+            earn: Decimal256::from_str("0.20").unwrap(),
+            borrow: BorrowNetApr {
+                distribution_apr: Decimal256::from_str("0.10").unwrap(),
+                interest_apr: Decimal256::from_str("0.05").unwrap(),
+            },
         };
         let basset_in_contract_address = Uint256::zero();
         let borrowed_amount = Uint256::from(48u64);
@@ -750,8 +779,7 @@ mod test {
         // aim_borrow_amount = 100 * 1 * 0,6 * 0,8 = 48 (= borrowed_amount = 48)
 
         let borrower_action = calc_borrower_action(
-            anchor_earn_apr,
-            anchor_borrow_net_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
