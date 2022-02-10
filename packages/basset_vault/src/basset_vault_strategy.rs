@@ -11,7 +11,6 @@ pub struct InstantiateMsg {
     pub anchor_market_addr: String,
     pub anchor_interest_model_addr: String,
     pub anchor_overseer_addr: String,
-    pub anchor_token_addr: String,
     pub anc_ust_swap_addr: String,
     pub basset_token_addr: String,
     pub stable_denom: String,
@@ -52,7 +51,6 @@ pub enum GovernanceMsg {
         anchor_market_addr: Option<String>,
         anchor_interest_model_addr: Option<String>,
         anchor_overseer_addr: Option<String>,
-        anchor_token_addr: Option<String>,
         anc_ust_swap_addr: Option<String>,
     },
     UpdateGovernanceContract {
@@ -174,6 +172,5 @@ pub struct MigrateMsg {
     pub anchor_market_addr: String,
     pub anchor_interest_model_addr: String,
     pub anchor_overseer_addr: String,
-    pub anchor_token_addr: String,
     pub anc_ust_swap_addr: String,
 }

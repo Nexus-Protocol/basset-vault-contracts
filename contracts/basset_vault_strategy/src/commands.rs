@@ -26,7 +26,6 @@ pub fn update_config(
     anchor_market_addr: Option<String>,
     anchor_interest_model_addr: Option<String>,
     anchor_overseer_addr: Option<String>,
-    anchor_token_addr: Option<String>,
     anc_ust_swap_addr: Option<String>,
 ) -> ContractResult<Response> {
     if let Some(ref oracle_addr) = oracle_addr {
@@ -69,10 +68,6 @@ pub fn update_config(
 
     if let Some(ref anchor_overseer_addr) = anchor_overseer_addr {
         current_config.anchor_overseer_contract = deps.api.addr_validate(anchor_overseer_addr)?;
-    }
-
-    if let Some(ref anchor_token_addr) = anchor_token_addr {
-        current_config.anchor_token = deps.api.addr_validate(anchor_token_addr)?;
     }
 
     if let Some(ref anc_ust_swap_addr) = anc_ust_swap_addr {

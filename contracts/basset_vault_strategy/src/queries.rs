@@ -78,7 +78,6 @@ fn query_anchor_apr(deps: Deps, config: &Config) -> StdResult<AnchorApr> {
         deps,
         &config.anchor_market_contract,
         &config.anchor_interest_model_contract,
-        config.anchor_token.clone(),
         &config.anc_ust_swap_contract,
         config.stable_denom.clone(),
     )?;
@@ -269,7 +268,6 @@ pub mod test_anchor_apr_calculation {
             deps,
             &config.anchor_market_contract,
             &config.anchor_interest_model_contract,
-            config.anchor_token.clone(),
             &config.anc_ust_swap_contract,
             config.stable_denom.clone(),
         )?;

@@ -26,7 +26,6 @@ pub fn instantiate(
         deps.api.addr_validate(&msg.anchor_market_addr)?,
         deps.api.addr_validate(&msg.anchor_interest_model_addr)?,
         deps.api.addr_validate(&msg.anchor_overseer_addr)?,
-        deps.api.addr_validate(&msg.anchor_token_addr)?,
         deps.api.addr_validate(&msg.anc_ust_swap_addr)?,
         deps.api.addr_validate(&msg.basset_token_addr)?,
         msg.stable_denom,
@@ -75,7 +74,6 @@ pub fn execute(
                     anchor_market_addr,
                     anchor_interest_model_addr,
                     anchor_overseer_addr,
-                    anchor_token_addr,
                     anc_ust_swap_addr,
                 } => commands::update_config(
                     deps,
@@ -92,7 +90,6 @@ pub fn execute(
                     anchor_market_addr,
                     anchor_interest_model_addr,
                     anchor_overseer_addr,
-                    anchor_token_addr,
                     anc_ust_swap_addr,
                 ),
 
@@ -138,7 +135,6 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> StdResult<Response>
         deps.api.addr_validate(&msg.anchor_market_addr)?,
         deps.api.addr_validate(&msg.anchor_interest_model_addr)?,
         deps.api.addr_validate(&msg.anchor_overseer_addr)?,
-        deps.api.addr_validate(&msg.anchor_token_addr)?,
         deps.api.addr_validate(&msg.anc_ust_swap_addr)?,
     );
     save_config(deps.storage, &new_config)?;

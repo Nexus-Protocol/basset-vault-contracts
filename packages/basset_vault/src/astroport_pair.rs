@@ -41,22 +41,17 @@ pub enum Cw20HookMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    Simulation { offer_asset: Asset },
+    Pool {},
 
     // Those cases aren't used
     //
     // Pair {},
-    // Pool {},
+    // Simulation { offer_asset: Asset },
     // ReverseSimulation { ask_asset: Asset },
 }
 
-/// SimulationResponse returns swap simulation response
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct SimulationResponse {
-    pub return_amount: Uint128,
-
-    // Those fields aren't used
-    //
-    // pub spread_amount: Uint128,
-    // pub commission_amount: Uint128,
+pub struct PoolResponse {
+    pub assets: [Asset; 2],
+    pub total_share: Uint128,
 }
