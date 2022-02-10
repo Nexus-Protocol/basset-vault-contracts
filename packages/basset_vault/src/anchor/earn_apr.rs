@@ -1,5 +1,6 @@
 use cosmwasm_bignumber::Decimal256;
-use cosmwasm_std::{Deps, Addr, StdResult, QuerierWrapper, QueryRequest, WasmQuery, to_binary};
+use cosmwasm_std::{Deps, Addr, StdResult, QuerierWrapper, QueryRequest, WasmQuery, Binary};
+use cosmwasm_storage::to_length_prefixed;
 use schemars::JsonSchema;
 use serde::{Serialize, Deserialize};
 use super::NUMBER_OF_BLOCKS_PER_YEAR;
@@ -17,26 +18,19 @@ struct EpochState {
     // last_executed_height: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-enum AnchorOverseerQueryMsg {
-    EpochState {},
-
-    // We don't use other cases
-}
-
-fn calculate_anchor_earn_apr(deposit_rate: Decimal256) -> Decimal256 {
-    deposit_rate * Decimal256::from_uint256(NUMBER_OF_BLOCKS_PER_YEAR)
-}
-
 fn query_epoch_state(
     querier: &QuerierWrapper,
     anchor_overseer_contract: &Addr,
 ) -> StdResult<EpochState> {
-    querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+    querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
         contract_addr: anchor_overseer_contract.to_string(),
-        msg: to_binary(&AnchorOverseerQueryMsg::EpochState {})?
+        // Anchor use cosmwasm_storage::Singleton which add length prefix
+        key: Binary::from(to_length_prefixed(b"epoch_state").to_vec()),
     }))
+}
+
+fn calculate_anchor_earn_apr(deposit_rate: Decimal256) -> Decimal256 {
+    deposit_rate * Decimal256::from_uint256(NUMBER_OF_BLOCKS_PER_YEAR)
 }
 
 pub fn query_anchor_earn_apr(
