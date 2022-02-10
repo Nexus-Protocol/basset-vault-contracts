@@ -13,3 +13,5 @@
 # IDEs
 *.iml
 .idea
+
+integration_tests_build.sh

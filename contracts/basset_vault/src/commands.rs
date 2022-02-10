@@ -615,7 +615,6 @@ pub(crate) fn withdraw_all_logic(
     // 2. unlock basset from anchor_overseer
     // 3. withdraw basset from anchor_custody
 
-    store_aim_buffer_size(deps.storage, &Uint256::zero())?;
     let repaying_loan_state = RepayingLoanState {
         to_repay_amount: borrower_info.loan_amount,
         aim_buffer_size: Uint256::zero(),

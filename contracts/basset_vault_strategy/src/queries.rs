@@ -167,7 +167,7 @@ fn calc_borrower_action(
 ) -> BorrowerActionResponse {
     let anchor_has_profit = anchor_apr
         .map(|a| a.is_profitable(buffer_part))
-        .unwrap_or(false); // TODO: fallback option, withdraw or not?
+        .unwrap_or(true); // TODO: fallback option, withdraw or not?
 
     if !anchor_has_profit {
         // Withdraw all if there are anything to withdraw
