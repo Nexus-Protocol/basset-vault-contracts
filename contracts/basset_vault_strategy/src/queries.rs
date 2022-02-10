@@ -134,14 +134,6 @@ pub fn borrower_action(
 
     let anchor_apr = query_anchor_apr(deps, &config);
 
-    let buffer_part = config.get_buffer_part();
-
-    if buffer_part > Decimal256::one() {
-        return Err(StdError::generic_err(
-            "Buffer part must be less than or equal to 1.0",
-        ));
-    }
-
     let response = calc_borrower_action(
         anchor_apr,
         ltv_info,
