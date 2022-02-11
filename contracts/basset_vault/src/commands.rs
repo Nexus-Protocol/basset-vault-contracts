@@ -324,14 +324,12 @@ pub fn withdraw_basset(
 
     let mut response = Response::new();
 
-    //
     // If amount of basset on the balance is not enough
     // then withdraw it from collateral:
     //
     // 1. rebalance in a way you don't have basset_to_withdraw
     // 2. unlock basset from anchor_overseer
     // 3. withdraw basset from anchor_custody
-    //
     if basset_in_contract_address < basset_to_withdraw {
         let additional_basset_needed = basset_to_withdraw - basset_in_contract_address;
 

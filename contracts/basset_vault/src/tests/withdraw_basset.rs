@@ -32,6 +32,7 @@ fn withdraw_good_case() {
         .unwrap();
 
     //set basset locked in custody & borrwer action
+    sdk.set_basset_balance(Uint256::zero());
     sdk.set_collateral_balance(deposit_1_amount + deposit_2_amount);
     sdk.set_nasset_supply(deposit_1_amount + deposit_2_amount);
     sdk.set_borrower_action(BorrowerActionResponse::Nothing {});
@@ -154,6 +155,7 @@ fn withdraw_bad_case() {
 
     //set basset locked in custody & borrwer action
     //but locked basset amount is half!
+    sdk.set_basset_balance(Uint256::zero());
     sdk.set_collateral_balance((deposit_1_amount + deposit_2_amount) / decimal_two);
     sdk.set_nasset_supply(deposit_1_amount + deposit_2_amount);
     sdk.set_borrower_action(BorrowerActionResponse::Nothing {});
@@ -270,6 +272,7 @@ fn withdraw_nasset_but_basset_balance_is_zero() {
         .unwrap();
 
     //set basset locked in custody & borrwer action
+    sdk.set_basset_balance(Uint256::zero());
     sdk.set_collateral_balance(Uint256::zero());
     sdk.set_nasset_supply(deposit_amount);
     sdk.set_borrower_action(BorrowerActionResponse::Nothing {});
