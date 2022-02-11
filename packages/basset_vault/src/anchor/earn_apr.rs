@@ -30,7 +30,7 @@ fn query_epoch_state(
 }
 
 fn calculate_anchor_earn_apr(deposit_rate: Decimal256) -> Decimal256 {
-    deposit_rate * Decimal256::from_uint256(NUMBER_OF_BLOCKS_PER_YEAR)
+    deposit_rate * NUMBER_OF_BLOCKS_PER_YEAR
 }
 
 pub fn query_anchor_earn_apr(

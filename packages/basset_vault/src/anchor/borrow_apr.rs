@@ -15,15 +15,11 @@ fn calculate_anchor_borrow_distribution_apr(
     if total_liabilities.is_zero() {
         return Err(StdError::generic_err("Total liabilities is zero"));
     }
-    let blocks_per_year = Decimal256::from_uint256(NUMBER_OF_BLOCKS_PER_YEAR);
-    let apr = anc_emission_rate * anc_price * blocks_per_year / total_liabilities;
-    Ok(apr)
+    Ok(anc_emission_rate * anc_price * NUMBER_OF_BLOCKS_PER_YEAR / total_liabilities)
 }
 
 fn calculate_anchor_borrow_interest_apr(borrow_rate: Decimal256) -> Decimal256 {
-    let blocks_per_year = Decimal256::from_uint256(NUMBER_OF_BLOCKS_PER_YEAR);
-    let apr = borrow_rate * blocks_per_year;
-    apr
+    borrow_rate * NUMBER_OF_BLOCKS_PER_YEAR
 }
 
 #[derive(Debug, Clone, Copy)]
