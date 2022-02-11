@@ -1,12 +1,13 @@
 use super::sdk::Sdk;
 use crate::tests::sdk::{
     ANCHOR_MARKET_CONTRACT, ANCHOR_TOKEN, ANC_STABLE_SWAP_CONTRACT, OVER_LOAN_BALANCE_VALUE,
-    PSI_DISTRIBUTOR_CONTRACT, PSI_STABLE_SWAP_CONTRACT, STABLE_DENOM,
+    PSI_DISTRIBUTOR_CONTRACT, PSI_STABLE_SWAP_CONTRACT, STABLE_DENOM, ANCHOR_BASSET_REWARD_CONTRACT,
 };
-use crate::MIN_ANC_REWARDS_TO_CLAIM;
+use crate::{MIN_ANC_REWARDS_TO_CLAIM, MIN_HOLDING_REWARDS_TO_CLAIM, SubmsgIds};
 use basset_vault::basset_vault::{
     ExecuteMsg as BassetFarmerExecuteMsg, YourselfMsg as BassetFarmerYourselfMsg,
 };
+use basset_vault::querier::AnchorBassetRewardMsg;
 use basset_vault::terraswap::{Asset, AssetInfo};
 use basset_vault::{
     astroport_pair::{Cw20HookMsg as AstroportCw20HookMsg, ExecuteMsg as AstroportExecuteMsg},
@@ -23,7 +24,7 @@ use cw20::Cw20ExecuteMsg;
 use std::str::FromStr;
 
 #[test]
-fn honest_work() {
+fn honest_work_claim_anc() {
     let mut sdk = Sdk::init();
 
     //NOT ENOUGHT REWARDS
@@ -35,7 +36,7 @@ fn honest_work() {
         assert_eq!(honest_work_response, Response::default());
     }
 
-    //NOT ENOUGHT REWARDS
+    //ENOUGHT REWARDS
     sdk.set_anc_pending_rewards(Decimal256::from_uint256(MIN_ANC_REWARDS_TO_CLAIM));
     //send HonestWork message
     {
@@ -139,6 +140,42 @@ fn honest_work() {
                     .unwrap(),
                     funds: vec![],
                 })),
+            ]
+        );
+    }
+}
+
+
+#[test]
+fn honest_work_claim_holding() {
+    let mut sdk = Sdk::init();
+
+    //NOT ENOUGHT REWARDS
+    sdk.set_holding_pending_rewards(Decimal256::from_uint256(50u64));
+    //send HonestWork message
+    {
+        let honest_work_response = sdk.user_send_honest_work().unwrap();
+
+        assert_eq!(honest_work_response, Response::default());
+    }
+
+    //ENOUGHT REWARDS
+    sdk.set_holding_pending_rewards(Decimal256::from_uint256(MIN_HOLDING_REWARDS_TO_CLAIM));
+    //send HonestWork message
+    {
+        let honest_work_response = sdk.user_send_honest_work().unwrap();
+
+        assert_eq!(
+            honest_work_response.messages,
+            vec![
+                SubMsg::reply_on_success(
+                    WasmMsg::Execute {
+                        contract_addr: ANCHOR_BASSET_REWARD_CONTRACT.to_string(),
+                        msg: to_binary(&AnchorBassetRewardMsg::ClaimRewards { recipient: None }).unwrap(),
+                        funds: vec![],
+                    },
+                    SubmsgIds::HoldingReward.id(),
+                )
             ]
         );
     }

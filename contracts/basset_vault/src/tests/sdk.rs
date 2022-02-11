@@ -25,7 +25,7 @@ use basset_vault::astroport_factory::{ExecuteMsg as AstroportFactoryExecuteMsg, 
 use basset_vault::basset_vault::Cw20HookMsg;
 use basset_vault::basset_vault_strategy::BorrowerActionResponse;
 use basset_vault::psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg;
-use basset_vault::querier::{AnchorMarketEpochStateResponse, AnchorMarketQueryMsg};
+use basset_vault::querier::{AnchorMarketEpochStateResponse, AnchorMarketQueryMsg, AnchorBassetRewardQueryMsg, HolderResponse};
 use basset_vault::terraswap::AssetInfo;
 use basset_vault::{
     basset_vault::ExecuteMsg,
@@ -79,6 +79,7 @@ pub struct Sdk {
     nasset_supply: Uint128,
     aterra_exchange_rate: Decimal256,
     anc_pending_rewards: Decimal256,
+    holding_pending_rewards: Decimal256,
     borrower_action: BorrowerActionResponse,
 }
 
@@ -131,6 +132,7 @@ impl Sdk {
             nasset_supply: Uint128::zero(),
             aterra_exchange_rate: Decimal256::zero(),
             anc_pending_rewards: Decimal256::zero(),
+            holding_pending_rewards: Decimal256::zero(),
             borrower_action: BorrowerActionResponse::Nothing {},
         }
     }
@@ -518,6 +520,17 @@ impl Sdk {
                 })
                 .unwrap(),
             ),
+            (
+                &ANCHOR_BASSET_REWARD_CONTRACT.to_string(),
+                &to_binary(&AnchorBassetRewardQueryMsg::Holder {
+                    address: MOCK_CONTRACT_ADDR.to_string(),
+                })
+                .unwrap(),
+                &to_binary(&HolderResponse {
+                    pending_rewards: self.holding_pending_rewards,
+                })
+                .unwrap(),
+            ),
         ]);
     }
 
@@ -553,6 +566,11 @@ impl Sdk {
 
     pub fn set_anc_pending_rewards(&mut self, value: Decimal256) {
         self.anc_pending_rewards = value;
+        self.set_wasm_query_respones();
+    }
+
+    pub fn set_holding_pending_rewards(&mut self, value: Decimal256) {
+        self.holding_pending_rewards = value;
         self.set_wasm_query_respones();
     }
 

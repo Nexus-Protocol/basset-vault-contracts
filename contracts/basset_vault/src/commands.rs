@@ -674,7 +674,7 @@ pub fn claim_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
 
     let holding_info = query_holding_info(
         deps.as_ref(),
-        &config.anchor_market_contract,
+        &config.anchor_basset_reward_contract,
         &env.contract.address,
     )?;
 
@@ -682,15 +682,19 @@ pub fn claim_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
 
     // We are NOT holding
     if basset_in_contract_address.is_zero() && is_anc_rewards_claimable(borrower_info.pending_rewards) {
-        response = response.add_messages(claim_anc_rewards_messages(env, &config)?);
+        response = response
+            .add_messages(claim_anc_rewards_messages(env, &config)?)
+            .add_attribute("action", "claim_anc_reward");
     }
 
     // We are holding
     if basset_in_custody.is_zero() && is_holding_rewards_claimable(holding_info.pending_rewards) {
-        response = response.add_submessage(claim_basset_holding_reward_message(&config)?);
+        response = response
+            .add_submessage(claim_basset_holding_reward_message(&config)?)
+            .add_attribute("action", "claim_holding_reward");
     }
 
-    Ok(response.add_attribute("action", "claim_reward"))
+    Ok(response)
 }
 
 /// Claim ANC rewards, swap ANC => UST token, swap
