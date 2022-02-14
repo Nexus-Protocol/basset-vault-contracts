@@ -495,7 +495,7 @@ pub(crate) fn repay_logic(
         repaying_loan_state.aim_buffer_size,
         &tax_info,
         repaying_loan_state.iteration_index == 0,
-    );
+    )?;
 
     repaying_loan_state.repaying_amount = repay_action.repaying_loan_amount();
     store_repaying_loan_state(deps.storage, &repaying_loan_state)?;
