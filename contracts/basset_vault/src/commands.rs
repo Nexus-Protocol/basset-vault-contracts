@@ -658,12 +658,6 @@ pub fn claim_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
         &env.contract.address,
     )?;
 
-    let basset_in_contract_address = query_token_balance(
-        deps.as_ref(),
-        &config.basset_token,
-        &env.contract.address
-    );
-
     let borrower_info = query_borrower_info(
         deps.as_ref(),
         &config.anchor_market_contract,
@@ -678,14 +672,13 @@ pub fn claim_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
 
     let mut response = Response::new();
 
-    // We are NOT holding
-    if basset_in_contract_address.is_zero() && is_anc_rewards_claimable(borrower_info.pending_rewards) {
+    if is_anc_rewards_claimable(borrower_info.pending_rewards) {
         response = response
             .add_messages(claim_anc_rewards_messages(env, &config)?)
             .add_attribute("action", "claim_anc_reward");
     }
 
-    // We are holding
+    // When we are holding
     if basset_in_custody.is_zero() && is_holding_rewards_claimable(holding_info.pending_rewards) {
         response = response
             .add_submessage(claim_basset_holding_reward_message(&config)?)
