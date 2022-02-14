@@ -366,6 +366,16 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             AnyoneMsg::ClaimRemainder {} => commands::claim_remainded_stables(deps.as_ref(), env),
 
             AnyoneMsg::AcceptGovernance {} => commands::accept_governance(deps, env, info),
+            // TODO: remove this method, it is only for testing
+            AnyoneMsg::Repay { amount, aim_buffer_size } => {
+                let config = load_config(deps.storage)?;
+                let repaying_loan_state = crate::state::RepayingLoanState {
+                    to_repay_amount: amount,
+                    aim_buffer_size,
+                    ..crate::state::RepayingLoanState::default()
+                };
+                crate::commands::repay_logic(deps, env, &config, repaying_loan_state)
+            }
         },
 
         ExecuteMsg::Yourself { yourself_msg } => {

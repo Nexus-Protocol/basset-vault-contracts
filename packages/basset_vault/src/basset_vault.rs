@@ -84,6 +84,12 @@ pub enum AnyoneMsg {
     // This command utilise it.
     ClaimRemainder {},
     AcceptGovernance {},
+
+    // TODO: remove this
+    Repay {
+        amount: Uint256,
+        aim_buffer_size: Uint256,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
