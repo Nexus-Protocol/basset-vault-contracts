@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use crate::{
     commands,
     state::{
@@ -11,7 +13,7 @@ use crate::{
         calc_after_borrow_action, get_repay_loan_action, is_anc_rewards_claimable,
         split_profit_to_handle_interest, ActionWithProfit, is_holding_rewards_claimable,
     },
-    SubmsgIds,
+    SubmsgIds, MIN_ANC_REWARDS_TO_CLAIM,
 };
 use basset_vault::{
     anchor::basset_custody::get_basset_in_custody,
@@ -537,7 +539,7 @@ pub(crate) fn repay_logic(
         repaying_loan_state.aim_buffer_size,
         &tax_info,
         repaying_loan_state.iteration_index == 0,
-    );
+    )?;
 
     repaying_loan_state.repaying_amount = repay_action.repaying_loan_amount();
     store_repaying_loan_state(deps.storage, &repaying_loan_state)?;
@@ -603,6 +605,7 @@ pub(crate) fn withdraw_all_logic(
     config: &Config,
     withdraw_amount: Uint256,
 ) -> StdResult<Response> {
+    // return Err(StdError::generic_err("GUCK YOU"));
     let borrower_info: BorrowerInfoResponse = query_borrower_info(
         deps.as_ref(),
         &config.anchor_market_contract,

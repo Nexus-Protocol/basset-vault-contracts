@@ -2,7 +2,7 @@ use crate::price::{query_price, PriceResponse};
 use basset_vault::anchor::borrow_apr::BorrowNetApr;
 use basset_vault::basset_vault_strategy::{BorrowerActionResponse, ConfigResponse};
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Deps, Env, StdResult, Timestamp};
+use cosmwasm_std::{Deps, Env, StdResult, Timestamp, StdError};
 
 use crate::state::{load_config, Config};
 
@@ -132,7 +132,7 @@ pub fn borrower_action(
         env.block.time,
     );
 
-    let anchor_apr = query_anchor_apr(deps, &config);
+    let anchor_apr = query_anchor_apr(deps, &config)?;
 
     let response = calc_borrower_action(
         anchor_apr,
@@ -142,33 +142,30 @@ pub fn borrower_action(
         locked_basset_amount,
         config.get_basset_max_ltv(),
         config.get_buffer_part(),
-    );
+    )?;
 
     Ok(response)
 }
 
 fn calc_borrower_action(
-    anchor_apr: StdResult<AnchorApr>,
+    anchor_apr: AnchorApr,
     ltv_info: LTVInfo,
     basset_in_contract_address: Uint256,
     borrowed_amount: Uint256,
     locked_basset_amount: Uint256,
     basset_max_ltv: Decimal256,
     buffer_part: Decimal256,
-) -> BorrowerActionResponse {
-    let anchor_has_profit = anchor_apr
-        .map(|a| a.is_profitable(buffer_part))
-        .unwrap_or(true); // TODO: fallback option, withdraw or not?
-
-    if !anchor_has_profit {
+) -> StdResult<BorrowerActionResponse> {
+    if !anchor_apr.is_profitable(buffer_part) {
+        // return Err(StdError::generic_err(format!("PROF {}", anchor_has_profit)));
         // Withdraw all if there are anything to withdraw
         if locked_basset_amount != Uint256::zero() {
             // If the actual `locked_basset_amount`
             // is more than provided `locked_basset_amount`,
             // withdraw logic still repay all actual borrowed amount
-            return BorrowerActionResponse::withdraw_all(locked_basset_amount);
+            return Ok(BorrowerActionResponse::withdraw_all(locked_basset_amount));
         } else {
-            return BorrowerActionResponse::nothing();
+            return Ok(BorrowerActionResponse::nothing());
         }
     }
 
@@ -180,15 +177,15 @@ fn calc_borrower_action(
             basset_max_ltv,
             buffer_part,
         );
-        BorrowerActionResponse::deposit(basset_in_contract_address, action_after)
+        Ok(BorrowerActionResponse::deposit(basset_in_contract_address, action_after))
     } else {
-        calc_borrower_action_on_profitable_anchor(
+        Ok(calc_borrower_action_on_profitable_anchor(
             ltv_info,
             borrowed_amount,
             locked_basset_amount,
             basset_max_ltv,
             buffer_part,
-        )
+        ))
     }
 }
 
@@ -239,6 +236,8 @@ fn calc_borrower_action_on_profitable_anchor(
 #[cfg(feature = "integration_tests_build")]
 pub mod test_anchor_apr_calculation {
     use super::*;
+    use basset_vault::anchor::market::query_market_state;
+    use cosmwasm_std::{QuerierResult, to_binary, WasmQuery, QueryResponse, QueryRequest};
     use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

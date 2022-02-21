@@ -67,10 +67,9 @@ pub struct StateResponse {
 }
 
 pub fn query_market_state(deps: Deps, anchor_market_contract: &Addr) -> StdResult<StateResponse> {
-    let market_state: StateResponse = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
+    let market_state: StateResponse = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: anchor_market_contract.to_string(),
-        //Anchor use cosmwasm_storage::Singleton which add length prefix
-        key: Binary::from(to_length_prefixed(b"state").to_vec()),
+        msg: to_binary(&AnchorMarketQueryMsg::State { block_height: None })?
     }))?;
 
     Ok(market_state)

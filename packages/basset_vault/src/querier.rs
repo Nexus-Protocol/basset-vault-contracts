@@ -128,8 +128,7 @@ pub enum AnchorMarketQueryMsg {
         borrower: String,
         block_height: Option<u64>,
     },
-    // using Raw query to ask for state
-    // State { block_height: Option<u64> },
+    State { block_height: Option<u64> },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
