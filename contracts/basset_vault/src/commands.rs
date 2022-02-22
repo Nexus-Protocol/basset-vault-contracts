@@ -443,7 +443,7 @@ fn handle_borrower_action(
     match borrower_action {
         BorrowerActionResponse::Nothing {} => {
             //maybe it is better to return error here, but
-            //we cant, cause it is used in 'withdraw'
+            //we cant, cause it is used in 'withdraw' and 'deposit'
             return Ok(Response::new().add_attribute("action", "rebalance_not_needed"));
         }
 
