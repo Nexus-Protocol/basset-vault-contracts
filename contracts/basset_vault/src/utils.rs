@@ -138,7 +138,7 @@ impl RepayLoanAction {
 macro_rules! return_nothing_if_zero {
     ($first:expr $(, $others:expr)*) => {
         if $first.is_zero() $(&& $others.is_zero())* {
-            return Ok(RepayLoanAction::Nothing);
+            return RepayLoanAction::Nothing;
         }
     };
 }
@@ -151,7 +151,7 @@ pub fn get_repay_loan_action(
     aim_buffer_size: Uint256,
     tax_info: &TaxInfo,
     is_first_try: bool,
-) -> StdResult<RepayLoanAction> {
+) -> RepayLoanAction {
     return_nothing_if_zero!(aterra_balance, stable_coin_balance);
 
     let max_amount_to_send = tax_info.subtract_tax(stable_coin_balance);
@@ -170,9 +170,9 @@ pub fn get_repay_loan_action(
     return_nothing_if_zero!(wanted_stables, repay_amount);
 
     if wanted_stables.is_zero() {
-        return Ok(RepayLoanAction::RepayLoan {
+        return RepayLoanAction::RepayLoan {
             amount: repay_amount,
-        });
+        };
     }
 
     //anchor will pay tax, so we will recieve lesser then assume
@@ -180,17 +180,15 @@ pub fn get_repay_loan_action(
 
     return_nothing_if_zero!(aterra_value, repay_amount);
     if aterra_value.is_zero() {
-        return Ok(RepayLoanAction::RepayLoan {
+        return RepayLoanAction::RepayLoan {
             amount: repay_amount,
-        });
+        };
     }
 
     //on first try only selling aterra, cause with high probability we will repay loan
     //in 'reply' handler, so don't need to do that twice
     if is_first_try || repay_amount.is_zero() {
-        if aterra_value < wanted_stables {
-            return Err(StdError::generic_err(format!("Not enough aterra to make repay. Wanted stables: {wanted_stables}, aterra value: {aterra_value}")));
-        }
+        let stables_from_aterra_sell = aterra_value.min(wanted_stables);
 
         let aterra_to_sell = tax_info.append_tax(wanted_stables) / aterra_exchange_rate;
 
@@ -200,9 +198,9 @@ pub fn get_repay_loan_action(
 
         return_nothing_if_zero!(expected_uusd);
 
-        return Ok(RepayLoanAction::SellAterra {
+        return RepayLoanAction::SellAterra {
             amount: aterra_to_sell,
-        });
+        };
     }
 
     //it is not first try, so we are in error handling
@@ -212,9 +210,9 @@ pub fn get_repay_loan_action(
     let stables_after_repaying = stable_coin_balance - repay_amount_with_tax;
 
     if stables_after_repaying >= aim_buffer_size {
-        return Ok(RepayLoanAction::RepayLoan {
+        return RepayLoanAction::RepayLoan {
             amount: repay_amount,
-        });
+        };
     }
 
     let stables_to_fill_buffer = aim_buffer_size - stables_after_repaying;
@@ -228,14 +226,14 @@ pub fn get_repay_loan_action(
     let aterra_to_sell = aterra_to_sell.min(aterra_balance);
     let expected_uusd = tax_info.subtract_tax(aterra_to_sell * aterra_exchange_rate);
     if aterra_to_sell.is_zero() || expected_uusd.is_zero() {
-        return Ok(RepayLoanAction::RepayLoan {
+        return RepayLoanAction::RepayLoan {
             amount: repay_amount,
-        });
+        };
     } else {
-        Ok(RepayLoanAction::RepayLoanAndSellAterra {
+        RepayLoanAction::RepayLoanAndSellAterra {
             aterra_amount_to_sell: aterra_to_sell,
             repay_loan_amount: repay_amount,
-        })
+        }
     }
 }
 
