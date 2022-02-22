@@ -518,7 +518,7 @@ mod test {
             RepayLoanAction::SellAterra {
                 amount: aterra_balance
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -542,7 +542,7 @@ mod test {
             &tax_info,
             true,
         );
-        assert_eq!(RepayLoanAction::Nothing, repay_action);
+        assert_eq!(RepayLoanAction::Nothing, repay_action.unwrap());
     }
 
     #[test]
@@ -565,7 +565,7 @@ mod test {
             &tax_info,
             true,
         );
-        assert_eq!(RepayLoanAction::Nothing, repay_action);
+        assert_eq!(RepayLoanAction::Nothing, repay_action.unwrap());
     }
 
     #[test]
@@ -588,7 +588,7 @@ mod test {
             &tax_info,
             true,
         );
-        assert_eq!(RepayLoanAction::Nothing, repay_action);
+        assert_eq!(RepayLoanAction::Nothing, repay_action.unwrap());
     }
 
     #[test]
@@ -617,7 +617,7 @@ mod test {
             RepayLoanAction::SellAterra {
                 amount: Uint256::from(808u64)
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -645,7 +645,7 @@ mod test {
             RepayLoanAction::RepayLoan {
                 amount: tax_info.subtract_tax(stable_coin_balance)
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -673,7 +673,7 @@ mod test {
             RepayLoanAction::SellAterra {
                 amount: aterra_balance
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -703,7 +703,7 @@ mod test {
             RepayLoanAction::SellAterra {
                 amount: aterra_balance
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -733,7 +733,7 @@ mod test {
             RepayLoanAction::RepayLoan {
                 amount: repay_amount
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -769,7 +769,7 @@ mod test {
                 //225 - 225/1.25 = 180
                 amount: Uint256::from(180u64)
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -800,7 +800,7 @@ mod test {
             RepayLoanAction::SellAterra {
                 amount: Uint256::from(750u64),
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -832,7 +832,7 @@ mod test {
                 //(100 +10)/1.25 = 88
                 amount: Uint256::from(88u64),
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -860,7 +860,7 @@ mod test {
             RepayLoanAction::RepayLoan {
                 amount: repay_amount
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -884,7 +884,7 @@ mod test {
             &tax_info,
             false,
         );
-        assert_eq!(RepayLoanAction::Nothing, repay_action);
+        assert_eq!(RepayLoanAction::Nothing, repay_action.unwrap());
     }
 
     #[test]
@@ -916,7 +916,7 @@ mod test {
                 //but aterra price is 0.88, so 242/0.88 = 275
                 amount: Uint256::from(275u64)
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -944,7 +944,7 @@ mod test {
             RepayLoanAction::RepayLoan {
                 amount: repay_amount,
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -979,7 +979,7 @@ mod test {
                 repay_loan_amount: Uint256::from(99_250u64), //minus 750 tax cap
                 aterra_amount_to_sell: Uint256::from(65_728u64), //82_160 / 1.25
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -1012,7 +1012,7 @@ mod test {
             RepayLoanAction::SellAterra {
                 amount: Uint256::from(137160u64), //171_450 / 1.25
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -1045,7 +1045,7 @@ mod test {
                 // (750 + 750*0.9) / 1.25 = 1140
                 aterra_amount_to_sell: Uint256::from(1_140u64)
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -1080,7 +1080,7 @@ mod test {
                 //99_250 / 1.25 = 79_400
                 aterra_amount_to_sell: Uint256::from(79_400u64)
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -1110,7 +1110,7 @@ mod test {
                 //so sell all
                 amount: aterra_balance,
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -1141,7 +1141,7 @@ mod test {
                 //so need to sell aterra for 750, but we have only 100, so sell all
                 aterra_amount_to_sell: aterra_balance
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -1169,7 +1169,7 @@ mod test {
             RepayLoanAction::RepayLoan {
                 amount: repay_amount,
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -1199,7 +1199,7 @@ mod test {
             RepayLoanAction::RepayLoan {
                 amount: tax_info.subtract_tax(stable_coin_balance),
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -1223,7 +1223,7 @@ mod test {
             &tax_info,
             true,
         );
-        assert_eq!(RepayLoanAction::Nothing, repay_action);
+        assert_eq!(RepayLoanAction::Nothing, repay_action.unwrap());
     }
 
     #[test]
@@ -1246,7 +1246,7 @@ mod test {
             &tax_info,
             true,
         );
-        assert_eq!(RepayLoanAction::Nothing, repay_action);
+        assert_eq!(RepayLoanAction::Nothing, repay_action.unwrap());
     }
 
     #[allow(non_snake_case)]
@@ -1273,7 +1273,7 @@ mod test {
         // aim_buffer_size is stable_coin_balance + 1
         // but aUST rate is 1.2, and 1/1.2 = 0
         // and we cant sell 0 aUST, means - do Nothing
-        assert_eq!(RepayLoanAction::Nothing, repay_action);
+        assert_eq!(RepayLoanAction::Nothing, repay_action.unwrap());
     }
 
     #[allow(non_snake_case)]
@@ -1307,7 +1307,7 @@ mod test {
             RepayLoanAction::RepayLoan {
                 amount: Uint256::from(100_000u64), //minus 750 tax cap
             },
-            repay_action
+            repay_action.unwrap()
         );
     }
 
@@ -1331,7 +1331,7 @@ mod test {
             &tax_info,
             false,
         );
-        assert_eq!(RepayLoanAction::Nothing, repay_action);
+        assert_eq!(RepayLoanAction::Nothing, repay_action.unwrap());
     }
 
     #[test]
@@ -1359,7 +1359,7 @@ mod test {
                 repay_loan_amount: Uint256::from(4_999u64),
                 aterra_amount_to_sell: Uint256::from(3_999u64),
             },
-            repay_action
+            repay_action.unwrap(),
         );
     }
 
