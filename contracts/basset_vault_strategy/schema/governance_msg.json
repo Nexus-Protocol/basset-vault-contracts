@@ -11,6 +11,30 @@
         "update_config": {
           "type": "object",
           "properties": {
+            "anc_ust_swap_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "anchor_interest_model_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "anchor_market_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "anchor_overseer_addr": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
             "basset_max_ltv": {
               "anyOf": [
                 {

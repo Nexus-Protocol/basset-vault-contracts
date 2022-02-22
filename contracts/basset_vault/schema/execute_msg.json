@@ -173,6 +173,12 @@
                     "null"
                   ]
                 },
+                "anchor_basset_reward_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
                 "anchor_custody_basset_contract_addr": {
                   "type": [
                     "string",

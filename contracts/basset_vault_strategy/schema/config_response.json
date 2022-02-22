@@ -3,6 +3,9 @@
   "title": "ConfigResponse",
   "type": "object",
   "required": [
+    "anchor_interest_model_contract",
+    "anchor_market_contract",
+    "anchor_overseer_contract",
     "basset_max_ltv",
     "basset_token",
     "borrow_ltv_aim",
@@ -15,6 +18,15 @@
     "stable_denom"
   ],
   "properties": {
+    "anchor_interest_model_contract": {
+      "type": "string"
+    },
+    "anchor_market_contract": {
+      "type": "string"
+    },
+    "anchor_overseer_contract": {
+      "type": "string"
+    },
     "basset_max_ltv": {
       "$ref": "#/definitions/Decimal256"
     },

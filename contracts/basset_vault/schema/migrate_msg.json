@@ -3,14 +3,10 @@
   "title": "MigrateMsg",
   "type": "object",
   "required": [
-    "new_anc_stable_swap_addr",
-    "new_psi_stable_swap_addr"
+    "anchor_basset_reward_addr"
   ],
   "properties": {
-    "new_anc_stable_swap_addr": {
-      "type": "string"
-    },
-    "new_psi_stable_swap_addr": {
+    "anchor_basset_reward_addr": {
       "type": "string"
     }
   }

@@ -61,9 +61,181 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "Deposit"
+      ],
+      "properties": {
+        "Deposit": {
+          "type": "object",
+          "required": [
+            "action_after",
+            "deposit_amount"
+          ],
+          "properties": {
+            "action_after": {
+              "description": "We need to rebalance again after deposit",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/BorrowerActionResponse"
+                }
+              ]
+            },
+            "deposit_amount": {
+              "$ref": "#/definitions/Uint256"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "WithdrawAll"
+      ],
+      "properties": {
+        "WithdrawAll": {
+          "type": "object",
+          "required": [
+            "withdraw_amount"
+          ],
+          "properties": {
+            "withdraw_amount": {
+              "description": "It might be strange that withdraw **all** contains amount, but since rebalance can be called with not actual balance but aim balance, we can't query it directly",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Uint256"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {
+    "BorrowerActionResponse": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "Nothing"
+          ],
+          "properties": {
+            "Nothing": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Borrow"
+          ],
+          "properties": {
+            "Borrow": {
+              "type": "object",
+              "required": [
+                "advised_buffer_size",
+                "amount"
+              ],
+              "properties": {
+                "advised_buffer_size": {
+                  "$ref": "#/definitions/Uint256"
+                },
+                "amount": {
+                  "$ref": "#/definitions/Uint256"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Repay"
+          ],
+          "properties": {
+            "Repay": {
+              "type": "object",
+              "required": [
+                "advised_buffer_size",
+                "amount"
+              ],
+              "properties": {
+                "advised_buffer_size": {
+                  "$ref": "#/definitions/Uint256"
+                },
+                "amount": {
+                  "$ref": "#/definitions/Uint256"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Deposit"
+          ],
+          "properties": {
+            "Deposit": {
+              "type": "object",
+              "required": [
+                "action_after",
+                "deposit_amount"
+              ],
+              "properties": {
+                "action_after": {
+                  "description": "We need to rebalance again after deposit",
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/BorrowerActionResponse"
+                    }
+                  ]
+                },
+                "deposit_amount": {
+                  "$ref": "#/definitions/Uint256"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "WithdrawAll"
+          ],
+          "properties": {
+            "WithdrawAll": {
+              "type": "object",
+              "required": [
+                "withdraw_amount"
+              ],
+              "properties": {
+                "withdraw_amount": {
+                  "description": "It might be strange that withdraw **all** contains amount, but since rebalance can be called with not actual balance but aim balance, we can't query it directly",
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/Uint256"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "Uint256": {
       "type": "string"
     }
