@@ -190,7 +190,7 @@ pub fn get_repay_loan_action(
     if is_first_try || repay_amount.is_zero() {
         let stables_from_aterra_sell = aterra_value.min(wanted_stables);
 
-        let aterra_to_sell = tax_info.append_tax(wanted_stables) / aterra_exchange_rate;
+        let aterra_to_sell = tax_info.append_tax(stables_from_aterra_sell) / aterra_exchange_rate;
 
         //make sure that we do not redeem more then we have (in case if some issue with tax precision)
         let aterra_to_sell = aterra_to_sell.min(aterra_balance);
