@@ -132,7 +132,7 @@ pub fn borrower_action(
         env.block.time,
     );
 
-    let anchor_apr = query_anchor_apr(deps, &config)?;
+    let anchor_apr = query_anchor_apr(deps, &config);
 
     let response = calc_borrower_action(
         anchor_apr,
@@ -142,7 +142,7 @@ pub fn borrower_action(
         locked_basset_amount,
         config.get_basset_max_ltv(),
         config.get_buffer_part(),
-    );
+    )?;
 
     Ok(response)
 }
@@ -309,7 +309,7 @@ mod test {
         //to_repay = (0.9 - 0.8) * 577_500 = 57_750
         //buffer_size = 0.018 * 577_500 = 10_395
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -349,7 +349,7 @@ mod test {
         //to_borrow =  (0.8 - 0.6) * 577_500 = 115_500
         //buffer_size = 0.018 * 577_500 = 10_395
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -385,7 +385,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -421,7 +421,7 @@ mod test {
         //ltv = 473_550 / 577_500 = 0.82
         //0.75 < 0.82 < 0.85 => do nothing
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -454,7 +454,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -487,7 +487,7 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -523,7 +523,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -556,7 +556,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -596,7 +596,7 @@ mod test {
         //to_borrow = (0.8 - 0.0) * 577_500 = 462_000
         //buffer_size = 0.018 * 577_500 = 10_395
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -632,7 +632,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -768,7 +768,7 @@ mod test {
         // aim_borrow_amount = 100 * 1 * 0,6 * 0,8 = 48 (= borrowed_amount = 48)
 
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -801,7 +801,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -835,7 +835,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -869,7 +869,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -916,7 +916,7 @@ mod test {
         };
 
         let borrower_action = calc_borrower_action(
-            anchor_apr,
+            Ok(anchor_apr),
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
