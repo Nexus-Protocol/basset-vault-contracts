@@ -132,7 +132,7 @@ pub fn borrower_action(
         env.block.time,
     );
 
-    let anchor_apr = query_anchor_apr(deps, &config)?;
+    let anchor_apr = query_anchor_apr(deps, &config);
 
     let response = calc_borrower_action(
         anchor_apr,
@@ -155,7 +155,7 @@ fn calc_borrower_action(
     locked_basset_amount: Uint256,
     basset_max_ltv: Decimal256,
     buffer_part: Decimal256,
-) -> StdResult<BorrowerActionResponse> {
+) -> BorrowerActionResponse {
     if !anchor_apr.is_profitable(buffer_part) {
         // return Err(StdError::generic_err(format!("PROF {}", anchor_has_profit)));
         // Withdraw all if there are anything to withdraw
@@ -163,9 +163,9 @@ fn calc_borrower_action(
             // If the actual `locked_basset_amount`
             // is more than provided `locked_basset_amount`,
             // withdraw logic still repay all actual borrowed amount
-            return Ok(BorrowerActionResponse::withdraw_all(locked_basset_amount));
+            return BorrowerActionResponse::withdraw_all(locked_basset_amount);
         } else {
-            return Ok(BorrowerActionResponse::nothing());
+            return BorrowerActionResponse::nothing();
         }
     }
 
@@ -177,15 +177,15 @@ fn calc_borrower_action(
             basset_max_ltv,
             buffer_part,
         );
-        Ok(BorrowerActionResponse::deposit(basset_in_contract_address, action_after))
+        BorrowerActionResponse::deposit(basset_in_contract_address, action_after)
     } else {
-        Ok(calc_borrower_action_on_profitable_anchor(
+        calc_borrower_action_on_profitable_anchor(
             ltv_info,
             borrowed_amount,
             locked_basset_amount,
             basset_max_ltv,
             buffer_part,
-        ))
+        )
     }
 }
 
