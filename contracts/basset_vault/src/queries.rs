@@ -24,6 +24,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         anchor_overseer_contract_addr: config.anchor_overseer_contract.to_string(),
         anchor_market_contract_addr: config.anchor_market_contract.to_string(),
         anchor_custody_basset_contract_addr: config.anchor_custody_basset_contract.to_string(),
+        anchor_basset_reward_addr: config.anchor_basset_reward_contract.to_string(),
         anc_stable_swap_contract_addr: config.anc_stable_swap_contract.to_string(),
         psi_stable_swap_contract_addr: config.psi_stable_swap_contract.to_string(),
         nasset_token_addr: config.nasset_token.to_string(),

@@ -134,6 +134,7 @@ pub struct ConfigResponse {
     pub anchor_overseer_contract_addr: String,
     pub anchor_market_contract_addr: String,
     pub anchor_custody_basset_contract_addr: String,
+    pub anchor_basset_reward_addr: String,
     pub anc_stable_swap_contract_addr: String,
     pub psi_stable_swap_contract_addr: String,
     pub basset_token_addr: String,
