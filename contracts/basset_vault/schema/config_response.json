@@ -4,6 +4,7 @@
   "type": "object",
   "required": [
     "anc_stable_swap_contract_addr",
+    "anchor_basset_reward_addr",
     "anchor_custody_basset_contract_addr",
     "anchor_market_contract_addr",
     "anchor_overseer_contract_addr",
@@ -22,6 +23,9 @@
   ],
   "properties": {
     "anc_stable_swap_contract_addr": {
+      "type": "string"
+    },
+    "anchor_basset_reward_addr": {
       "type": "string"
     },
     "anchor_custody_basset_contract_addr": {
