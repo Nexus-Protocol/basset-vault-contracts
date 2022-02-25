@@ -80,6 +80,7 @@ pub struct ConfigResponse {
     pub anchor_market_contract: String,
     pub anchor_interest_model_contract: String,
     pub anchor_overseer_contract: String,
+    pub anc_ust_swap_contract: String,
     pub basset_token: String,
     pub stable_denom: String,
     pub borrow_ltv_max: Decimal256,

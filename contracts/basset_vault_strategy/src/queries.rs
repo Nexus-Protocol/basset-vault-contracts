@@ -12,6 +12,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         anchor_market_contract: config.anchor_market_contract.to_string(),
         anchor_interest_model_contract: config.anchor_interest_model_contract.to_string(),
         anchor_overseer_contract: config.anchor_overseer_contract.to_string(),
+        anc_ust_swap_contract: config.anc_ust_swap_contract.to_string(),
         governance_contract: config.governance_contract.to_string(),
         oracle_contract: config.oracle_contract.to_string(),
         basset_token: config.basset_token.to_string(),
