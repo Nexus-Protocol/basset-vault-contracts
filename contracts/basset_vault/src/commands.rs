@@ -6,7 +6,7 @@ use crate::{
         load_aim_buffer_size, load_config, load_gov_update, load_repaying_loan_state,
         load_stable_balance_before_selling_anc, remove_gov_update, store_aim_buffer_size,
         store_config, store_gov_update, store_repaying_loan_state,
-        store_stable_balance_before_selling_anc, Config, GovernanceUpdateState, RepayingLoanState,
+        store_stable_balance_before_selling_anc, Config, GovernanceUpdateState, RepayingLoanState, load_after_deposit_action, store_after_deposit_action,
     },
     tax_querier::get_tax_info,
     utils::{
@@ -568,35 +568,35 @@ pub(crate) fn deposit_logic(
     deposit_amount: Uint256,
     action_after: BorrowerActionResponse,
 ) -> StdResult<Response> {
-    let deposit_messages = [
-        SubMsg::new(WasmMsg::Execute {
-            contract_addr: config.basset_token.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Send {
-                contract: config.anchor_custody_basset_contract.to_string(),
-                amount: deposit_amount.into(),
-                msg: to_binary(&AnchorCustodyCw20Msg::DepositCollateral {})?,
-            })?,
-            funds: vec![],
-        }),
-        SubMsg::new(WasmMsg::Execute {
-            contract_addr: config.anchor_overseer_contract.to_string(),
-            msg: to_binary(&AnchorOverseerMsg::LockCollateral {
-                collaterals: vec![(config.basset_token.to_string(), deposit_amount)],
-            })?,
-            funds: vec![],
-        }),
-    ];
+    store_after_deposit_action(deps.storage, &action_after)?;
 
-    let mut action_after_response = handle_borrower_action(deps, env, config, action_after)?;
-
-    for (i, deposit_msg) in std::iter::IntoIterator::into_iter(deposit_messages).enumerate() {
-        action_after_response.messages.insert(i, deposit_msg);
-    }
-
-    Ok(action_after_response
+    let response = Response::new()
+        .add_submessages([
+            SubMsg::new(WasmMsg::Execute {
+                contract_addr: config.basset_token.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Send {
+                    contract: config.anchor_custody_basset_contract.to_string(),
+                    amount: deposit_amount.into(),
+                    msg: to_binary(&AnchorCustodyCw20Msg::DepositCollateral {})?,
+                })?,
+                funds: vec![],
+            }),
+            SubMsg::reply_on_success(
+                WasmMsg::Execute {
+                    contract_addr: config.anchor_overseer_contract.to_string(),
+                    msg: to_binary(&AnchorOverseerMsg::LockCollateral {
+                        collaterals: vec![(config.basset_token.to_string(), deposit_amount)],
+                    })?,
+                    funds: vec![],
+                },
+                SubmsgIds::AfterDepositAction.id(),
+            ),
+        ])
         .add_attributes(vec![
             ("deposited_amount", &deposit_amount.to_string()),
-        ]))
+        ]);
+
+    Ok(response)
 }
 
 pub(crate) fn withdraw_all_logic(
@@ -905,4 +905,10 @@ pub(crate) fn holding_reward_logic_on_reply(deps: DepsMut, env: Env) -> StdResul
 
 fn get_time(block: &BlockInfo) -> u64 {
     block.time.seconds()
+}
+
+pub(crate) fn after_deposit_action_on_reply(deps: DepsMut, env: Env) -> StdResult<Response> {
+    let config = load_config(deps.storage)?;
+    let action = load_after_deposit_action(deps.storage)?;
+    Ok(handle_borrower_action(deps, env, &config, action)?)
 }

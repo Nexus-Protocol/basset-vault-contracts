@@ -1,3 +1,4 @@
+use basset_vault::basset_vault_strategy::BorrowerActionResponse;
 use cw_storage_plus::Item;
 use serde::{Deserialize, Serialize};
 
@@ -112,6 +113,8 @@ static KEY_GOVERNANCE_UPDATE: Item<GovernanceUpdateState> = Item::new("gov_updat
 //need that only for instantiating
 static KEY_PSI_DISTRIBUTOR_INIT_INFO: Item<PsiDistributorInitInfo> =
     Item::new("psi_distributor_init_info");
+
+static KEY_AFTER_DEPOSIT_ACTION: Item<BorrowerActionResponse> = Item::new("after_deposit_action");
 
 pub fn load_nasset_token_config_holder(storage: &dyn Storage) -> StdResult<Addr> {
     KEY_NASSET_TOKEN_CONFIG_HOLDER.load(storage)
@@ -228,4 +231,15 @@ pub fn store_psi_distributor_init_info(
     info: &PsiDistributorInitInfo,
 ) -> StdResult<()> {
     KEY_PSI_DISTRIBUTOR_INIT_INFO.save(storage, info)
+}
+
+pub fn load_after_deposit_action(storage: &dyn Storage) -> StdResult<BorrowerActionResponse> {
+    KEY_AFTER_DEPOSIT_ACTION.load(storage)
+}
+
+pub fn store_after_deposit_action(
+    storage: &mut dyn Storage,
+    action: &BorrowerActionResponse,
+) -> StdResult<()> {
+    KEY_AFTER_DEPOSIT_ACTION.save(storage, action)
 }

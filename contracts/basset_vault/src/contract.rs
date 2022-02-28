@@ -343,6 +343,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
         }
 
         SubmsgIds::HoldingReward => commands::holding_reward_logic_on_reply(deps, env),
+        SubmsgIds::AfterDepositAction => commands::after_deposit_action_on_reply(deps, env),
     }
 }
 
