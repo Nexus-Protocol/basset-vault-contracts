@@ -158,7 +158,6 @@ fn calc_borrower_action(
     buffer_part: Decimal256,
 ) -> BorrowerActionResponse {
     if !anchor_apr.is_profitable(buffer_part) {
-        // return Err(StdError::generic_err(format!("PROF {}", anchor_has_profit)));
         // Withdraw all if there are anything to withdraw
         if locked_basset_amount != Uint256::zero() {
             // If the actual `locked_basset_amount`
@@ -174,7 +173,7 @@ fn calc_borrower_action(
         let action_after = calc_borrower_action_on_profitable_anchor(
             ltv_info,
             borrowed_amount,
-            basset_in_contract_address, // locked_basset_amount after deposit,
+            basset_in_contract_address, // locked_basset_amount after deposit
             basset_max_ltv,
             buffer_part,
         );
