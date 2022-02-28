@@ -605,7 +605,6 @@ pub(crate) fn withdraw_all_logic(
     config: &Config,
     withdraw_amount: Uint256,
 ) -> StdResult<Response> {
-    // return Err(StdError::generic_err("GUCK YOU"));
     let borrower_info: BorrowerInfoResponse = query_borrower_info(
         deps.as_ref(),
         &config.anchor_market_contract,
