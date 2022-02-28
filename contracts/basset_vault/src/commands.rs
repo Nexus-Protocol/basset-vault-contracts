@@ -222,7 +222,7 @@ pub fn deposit_basset(
         ));
     }
 
-    let is_first_depositor = nasset_supply.is_zero(); // TODO: maybe alternative `basset_balance == deposited_basset`?
+    let is_first_depositor = nasset_supply.is_zero();
 
     // nAsset tokens to mint:
     // user_share = (deposited_basset / total_basset)
