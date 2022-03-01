@@ -469,7 +469,7 @@ fn handle_borrower_action(
 
         BorrowerActionResponse::Deposit { deposit_amount, action_after } => deposit_logic(deps, env, config, deposit_amount, *action_after),
 
-        BorrowerActionResponse::RepayAllAndWithdraw { withdraw_amount } => withdraw_all_logic(deps, env, config, withdraw_amount),
+        BorrowerActionResponse::RepayAllAndWithdraw { withdraw_amount } => repay_all_and_withdraw(deps, env, config, withdraw_amount),
     }
 }
 
@@ -599,7 +599,7 @@ pub(crate) fn deposit_logic(
     Ok(response)
 }
 
-pub(crate) fn withdraw_all_logic(
+pub(crate) fn repay_all_and_withdraw(
     deps: DepsMut,
     env: Env,
     config: &Config,
