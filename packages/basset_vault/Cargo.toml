@@ -24,6 +24,7 @@ schemars = "0.8.3"
 serde = { version = "1.0.126", default-features = false, features = ["derive"] }
 cosmwasm-bignumber = "2.2.0"
 bigint = "4"
+cw-storage-plus = { version = "0.8.1" }
 
 [profile.release]
 opt-level = 3

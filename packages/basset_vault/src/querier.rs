@@ -1,10 +1,11 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
     to_binary, Addr, BalanceResponse, BankQuery, Binary, Deps, QuerierWrapper, QueryRequest,
-    StdResult, Uint128, WasmQuery,
+    StdResult, Uint128, WasmQuery, CanonicalAddr,
 };
 use cosmwasm_storage::to_length_prefixed;
 use cw20_base::state::TokenInfo;
+use cw_storage_plus::Map;
 
 use crate::concat;
 use schemars::JsonSchema;
@@ -202,14 +203,15 @@ pub fn query_holding_info(
     anchor_basset_reward_contract: &Addr,
     holder: &Addr,
 ) -> StdResult<HolderResponse> {
+    pub const HOLDERS: Map<&[u8], ()> = Map::new("holders");
+    let addr = deps.api.addr_canonicalize(holder.as_str())?;
+    let key = &*HOLDERS.key(addr.as_slice());
+
     let holder_info: StdResult<HolderResponse> =
-        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
             contract_addr: anchor_basset_reward_contract.to_string(),
-            msg: to_binary(&AnchorBassetRewardQueryMsg::Holder {
-                address: holder.to_string(),
-            })?,
+            key: Binary::from(key),
         }));
 
-    Ok(holder_info
-        .unwrap_or(HolderResponse { pending_rewards: Decimal256::zero() }))
+    Ok(holder_info.unwrap_or(HolderResponse { pending_rewards: Decimal256::zero() }))
 }
