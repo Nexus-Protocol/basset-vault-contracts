@@ -206,7 +206,7 @@ pub struct GovernanceUpdateState {
 /// Only for migration purpose
 static KEY_LEGACY_CONFIG: Item<LegacyConfig> = Item::new("config");
 
-static KEY_CONFIG: Item<Config> = Item::new("config");
+static KEY_CONFIG: Item<Config> = Item::new("config_v2");
 static KEY_GOVERNANCE_UPDATE: Item<GovernanceUpdateState> = Item::new("gov_update");
 
 /// Only for migration purpose

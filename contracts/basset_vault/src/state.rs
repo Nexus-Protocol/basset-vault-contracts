@@ -96,7 +96,7 @@ impl PsiDistributorInitInfo {
 /// Only for migration purpose
 static KEY_LEGACY_CONFIG: Item<LegacyConfig> = Item::new("config");
 
-static KEY_CONFIG: Item<Config> = Item::new("config");
+static KEY_CONFIG: Item<Config> = Item::new("config_v2");
 static KEY_REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
 static KEY_AIM_BUFFER_SIZE: Item<Uint256> = Item::new("aim_buf_size");
 
