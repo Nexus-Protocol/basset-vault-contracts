@@ -173,7 +173,7 @@ fn calc_borrower_action(
         let action_after = calc_borrower_action_on_profitable_anchor(
             ltv_info,
             borrowed_amount,
-            basset_in_contract_address, // locked_basset_amount after deposit
+            basset_in_contract_address + locked_basset_amount, // locked_basset_amount after deposit
             basset_max_ltv,
             buffer_part,
         );
