@@ -164,10 +164,7 @@ pub enum RebalanceResponse {
         /// We need to rebalance again after deposit
         action_after: Box<RebalanceResponse>,
     },
-    WithdrawAll {
-        /// It might be strange that withdraw **all** contains amount,
-        /// but since rebalance can be called with not actual balance but aim balance,
-        /// we can't query it directly
+    RepayAllAndWithdraw {
         withdraw_amount: Uint256,
     },
 }

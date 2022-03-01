@@ -884,8 +884,8 @@ mod test {
                     panic!("Incorrect deposit amount");
                 }
                 match *action_after {
-                    BorrowerActionResponse::WithdrawAll { .. } | BorrowerActionResponse::Deposit { .. } => {
-                        panic!("`action_after` must be neither `WithdrawAll` nor `Deposit`")
+                    BorrowerActionResponse::RepayAllAndWithdraw { .. } | BorrowerActionResponse::Deposit { .. } => {
+                        panic!("`action_after` must be neither `RepayAllAndWithdraw` nor `Deposit`")
                     },
                     _ => (),
                 }
@@ -926,8 +926,8 @@ mod test {
         );
 
         match borrower_action {
-            BorrowerActionResponse::WithdrawAll { .. } | BorrowerActionResponse::Deposit { .. } => {
-                panic!("`borrower_action` must be neither `WithdrawAll` nor `Deposit`")
+            BorrowerActionResponse::RepayAllAndWithdraw { .. } | BorrowerActionResponse::Deposit { .. } => {
+                panic!("`borrower_action` must be neither `RepayAllAndWithdraw` nor `Deposit`")
             },
             _ => (),
         }

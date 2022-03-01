@@ -469,7 +469,7 @@ fn handle_borrower_action(
 
         BorrowerActionResponse::Deposit { deposit_amount, action_after } => deposit_logic(deps, env, config, deposit_amount, *action_after),
 
-        BorrowerActionResponse::WithdrawAll { withdraw_amount } => withdraw_all_logic(deps, env, config, withdraw_amount),
+        BorrowerActionResponse::RepayAllAndWithdraw { withdraw_amount } => withdraw_all_logic(deps, env, config, withdraw_amount),
     }
 }
 
