@@ -181,7 +181,7 @@ pub fn deposit_basset(
     env: Env,
     config: Config,
     farmer: Addr,
-    mut deposited_basset: Uint256,
+    deposited_basset: Uint256,
 ) -> StdResult<Response> {
     let nasset_supply: Uint256 = query_supply(&deps.querier, &config.nasset_token.clone())?.into();
 
@@ -203,14 +203,6 @@ pub fn deposit_basset(
         return Err(StdError::generic_err(
             "basset balance is zero (impossible case)".to_string(),
         ));
-    }
-
-    // In case when someone has sent bAsset directly to the contract address
-    // without calling this method.
-    //
-    // It is correct only if we aren't holding bAssets
-    if !basset_in_custody.is_zero() {
-        deposited_basset = basset_in_contract_address;
     }
 
     let basset_balance: Uint256 = basset_in_custody + basset_in_contract_address;
