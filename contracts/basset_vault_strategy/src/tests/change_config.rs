@@ -115,8 +115,7 @@ fn success_to_change_config_if_sender_governance() {
     let new_anchor_market_addr = "addr9996".to_string();
     let new_anchor_interest_model_addr = "addr9995".to_string();
     let new_overseer_addr = "addr9994".to_string();
-    let new_anchor_token_addr = "addr9993".to_string();
-    let new_anc_ust_swap_addr = "addr9992".to_string();
+    let new_anc_ust_swap_addr = "addr9993".to_string();
     let new_borrow_ltv_max = Decimal256::from_str("0.6").unwrap();
     let new_borrow_ltv_min = Decimal256::from_str("0.4").unwrap();
     let new_borrow_ltv_aim = Decimal256::from_str("0.5").unwrap();
