@@ -881,20 +881,10 @@ mod test {
             buffer_part,
         );
 
-        match borrower_action {
-            BorrowerActionResponse::Deposit { deposit_amount, action_after } => {
-                if deposit_amount != basset_in_contract_address {
-                    panic!("Incorrect deposit amount");
-                }
-                match *action_after {
-                    BorrowerActionResponse::RepayAllAndWithdraw { .. } | BorrowerActionResponse::Deposit { .. } => {
-                        panic!("`action_after` must be neither `RepayAllAndWithdraw` nor `Deposit`")
-                    },
-                    _ => (),
-                }
-            }
-            _ => panic!("Must be deposit action"),
-        }
+        assert_eq!(BorrowerActionResponse::Deposit {
+            deposit_amount: basset_in_contract_address,
+            action_after: Box::new(BorrowerActionResponse::Nothing {}),
+        }, borrower_action);
     }
 
     #[test]
@@ -928,12 +918,7 @@ mod test {
             buffer_part,
         );
 
-        match borrower_action {
-            BorrowerActionResponse::RepayAllAndWithdraw { .. } | BorrowerActionResponse::Deposit { .. } => {
-                panic!("`borrower_action` must be neither `RepayAllAndWithdraw` nor `Deposit`")
-            },
-            _ => (),
-        }
+        assert_eq!(BorrowerActionResponse::Nothing {}, borrower_action);
     }
 
     #[test]
