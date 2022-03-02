@@ -15,6 +15,7 @@ fn proper_initialization() {
         anchor_market_addr: "addr0002".to_string(),
         anchor_interest_model_addr: "addr0003".to_string(),
         anchor_overseer_addr: "addr0004".to_string(),
+        anchor_token_addr: "addr0005".to_string(),
         anc_ust_swap_addr: "addr0006".to_string(),
         basset_token_addr: "addr0007".to_string(),
         stable_denom: "uust".to_string(),

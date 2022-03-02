@@ -17,8 +17,9 @@ fn fail_to_change_config_if_sender_is_not_governance() {
         anchor_market_addr: "addr0002".to_string(),
         anchor_interest_model_addr: "addr0003".to_string(),
         anchor_overseer_addr: "addr0004".to_string(),
-        anc_ust_swap_addr: "addr0005".to_string(),
-        basset_token_addr: "addr0006".to_string(),
+        anchor_token_addr: "addr0005".to_string(),
+        anc_ust_swap_addr: "addr0006".to_string(),
+        basset_token_addr: "addr0007".to_string(),
         stable_denom: "uust".to_string(),
         borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
         borrow_ltv_min: Decimal256::from_str("0.75").unwrap(),
@@ -44,6 +45,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
     let new_anchor_market_addr = Some("addr9996".to_string());
     let new_anchor_interest_model_addr = Some("addr9995".to_string());
     let new_overseer_addr = Some("addr9994".to_string());
+    let new_anchor_token_addr = Some("addr9993".to_string());
     let new_anc_ust_swap_addr = Some("addr9992".to_string());
     let new_borrow_ltv_max = Some(Decimal256::from_str("0.6").unwrap());
     let new_borrow_ltv_min = Some(Decimal256::from_str("0.4").unwrap());
@@ -67,6 +69,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
             anchor_interest_model_addr: new_anchor_interest_model_addr,
             anchor_overseer_addr: new_overseer_addr,
             anc_ust_swap_addr: new_anc_ust_swap_addr,
+            anchor_token_addr: new_anchor_token_addr,
         },
     };
 
@@ -88,6 +91,7 @@ fn success_to_change_config_if_sender_governance() {
         anchor_market_addr: "addr0002".to_string(),
         anchor_interest_model_addr: "addr0003".to_string(),
         anchor_overseer_addr: "addr0004".to_string(),
+        anchor_token_addr: "addr0005".to_string(),
         anc_ust_swap_addr: "addr0006".to_string(),
         basset_token_addr: "addr0007".to_string(),
         stable_denom: "uust".to_string(),
@@ -116,6 +120,7 @@ fn success_to_change_config_if_sender_governance() {
     let new_anchor_interest_model_addr = "addr9995".to_string();
     let new_overseer_addr = "addr9994".to_string();
     let new_anc_ust_swap_addr = "addr9993".to_string();
+    let new_anchor_token_addr = "addr9992".to_string();
     let new_borrow_ltv_max = Decimal256::from_str("0.6").unwrap();
     let new_borrow_ltv_min = Decimal256::from_str("0.4").unwrap();
     let new_borrow_ltv_aim = Decimal256::from_str("0.5").unwrap();
@@ -138,6 +143,7 @@ fn success_to_change_config_if_sender_governance() {
             anchor_interest_model_addr: Some(new_anchor_interest_model_addr.clone()),
             anchor_overseer_addr: Some(new_overseer_addr.clone()),
             anc_ust_swap_addr: Some(new_anc_ust_swap_addr.clone()),
+            anchor_token_addr: Some(new_anchor_token_addr.clone()),
         },
     };
 
@@ -159,4 +165,5 @@ fn success_to_change_config_if_sender_governance() {
     assert_eq!(new_anchor_interest_model_addr, config.anchor_interest_model_contract);
     assert_eq!(new_overseer_addr, config.anchor_overseer_contract);
     assert_eq!(new_anc_ust_swap_addr, config.anc_ust_swap_contract);
+    assert_eq!(new_anchor_token_addr, config.anchor_token);
 }
