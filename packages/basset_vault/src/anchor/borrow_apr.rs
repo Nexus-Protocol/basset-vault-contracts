@@ -1,5 +1,5 @@
 use super::market::query_market_state;
-use crate::querier::query_balance;
+use crate::querier::{query_balance, query_token_balance};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{StdResult, Deps, Addr, QueryRequest, WasmQuery, to_binary, QuerierWrapper, StdError};
 use schemars::JsonSchema;
@@ -87,21 +87,20 @@ fn query_borrow_rate(
 }
 
 fn query_anc_price(
-    querier: &QuerierWrapper,
+    deps: Deps,
     anc_ust_swap_contract: &Addr,
+    stable_denom: String,
+    anchor_token: &Addr,
 ) -> StdResult<Decimal256> {
-    let pool: PoolResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
-        contract_addr: anc_ust_swap_contract.to_string(),
-        msg: to_binary(&AstroportPairQueryMsg::Pool {})?
-    }))?;
+    let stables_amount = query_balance(&deps.querier, anc_ust_swap_contract, stable_denom)?;
 
-    let [anc_asset, ust_asset] = pool.assets;
+    let anc_amount = query_token_balance(deps, anchor_token, anc_ust_swap_contract);
 
-    if anc_asset.amount.is_zero() {
+    if anc_amount.is_zero() {
         return Err(StdError::generic_err("Can't calculate ANC price, ANC amount in pool = 0"));
     }
 
-    Ok(Decimal256::from_ratio(Uint256::from(ust_asset.amount), Uint256::from(anc_asset.amount)))
+    Ok(Decimal256::from_ratio(Uint256::from(stables_amount), Uint256::from(anc_amount)))
 }
 
 pub fn query_anchor_borrow_net_apr(
@@ -110,19 +109,20 @@ pub fn query_anchor_borrow_net_apr(
     anchor_interest_model_contract: &Addr,
     anc_ust_swap_contract: &Addr,
     stable_denom: String,
+    anchor_token: &Addr,
 ) -> StdResult<BorrowNetApr> {
     let market_state = query_market_state(deps, anchor_market_contract)?;
 
     let borrow_rate = query_borrow_rate(
         &deps.querier,
         anchor_market_contract,
-        stable_denom,
+        stable_denom.clone(),
         anchor_interest_model_contract,
         market_state.total_liabilities,
         market_state.total_reserves,
     )?;
 
-    let anc_price = query_anc_price(&deps.querier, anc_ust_swap_contract)?;
+    let anc_price = query_anc_price(deps, anc_ust_swap_contract, stable_denom, anchor_token)?;
 
     let net_apr = calculate_anchor_borrow_net_apr(
         anc_price,

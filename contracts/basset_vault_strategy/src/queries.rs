@@ -13,6 +13,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         anchor_interest_model_contract: config.anchor_interest_model_contract.to_string(),
         anchor_overseer_contract: config.anchor_overseer_contract.to_string(),
         anc_ust_swap_contract: config.anc_ust_swap_contract.to_string(),
+        anchor_token_contract: config.anchor_token.to_string(),
         governance_contract: config.governance_contract.to_string(),
         oracle_contract: config.oracle_contract.to_string(),
         basset_token: config.basset_token.to_string(),
@@ -81,6 +82,7 @@ fn query_anchor_apr(deps: Deps, config: &Config) -> StdResult<AnchorApr> {
         &config.anchor_interest_model_contract,
         &config.anc_ust_swap_contract,
         config.stable_denom.clone(),
+        &config.anchor_token,
     )?;
 
     Ok(AnchorApr { earn, borrow })
@@ -261,6 +263,7 @@ pub mod test_anchor_apr_calculation {
             &config.anchor_interest_model_contract,
             &config.anc_ust_swap_contract,
             config.stable_denom.clone(),
+            &config.anchor_token,
         )?;
 
         Ok(AnchorApr {
