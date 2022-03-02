@@ -109,7 +109,7 @@ fn do_not_accept_deposit_if_nluna_supply_is_not_zero_but_bluna_in_custody_is_zer
 }
 
 #[test]
-fn deposit_basset_as_first_depositor_after_someone_transfer_some_bassets_directly_to_contract() {
+fn deposit_basset_as_first_depositor_after_someone_transfered_some_bassets_directly_to_contract() {
     let mut sdk = Sdk::init();
 
     //first farmer come
@@ -152,7 +152,7 @@ fn deposit_basset_as_first_depositor_after_someone_transfer_some_bassets_directl
 }
 
 #[test]
-fn deposit_basset_after_someone_transfer_some_bassets_directly_to_contract_while_anchor() {
+fn deposit_basset_after_someone_transfered_some_bassets_directly_to_contract_while_anchor() {
     let mut sdk = Sdk::init();
 
     //first farmer come
@@ -174,6 +174,8 @@ fn deposit_basset_after_someone_transfer_some_bassets_directly_to_contract_while
             .user_deposit(&user_address, deposit_amount.into())
             .unwrap();
 
+        let expected_nasset_to_mint = deposited_earlier * deposit_amount / Decimal256::from_uint256(deposited_earlier + basset_directly_tranfered_amount);
+
         assert_eq!(
             response.messages,
             vec![
@@ -181,7 +183,7 @@ fn deposit_basset_after_someone_transfer_some_bassets_directly_to_contract_while
                     contract_addr: NASSET_TOKEN_ADDR.to_string(),
                     msg: to_binary(&Cw20ExecuteMsg::Mint {
                         recipient: user_address.clone(),
-                        amount: total_basset_amount.into(), // what user deposited + that someone deposited directly
+                        amount: expected_nasset_to_mint.into(),
                     })
                     .unwrap(),
                     funds: vec![],

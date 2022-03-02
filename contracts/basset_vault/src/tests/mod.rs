@@ -12,6 +12,7 @@ mod withdraw_basset;
 
 use basset_vault::anchor::basset_custody::BorrowerInfo as AnchorBassetCustodyBorrowerInfo;
 use basset_vault::anchor::market::BorrowerInfoResponse as AnchorMarketBorrowerInfo;
+use basset_vault::querier::HolderResponse;
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
@@ -24,6 +25,8 @@ use std::hash::Hash;
 use terra_cosmwasm::{TaxCapResponse, TaxRateResponse, TerraQuery, TerraQueryWrapper, TerraRoute};
 
 use cw20::TokenInfoResponse;
+
+use self::sdk::ANCHOR_BASSET_REWARD_CONTRACT;
 
 /// copypasted from TerraSwap
 /// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies
@@ -48,6 +51,7 @@ pub struct WasmMockQuerier {
     tax_querier: TaxQuerier,
     token_querier: TokenQuerier,
     wasm_query_smart_responses: HashMap<String, HashMap<Binary, Binary>>,
+    basset_holding_reward: Decimal256,
 }
 
 #[derive(Clone, Default)]
@@ -152,6 +156,12 @@ impl WasmMockQuerier {
                 }
                 if let Some(borrower_info_res) = self.try_get_borrower_info(key, contract_addr) {
                     return borrower_info_res;
+                }
+
+                if contract_addr == ANCHOR_BASSET_REWARD_CONTRACT {
+                    return SystemResult::Ok(ContractResult::from(to_binary(&HolderResponse {
+                        pending_rewards: self.basset_holding_reward
+                    })));
                 }
 
                 let prefix_token_info = b"token_info";
@@ -334,6 +344,7 @@ impl WasmMockQuerier {
             token_querier: TokenQuerier::default(),
             wasm_query_smart_responses: HashMap::new(),
             tax_querier: TaxQuerier::default(),
+            basset_holding_reward: Decimal256::zero(),
         }
     }
 
@@ -379,5 +390,9 @@ impl WasmMockQuerier {
         borrowers: &[(&String, &[(&String, &AnchorBassetCustodyBorrowerInfo)])],
     ) {
         self.borrowers = array_to_hashmap(borrowers);
+    }
+
+    pub fn with_basset_holding_reward(&mut self, amount: Decimal256) {
+        self.basset_holding_reward = amount;
     }
 }

@@ -79,7 +79,6 @@ pub struct Sdk {
     nasset_supply: Uint128,
     aterra_exchange_rate: Decimal256,
     anc_pending_rewards: Decimal256,
-    holding_pending_rewards: Decimal256,
     borrower_action: BorrowerActionResponse,
 }
 
@@ -132,7 +131,6 @@ impl Sdk {
             nasset_supply: Uint128::zero(),
             aterra_exchange_rate: Decimal256::zero(),
             anc_pending_rewards: Decimal256::zero(),
-            holding_pending_rewards: Decimal256::zero(),
             borrower_action: BorrowerActionResponse::Nothing {},
         }
     }
@@ -520,17 +518,6 @@ impl Sdk {
                 })
                 .unwrap(),
             ),
-            (
-                &ANCHOR_BASSET_REWARD_CONTRACT.to_string(),
-                &to_binary(&AnchorBassetRewardQueryMsg::Holder {
-                    address: MOCK_CONTRACT_ADDR.to_string(),
-                })
-                .unwrap(),
-                &to_binary(&HolderResponse {
-                    pending_rewards: self.holding_pending_rewards,
-                })
-                .unwrap(),
-            ),
         ]);
     }
 
@@ -570,8 +557,7 @@ impl Sdk {
     }
 
     pub fn set_holding_pending_rewards(&mut self, value: Decimal256) {
-        self.holding_pending_rewards = value;
-        self.set_wasm_query_respones();
+        self.deps.querier.with_basset_holding_reward(value);
     }
 
     fn set_token_supplies(&mut self) {
