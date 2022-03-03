@@ -214,7 +214,6 @@ fn deposit_basset_after_someone_transfer_some_bassets_directly_to_contract_while
     let total_basset_amount = deposited_earlier + deposit_amount + basset_directly_tranfered_amount;
     {
         // -= USER SEND bAsset tokens to basset_vault =-
-        sdk.set_nasset_supply(Uint256::zero());
         sdk.set_basset_balance(total_basset_amount);
         
         // Someone had deposited bAssets earlier and now vault is holding them
