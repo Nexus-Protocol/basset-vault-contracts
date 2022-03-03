@@ -11,7 +11,7 @@ use cw20::Cw20ExecuteMsg;
 use std::str::FromStr;
 
 #[test]
-fn withdraw_good_case() {
+fn withdraw_good_case_when_bassets_in_anchor() {
     let mut sdk = Sdk::init();
 
     //first farmer come
@@ -132,7 +132,7 @@ fn withdraw_good_case() {
 
 //in this case we were liquidated and lost half of bLuna
 #[test]
-fn withdraw_bad_case() {
+fn withdraw_bad_case_when_bassets_in_anchor() {
     let mut sdk = Sdk::init();
     let decimal_two = Decimal256::from_str("2").unwrap();
 
@@ -243,6 +243,508 @@ fn withdraw_bad_case() {
                 msg: to_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: user_2_address.clone(),
                     amount: (deposit_2_amount / decimal_two).into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: NASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Burn {
+                    amount: deposit_2_amount.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+        ]
+    );
+}
+
+#[test]
+fn withdraw_good_case_when_bassets_in_anchor_and_someone_directly_deposited() {
+    let mut sdk = Sdk::init();
+
+    let direct_deposit_amount: Uint256 = 4_000_000_000u128.into();
+
+    //first farmer come
+    let user_1_address = "addr9999".to_string();
+    let deposit_1_amount: Uint256 = 2_000_000_000u128.into();
+    sdk.set_nasset_supply(Uint256::zero());
+    sdk.set_basset_balance(deposit_1_amount);
+    sdk.user_deposit(&user_1_address, deposit_1_amount.into())
+        .unwrap();
+
+    //second farmer come
+    let user_2_address = "addr6666".to_string();
+    let deposit_2_amount: Uint256 = 6_000_000_000u128.into();
+    sdk.set_nasset_supply(deposit_1_amount);
+    sdk.set_collateral_balance(deposit_1_amount);
+    sdk.set_basset_balance(deposit_2_amount);
+    sdk.user_deposit(&user_2_address, deposit_2_amount.into())
+        .unwrap();
+
+    //set basset locked in custody & borrwer action & direct deposit
+    sdk.set_collateral_balance(deposit_1_amount + deposit_2_amount);
+    sdk.set_borrower_action(BorrowerActionResponse::Nothing {});
+    sdk.set_basset_balance(direct_deposit_amount);
+
+    let nasset_suply = deposit_1_amount + deposit_2_amount;
+    sdk.set_nasset_supply(nasset_suply);
+    let total_balance = deposit_1_amount + deposit_2_amount + direct_deposit_amount;
+
+
+    //first user withdraw
+    let user_1_withdraw_response = sdk
+        .user_withdraw(&user_1_address, deposit_1_amount.into())
+        .unwrap();
+
+    let user_1_withdrawed_bassets: Uint256 = total_balance * deposit_1_amount / Decimal256::from_uint256(nasset_suply);
+
+    assert_eq!(
+        user_1_withdraw_response.messages,
+        vec![
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: BASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: user_1_address.clone(),
+                    amount: user_1_withdrawed_bassets.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: NASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Burn {
+                    amount: deposit_1_amount.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+        ]
+    );
+
+    let bassets_on_balance_after_user1_withdraw = direct_deposit_amount - user_1_withdrawed_bassets;
+
+    //set basset balance & nasset supply
+    sdk.set_basset_balance(bassets_on_balance_after_user1_withdraw);
+    sdk.set_nasset_supply(deposit_2_amount);
+
+    //second user withdraw
+    let user_2_withdraw_response = sdk
+        .user_withdraw(&user_2_address, deposit_2_amount.into())
+        .unwrap();
+
+    assert_eq!(
+        user_2_withdraw_response.messages,
+        vec![
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
+                msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
+                    collaterals: vec![(BASSET_TOKEN_ADDR.to_string(), (deposit_1_amount + deposit_2_amount))],
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+                msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
+                    amount: Some(deposit_1_amount + deposit_2_amount),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: BASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: user_2_address.clone(),
+                    amount: (bassets_on_balance_after_user1_withdraw + deposit_1_amount + deposit_2_amount).into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: NASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Burn {
+                    amount: deposit_2_amount.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+        ]
+    );
+}
+
+//in this case we were liquidated and lost half of bLuna
+#[test]
+fn withdraw_bad_case_when_bassets_in_anchor_and_someone_directly_deposited() {
+    let mut sdk = Sdk::init();
+    let decimal_two = Decimal256::from_str("2").unwrap();
+
+    let direct_deposit_amount: Uint256 = 4_000_000_000u128.into();
+
+    //first farmer come
+    let user_1_address = "addr9999".to_string();
+    let deposit_1_amount: Uint256 = 2_000_000_000u128.into();
+    sdk.set_nasset_supply(Uint256::zero());
+    sdk.set_basset_balance(deposit_1_amount);
+    sdk.user_deposit(&user_1_address, deposit_1_amount.into())
+        .unwrap();
+
+    //second farmer come
+    let user_2_address = "addr6666".to_string();
+    let deposit_2_amount: Uint256 = 6_000_000_000u128.into();
+    sdk.set_nasset_supply(deposit_1_amount);
+    sdk.set_collateral_balance(deposit_1_amount);
+    sdk.set_basset_balance(deposit_2_amount);
+    sdk.user_deposit(&user_2_address, deposit_2_amount.into())
+        .unwrap();
+
+    //set basset locked in custody & borrwer action
+    //but locked basset amount is half!
+    sdk.set_basset_balance(direct_deposit_amount);
+    let collateral_after_liquidation = (deposit_1_amount + deposit_2_amount) / decimal_two;
+    sdk.set_collateral_balance(collateral_after_liquidation);
+    let nasset_supply = deposit_1_amount + deposit_2_amount;
+    sdk.set_nasset_supply(nasset_supply);
+    sdk.set_borrower_action(BorrowerActionResponse::Nothing {});
+
+    let total_balance = direct_deposit_amount + collateral_after_liquidation;
+
+    //first user withdraw
+    let user_1_withdraw_response = sdk
+        .user_withdraw(&user_1_address, deposit_1_amount.into())
+        .unwrap();
+
+    let user_1_withdrawed_bassets: Uint256 = deposit_1_amount * total_balance / Decimal256::from_uint256(nasset_supply);
+
+    assert_eq!(
+        user_1_withdraw_response.messages,
+        vec![
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: BASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: user_1_address.clone(),
+                    amount: user_1_withdrawed_bassets.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: NASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Burn {
+                    amount: deposit_1_amount.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+        ]
+    );
+
+    //set basset locked in custody & borrwer action
+    sdk.set_nasset_supply(deposit_2_amount);
+    let bassets_on_balance_after_user1_withdraw = direct_deposit_amount - user_1_withdrawed_bassets;
+    sdk.set_basset_balance(bassets_on_balance_after_user1_withdraw);
+
+    //second user withdraw
+    let user_2_withdraw_response = sdk
+        .user_withdraw(&user_2_address, deposit_2_amount.into())
+        .unwrap();
+
+    assert_eq!(
+        user_2_withdraw_response.messages,
+        vec![
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
+                msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
+                    collaterals: vec![(
+                        BASSET_TOKEN_ADDR.to_string(),
+                        (deposit_1_amount + deposit_2_amount) / decimal_two
+                    )],
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+                msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
+                    amount: Some((deposit_1_amount + deposit_2_amount) / decimal_two),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: BASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: user_2_address.clone(),
+                    amount: (bassets_on_balance_after_user1_withdraw + (deposit_1_amount + deposit_2_amount) / decimal_two).into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: NASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Burn {
+                    amount: deposit_2_amount.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+        ]
+    );
+}
+
+#[test]
+fn withdraw_good_case_when_holding_bassets() {
+    let mut sdk = Sdk::init();
+
+    //first farmer come
+    let user_1_address = "addr9999".to_string();
+    let deposit_1_amount: Uint256 = 2_000_000_000u128.into();
+    sdk.set_nasset_supply(Uint256::zero());
+    sdk.set_basset_balance(deposit_1_amount);
+    sdk.user_deposit(&user_1_address, deposit_1_amount.into())
+        .unwrap();
+
+    //second farmer come
+    let user_2_address = "addr6666".to_string();
+    let deposit_2_amount: Uint256 = 6_000_000_000u128.into();
+    sdk.set_nasset_supply(deposit_1_amount);
+    sdk.set_basset_balance(deposit_1_amount + deposit_2_amount);
+    sdk.user_deposit(&user_2_address, deposit_2_amount.into())
+        .unwrap();
+
+    //set nasset supply & borrwer action
+    sdk.set_nasset_supply(deposit_1_amount + deposit_2_amount);
+    sdk.set_borrower_action(BorrowerActionResponse::Nothing {});
+
+    //first user withdraw
+    let user_1_withdraw_response = sdk
+        .user_withdraw(&user_1_address, deposit_1_amount.into())
+        .unwrap();
+
+    assert_eq!(
+        user_1_withdraw_response.messages,
+        vec![
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: BASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: user_1_address.clone(),
+                    amount: deposit_1_amount.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: NASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Burn {
+                    amount: deposit_1_amount.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+        ]
+    );
+
+    //set basset on balance & borrwer action
+    sdk.set_basset_balance(deposit_2_amount);
+    sdk.set_nasset_supply(deposit_2_amount);
+
+    //second user withdraw
+    let user_2_withdraw_response = sdk
+        .user_withdraw(&user_2_address, deposit_2_amount.into())
+        .unwrap();
+
+    assert_eq!(
+        user_2_withdraw_response.messages,
+        vec![
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: BASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: user_2_address.clone(),
+                    amount: deposit_2_amount.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: NASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Burn {
+                    amount: deposit_2_amount.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+        ]
+    );
+}
+
+// In this case we were liquidated, lost half of bLuna, and then rebalanced to holding
+#[test]
+fn withdraw_bad_case_when_holding_bassets() {
+    let mut sdk = Sdk::init();
+    let decimal_two = Decimal256::from_str("2").unwrap();
+
+    //first farmer come
+    let user_1_address = "addr9999".to_string();
+    let deposit_1_amount: Uint256 = 2_000_000_000u128.into();
+    sdk.set_nasset_supply(Uint256::zero());
+    sdk.set_basset_balance(deposit_1_amount);
+    sdk.user_deposit(&user_1_address, deposit_1_amount.into())
+        .unwrap();
+
+    //second farmer come
+    let user_2_address = "addr6666".to_string();
+    let deposit_2_amount: Uint256 = 6_000_000_000u128.into();
+    sdk.set_nasset_supply(deposit_1_amount);
+    sdk.set_basset_balance(deposit_1_amount + deposit_2_amount);
+    sdk.user_deposit(&user_2_address, deposit_2_amount.into())
+        .unwrap();
+
+    //set basset balance, nasset supply & borrwer action
+    //but basset balance is half!
+    sdk.set_basset_balance((deposit_1_amount + deposit_2_amount) / decimal_two);
+    sdk.set_nasset_supply(deposit_1_amount + deposit_2_amount);
+    sdk.set_borrower_action(BorrowerActionResponse::Nothing {});
+
+    //first user withdraw
+    let user_1_withdraw_response = sdk
+        .user_withdraw(&user_1_address, deposit_1_amount.into())
+        .unwrap();
+
+    assert_eq!(
+        user_1_withdraw_response.messages,
+        vec![
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: BASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: user_1_address.clone(),
+                    amount: (deposit_1_amount / decimal_two).into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: NASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Burn {
+                    amount: deposit_1_amount.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+        ]
+    );
+
+    //set basset balance
+    sdk.set_basset_balance(deposit_2_amount / decimal_two);
+    sdk.set_nasset_supply(deposit_2_amount);
+
+    //second user withdraw
+    let user_2_withdraw_response = sdk
+        .user_withdraw(&user_2_address, deposit_2_amount.into())
+        .unwrap();
+
+    assert_eq!(
+        user_2_withdraw_response.messages,
+        vec![
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: BASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: user_2_address.clone(),
+                    amount: (deposit_2_amount / decimal_two).into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: NASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Burn {
+                    amount: deposit_2_amount.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+        ]
+    );
+}
+
+#[test]
+fn withdraw_when_holding_bassets_and_someone_directly_deposited() {
+    let mut sdk = Sdk::init();
+
+    let direct_deposit_amount: Uint256 = 4_000_000_000u128.into();
+
+    //first farmer come
+    let user_1_address = "addr9999".to_string();
+    let deposit_1_amount: Uint256 = 2_000_000_000u128.into();
+    sdk.set_nasset_supply(Uint256::zero());
+    sdk.set_basset_balance(deposit_1_amount);
+    sdk.user_deposit(&user_1_address, deposit_1_amount.into())
+        .unwrap();
+
+    //second farmer come
+    let user_2_address = "addr6666".to_string();
+    let deposit_2_amount: Uint256 = 6_000_000_000u128.into();
+    sdk.set_nasset_supply(deposit_1_amount);
+    sdk.set_basset_balance(deposit_1_amount + deposit_2_amount);
+    sdk.user_deposit(&user_2_address, deposit_2_amount.into())
+        .unwrap();
+
+    // borrwer action & basset balance + direct deposit
+    sdk.set_borrower_action(BorrowerActionResponse::Nothing {});
+    let nasset_suply = deposit_1_amount + deposit_2_amount;
+    sdk.set_nasset_supply(nasset_suply);
+    let total_balance = deposit_1_amount + deposit_2_amount + direct_deposit_amount;
+    sdk.set_basset_balance(total_balance);
+
+
+    //first user withdraw
+    let user_1_withdraw_response = sdk
+        .user_withdraw(&user_1_address, deposit_1_amount.into())
+        .unwrap();
+
+    let user_1_withdrawed_bassets: Uint256 = total_balance * deposit_1_amount / Decimal256::from_uint256(nasset_suply);
+
+    assert_eq!(
+        user_1_withdraw_response.messages,
+        vec![
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: BASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: user_1_address.clone(),
+                    amount: user_1_withdrawed_bassets.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: NASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Burn {
+                    amount: deposit_1_amount.into(),
+                })
+                .unwrap(),
+                funds: vec![],
+            })),
+        ]
+    );
+
+    let bassets_on_balance_after_user1_withdraw = total_balance - user_1_withdrawed_bassets;
+
+    //set basset balance & nasset supply
+    sdk.set_basset_balance(bassets_on_balance_after_user1_withdraw);
+    sdk.set_nasset_supply(deposit_2_amount);
+
+    //second user withdraw
+    let user_2_withdraw_response = sdk
+        .user_withdraw(&user_2_address, deposit_2_amount.into())
+        .unwrap();
+
+    assert_eq!(
+        user_2_withdraw_response.messages,
+        vec![
+            SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: BASSET_TOKEN_ADDR.to_string(),
+                msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: user_2_address.clone(),
+                    amount: bassets_on_balance_after_user1_withdraw.into(),
                 })
                 .unwrap(),
                 funds: vec![],
