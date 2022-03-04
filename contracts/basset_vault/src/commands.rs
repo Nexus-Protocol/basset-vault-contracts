@@ -560,6 +560,16 @@ pub(crate) fn deposit_logic(
     deposit_amount: Uint256,
     action_after: BorrowerActionResponse,
 ) -> StdResult<Response> {
+    if deposit_amount.is_zero() {
+        return Err(StdError::generic_err("Deposit amount is zero"));
+    }
+
+    let basset_balance: Uint256 = query_token_balance(deps.as_ref(), &config.basset_token, &env.contract.address).into();
+
+    if basset_balance < deposit_amount {
+        return Err(StdError::generic_err("Deposit amount is more than bAssets amount on contract balance"));
+    }
+
     store_after_deposit_action(deps.storage, &action_after)?;
 
     let response = Response::new()

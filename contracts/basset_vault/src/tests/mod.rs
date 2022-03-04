@@ -9,6 +9,7 @@ mod repay_loan;
 mod repay_loan_action;
 mod sdk;
 mod withdraw_basset;
+mod deposit_to_anchor;
 
 use basset_vault::anchor::basset_custody::BorrowerInfo as AnchorBassetCustodyBorrowerInfo;
 use basset_vault::anchor::market::BorrowerInfoResponse as AnchorMarketBorrowerInfo;

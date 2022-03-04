@@ -643,6 +643,18 @@ impl Sdk {
         crate::contract::reply(self.deps.as_mut(), mock_env(), reply_msg)
     }
 
+    pub fn after_deposit_action(&mut self) -> StdResult<Response<Empty>> {
+        let reply_msg = Reply {
+            id: SubmsgIds::AfterDepositAction.id(),
+            result: cosmwasm_std::ContractResult::Ok(SubMsgExecutionResponse {
+                events: vec![],
+                data: None,
+            }),
+        };
+
+        crate::contract::reply(self.deps.as_mut(), mock_env(), reply_msg)
+    }
+
     pub fn user_deposit(&mut self, address: &str, amount: Uint128) -> StdResult<Response<Empty>> {
         let cw20_deposit_msg = Cw20ReceiveMsg {
             sender: address.to_string(),
