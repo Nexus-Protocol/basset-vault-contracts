@@ -461,7 +461,7 @@ fn handle_borrower_action(
 
         BorrowerActionResponse::Deposit { deposit_amount, action_after } => deposit_logic(deps, env, config, deposit_amount, *action_after),
 
-        BorrowerActionResponse::RepayAllAndWithdraw { withdraw_amount } => repay_all_and_withdraw(deps, env, config, withdraw_amount),
+        BorrowerActionResponse::RepayAllAndWithdraw { withdraw_amount } => repay_all_and_withdraw_logic(deps, env, config, withdraw_amount),
     }
 }
 
@@ -601,12 +601,22 @@ pub(crate) fn deposit_logic(
     Ok(response)
 }
 
-pub(crate) fn repay_all_and_withdraw(
+pub(crate) fn repay_all_and_withdraw_logic(
     deps: DepsMut,
     env: Env,
     config: &Config,
     withdraw_amount: Uint256,
 ) -> StdResult<Response> {
+    let basset_in_custody = get_basset_in_custody(
+        deps.as_ref(),
+        &config.anchor_custody_basset_contract,
+        &env.contract.address,
+    )?;
+
+    if basset_in_custody < withdraw_amount {
+        return Err(StdError::generic_err(format!("Attempt to withdraw more bAssets than in custody. Withdraw amount: {}, bAssets in custody: {}", withdraw_amount, basset_in_custody)));
+    }
+
     let borrower_info: BorrowerInfoResponse = query_borrower_info(
         deps.as_ref(),
         &config.anchor_market_contract,
@@ -623,33 +633,36 @@ pub(crate) fn repay_all_and_withdraw(
         ..RepayingLoanState::default()
     };
 
-    let repay = repay_logic(deps, env, config, repaying_loan_state)?;
+    let mut response = repay_logic(deps, env, config, repaying_loan_state)?;
 
-    let response = repay
-        .add_message(
-            CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: config.anchor_overseer_contract.to_string(),
-                msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
-                    collaterals: vec![(config.basset_token.to_string(), withdraw_amount)],
-                })?,
-                funds: vec![],
-            })
-        )
-        .add_message(
-            CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: config.anchor_custody_basset_contract.to_string(),
-                msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
-                    amount: Some(withdraw_amount),
-                })?,
-                funds: vec![],
-            })
-        )
+    if !withdraw_amount.is_zero() {
+        response = response
+            .add_message(
+                CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: config.anchor_overseer_contract.to_string(),
+                    msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
+                        collaterals: vec![(config.basset_token.to_string(), withdraw_amount)],
+                    })?,
+                    funds: vec![],
+                })
+            )
+            .add_message(
+                CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: config.anchor_custody_basset_contract.to_string(),
+                    msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
+                        amount: Some(withdraw_amount),
+                    })?,
+                    funds: vec![],
+                })
+            );
+    }
+
+    Ok(response
         .add_attributes(vec![
             ("action", "withdraw_all"),
             ("amount", &withdraw_amount.to_string()),
-        ]);
-
-    Ok(response)
+        ])
+    )
 }
 
 /// Anyone can execute `claim_rewards` function to claim ANC and bAsset holding rewards 

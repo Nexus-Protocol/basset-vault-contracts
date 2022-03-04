@@ -80,6 +80,7 @@ pub struct Sdk {
     aterra_exchange_rate: Decimal256,
     anc_pending_rewards: Decimal256,
     borrower_action: BorrowerActionResponse,
+    loan_amount: Uint256,
 }
 
 impl Sdk {
@@ -132,6 +133,7 @@ impl Sdk {
             aterra_exchange_rate: Decimal256::zero(),
             anc_pending_rewards: Decimal256::zero(),
             borrower_action: BorrowerActionResponse::Nothing {},
+            loan_amount: Uint256::zero(),
         }
     }
 
@@ -458,17 +460,8 @@ impl Sdk {
 
     #[allow(dead_code)]
     pub fn set_loan(&mut self, value: Uint256) {
-        self.deps.querier.with_loan(&[(
-            &ANCHOR_MARKET_CONTRACT.to_string(),
-            &[(
-                &MOCK_CONTRACT_ADDR.to_string(),
-                &AnchorMarketBorrowerInfo {
-                    borrower: MOCK_CONTRACT_ADDR.to_string(),
-                    loan_amount: value,
-                    pending_rewards: Decimal256::zero(),
-                },
-            )],
-        )]);
+        self.loan_amount = value;
+        self.set_wasm_query_respones();
     }
 
     pub fn set_tax(&mut self, tax_percent: Decimal, cap: u128) {
@@ -513,7 +506,7 @@ impl Sdk {
                 .unwrap(),
                 &to_binary(&AnchorMarketBorrowerInfo {
                     borrower: MOCK_CONTRACT_ADDR.to_string(),
-                    loan_amount: Uint256::zero(),
+                    loan_amount: self.loan_amount,
                     pending_rewards: self.anc_pending_rewards,
                 })
                 .unwrap(),
