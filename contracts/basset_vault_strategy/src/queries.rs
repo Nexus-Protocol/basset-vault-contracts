@@ -165,7 +165,7 @@ fn calc_borrower_action(
             // If the actual `locked_basset_amount`
             // is more than provided `locked_basset_amount`,
             // withdraw logic still repay all actual borrowed amount
-            return BorrowerActionResponse::withdraw_all(locked_basset_amount);
+            return BorrowerActionResponse::repay_all_and_withdraw(locked_basset_amount);
         } else {
             return BorrowerActionResponse::nothing();
         }
@@ -813,7 +813,7 @@ mod test {
             buffer_part,
         );
 
-        assert_eq!(borrower_action, BorrowerActionResponse::withdraw_all(locked_basset_amount));
+        assert_eq!(borrower_action, BorrowerActionResponse::repay_all_and_withdraw(locked_basset_amount));
     }
 
     #[test]

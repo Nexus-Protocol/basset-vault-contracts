@@ -141,7 +141,7 @@ impl BorrowerActionResponse {
         }
     }
 
-    pub fn withdraw_all(withdraw_amount: Uint256) -> Self {
+    pub fn repay_all_and_withdraw(withdraw_amount: Uint256) -> Self {
         BorrowerActionResponse::RepayAllAndWithdraw {
             withdraw_amount
         }
