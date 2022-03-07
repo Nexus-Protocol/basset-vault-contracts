@@ -197,8 +197,8 @@ fn claim_rewards_logic(
         })
         .add_attributes(vec![
             ("action", "claim_reward"),
-            ("holder_address", &holder_addr.to_string()),
-            ("recipient_address", &recipient.to_string()),
+            ("holder_address", holder_addr.as_ref()),
+            ("recipient_address", recipient.as_ref()),
             ("rewards", &rewards.to_string()),
         ]))
 }

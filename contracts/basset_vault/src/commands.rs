@@ -181,7 +181,7 @@ pub fn deposit_basset(
     farmer: Addr,
     deposited_basset: Uint256,
 ) -> StdResult<Response> {
-    let nasset_supply: Uint256 = query_supply(&deps.querier, &config.nasset_token.clone())?.into();
+    let nasset_supply: Uint256 = query_supply(&deps.querier, &config.nasset_token)?.into();
 
     let basset_in_custody = get_basset_in_custody(
         deps.as_ref(),
@@ -416,7 +416,7 @@ pub fn rebalance(
     let borrower_action = query_borrower_action(
         deps.as_ref(),
         &config.basset_vault_strategy_contract,
-        basset_in_contract_address.into(),
+        basset_in_contract_address,
         borrowed_ust,
         basset_in_custody,
     )?;
@@ -881,7 +881,7 @@ pub fn buy_psi_on_remainded_stable_coins(
                     to: Some(config.governance_contract.to_string()),
                 })?,
                 funds: vec![Coin {
-                    denom: config.stable_denom.clone(),
+                    denom: config.stable_denom,
                     amount: stable_coin_to_buy_psi,
                 }],
             })
@@ -923,5 +923,5 @@ fn get_time(block: &BlockInfo) -> u64 {
 pub(crate) fn after_deposit_action_on_reply(deps: DepsMut, env: Env) -> StdResult<Response> {
     let config = load_config(deps.storage)?;
     let action = load_after_deposit_action(deps.storage)?;
-    Ok(handle_borrower_action(deps, env, &config, action)?)
+    handle_borrower_action(deps, env, &config, action)
 }
