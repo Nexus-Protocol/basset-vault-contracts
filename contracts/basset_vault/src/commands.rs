@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use crate::{
     commands,
     state::{
@@ -13,7 +11,7 @@ use crate::{
         calc_after_borrow_action, get_repay_loan_action, is_anc_rewards_claimable,
         split_profit_to_handle_interest, ActionWithProfit, is_holding_rewards_claimable,
     },
-    SubmsgIds, MIN_ANC_REWARDS_TO_CLAIM,
+    SubmsgIds,
 };
 use basset_vault::{
     anchor::basset_custody::get_basset_in_custody,

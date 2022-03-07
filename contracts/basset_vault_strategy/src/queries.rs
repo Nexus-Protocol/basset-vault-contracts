@@ -2,7 +2,7 @@ use crate::price::{query_price, PriceResponse};
 use basset_vault::anchor::borrow_apr::BorrowNetApr;
 use basset_vault::basset_vault_strategy::{BorrowerActionResponse, ConfigResponse};
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{Deps, Env, StdResult, Timestamp, StdError};
+use cosmwasm_std::{Deps, Env, StdResult, Timestamp};
 
 use crate::state::{load_config, Config};
 

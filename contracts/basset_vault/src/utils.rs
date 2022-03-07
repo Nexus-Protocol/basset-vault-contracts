@@ -1,5 +1,5 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{to_binary, Coin, CosmosMsg, Response, StdResult, SubMsg, Uint128, WasmMsg, StdError};
+use cosmwasm_std::{to_binary, Coin, CosmosMsg, Response, StdResult, SubMsg, Uint128, WasmMsg};
 
 use crate::tax_querier::TaxInfo;
 use crate::{SubmsgIds, MIN_HOLDING_REWARDS_TO_CLAIM};

@@ -25,7 +25,7 @@ use basset_vault::astroport_factory::{ExecuteMsg as AstroportFactoryExecuteMsg, 
 use basset_vault::basset_vault::Cw20HookMsg;
 use basset_vault::basset_vault_strategy::BorrowerActionResponse;
 use basset_vault::psi_distributor::InstantiateMsg as PsiDistributorInstantiateMsg;
-use basset_vault::querier::{AnchorMarketEpochStateResponse, AnchorMarketQueryMsg, AnchorBassetRewardQueryMsg, HolderResponse};
+use basset_vault::querier::{AnchorMarketEpochStateResponse, AnchorMarketQueryMsg};
 use basset_vault::terraswap::AssetInfo;
 use basset_vault::{
     basset_vault::ExecuteMsg,

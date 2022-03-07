@@ -13,7 +13,6 @@ mod rebalance_deposit;
 mod rebalance_withdraw;
 
 use basset_vault::anchor::basset_custody::BorrowerInfo as AnchorBassetCustodyBorrowerInfo;
-use basset_vault::anchor::market::BorrowerInfoResponse as AnchorMarketBorrowerInfo;
 use basset_vault::querier::HolderResponse;
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};

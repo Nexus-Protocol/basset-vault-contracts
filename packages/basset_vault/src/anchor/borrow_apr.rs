@@ -5,7 +5,6 @@ use cosmwasm_std::{StdResult, Deps, Addr, QueryRequest, WasmQuery, to_binary, Qu
 use schemars::JsonSchema;
 use serde::{Serialize, Deserialize};
 use super::NUMBER_OF_BLOCKS_PER_YEAR;
-use crate::astroport_pair::{QueryMsg as AstroportPairQueryMsg, PoolResponse};
 
 fn calculate_anchor_borrow_distribution_apr(
     anc_price: Decimal256,

@@ -11,7 +11,6 @@ use cosmwasm_std::{Addr, StdResult, Storage};
 use crate::{error::ContractError, ContractResult};
 
 /// Only for migration purpose
-#[deprecated]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct LegacyConfig {
     pub governance_contract: Addr,
