@@ -3,6 +3,8 @@ use basset_vault::anchor::borrow_apr::BorrowNetApr;
 use basset_vault::basset_vault_strategy::{BorrowerActionResponse, ConfigResponse};
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Deps, Env, StdResult, Timestamp};
+use serde::{Serialize, Deserialize};
+use schemars::JsonSchema;
 
 use crate::state::{load_config, Config};
 
@@ -65,12 +67,14 @@ impl LTVInfo {
     }
 }
 
-struct AnchorApr {
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct AnchorApr {
     earn: Decimal256,
     borrow: BorrowNetApr,
 }
 
-fn query_anchor_apr(deps: Deps, config: &Config) -> StdResult<AnchorApr> {
+pub fn query_anchor_apr(deps: Deps, config: &Config) -> StdResult<AnchorApr> {
     let earn = basset_vault::anchor::earn_apr::query_anchor_earn_apr(
         deps,
         &config.anchor_overseer_contract,
@@ -232,45 +236,6 @@ fn calc_borrower_action_on_profitable_anchor(
         BorrowerActionResponse::borrow(borrow_amount, buffer_size)
     } else {
         BorrowerActionResponse::nothing()
-    }
-}
-
-#[cfg(feature = "integration_tests_build")]
-pub mod test_anchor_apr_calculation {
-    use super::*;
-    use basset_vault::anchor::market::query_market_state;
-    use cosmwasm_std::{QuerierResult, to_binary, WasmQuery, QueryResponse, QueryRequest};
-    use serde::{Deserialize, Serialize};
-
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-    pub struct AnchorApr {
-        pub anchor_earn_apr: Decimal256,
-        pub anchor_borrow_distribution_apr: Decimal256,
-        pub anchor_borrow_interest_apr: Decimal256,
-    }
-
-    pub fn calculate(deps: Deps, _env: Env) -> StdResult<AnchorApr> {
-        let config: Config = load_config(deps.storage)?;
-
-        let anchor_earn_apr = basset_vault::anchor::earn_apr::query_anchor_earn_apr(
-            deps,
-            &config.anchor_overseer_contract,
-        )?;
-
-        let anchor_borrow_apr = basset_vault::anchor::borrow_apr::query_anchor_borrow_net_apr(
-            deps,
-            &config.anchor_market_contract,
-            &config.anchor_interest_model_contract,
-            &config.anc_ust_swap_contract,
-            config.stable_denom.clone(),
-            &config.anchor_token,
-        )?;
-
-        Ok(AnchorApr {
-            anchor_earn_apr,
-            anchor_borrow_distribution_apr: anchor_borrow_apr.distribution_apr,
-            anchor_borrow_interest_apr: anchor_borrow_apr.interest_apr,
-        })
     }
 }
 

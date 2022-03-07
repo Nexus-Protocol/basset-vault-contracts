@@ -21,7 +21,8 @@ fn calculate_anchor_borrow_interest_apr(borrow_rate: Decimal256) -> Decimal256 {
     borrow_rate * NUMBER_OF_BLOCKS_PER_YEAR
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct BorrowNetApr {
     pub distribution_apr: Decimal256,
     pub interest_apr: Decimal256,
