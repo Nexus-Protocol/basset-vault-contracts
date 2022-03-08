@@ -25,6 +25,7 @@ fn proper_initialization() {
         basset_max_ltv: Decimal256::from_str("0.5").unwrap(),
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
+        staking_apr: Decimal256::from_str("0.0").unwrap(),
     };
 
     let env = mock_env();

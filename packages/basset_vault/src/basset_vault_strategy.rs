@@ -21,6 +21,7 @@ pub struct InstantiateMsg {
     pub basset_max_ltv: Decimal256,
     pub buffer_part: Decimal256,
     pub price_timeframe: u64,
+    pub staking_apr: Decimal256,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -54,6 +55,7 @@ pub enum GovernanceMsg {
         anchor_overseer_addr: Option<String>,
         anc_ust_swap_addr: Option<String>,
         anchor_token_addr: Option<String>,
+        staking_apr: Option<Decimal256>,
     },
     UpdateGovernanceContract {
         gov_addr: String,
@@ -91,6 +93,7 @@ pub struct ConfigResponse {
     pub basset_max_ltv: Decimal256,
     pub buffer_part: Decimal256,
     pub price_timeframe: u64,
+    pub staking_apr: Decimal256,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -174,4 +177,5 @@ pub struct MigrateMsg {
     pub anchor_overseer_addr: String,
     pub anc_ust_swap_addr: String,
     pub anchor_token_addr: String,
+    pub staking_apr: Decimal256,
 }

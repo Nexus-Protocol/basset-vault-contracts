@@ -27,6 +27,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
         basset_max_ltv: Decimal256::from_str("0.5").unwrap(),
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
+        staking_apr: Decimal256::from_str("0.0").unwrap(),
     };
 
     {
@@ -53,6 +54,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
     let new_basset_max_ltv = Some(Decimal256::from_str("0.7").unwrap());
     let new_buffer_part = Some(Decimal256::from_str("0.99").unwrap());
     let new_price_timeframe = Some(100);
+    let new_staking_apr = Some(Decimal256::from_str("0.05").unwrap());
 
     let change_config_msg = ExecuteMsg::Governance {
         governance_msg: GovernanceMsg::UpdateConfig {
@@ -70,6 +72,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
             anchor_overseer_addr: new_overseer_addr,
             anc_ust_swap_addr: new_anc_ust_swap_addr,
             anchor_token_addr: new_anchor_token_addr,
+            staking_apr: new_staking_apr,
         },
     };
 
@@ -101,6 +104,7 @@ fn success_to_change_config_if_sender_governance() {
         basset_max_ltv: Decimal256::from_str("0.5").unwrap(),
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
+        staking_apr: Decimal256::from_str("0.0").unwrap(),
     };
 
     {
@@ -127,6 +131,7 @@ fn success_to_change_config_if_sender_governance() {
     let new_basset_max_ltv = Decimal256::from_str("0.7").unwrap();
     let new_buffer_part = Decimal256::from_str("0.99").unwrap();
     let new_price_timeframe = 100;
+    let new_staking_apr = Decimal256::from_str("0.05").unwrap();
 
     let change_config_msg = ExecuteMsg::Governance {
         governance_msg: GovernanceMsg::UpdateConfig {
@@ -144,6 +149,7 @@ fn success_to_change_config_if_sender_governance() {
             anchor_overseer_addr: Some(new_overseer_addr.clone()),
             anc_ust_swap_addr: Some(new_anc_ust_swap_addr.clone()),
             anchor_token_addr: Some(new_anchor_token_addr.clone()),
+            staking_apr: Some(new_staking_apr),
         },
     };
 
@@ -166,4 +172,5 @@ fn success_to_change_config_if_sender_governance() {
     assert_eq!(new_overseer_addr, config.anchor_overseer_contract);
     assert_eq!(new_anc_ust_swap_addr, config.anc_ust_swap_contract);
     assert_eq!(new_anchor_token_addr, config.anchor_token);
+    assert_eq!(new_staking_apr, config.staking_apr);
 }
