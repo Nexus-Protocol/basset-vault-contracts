@@ -75,7 +75,7 @@ pub fn load_aim_ltv(deps: Deps, config: &Config) -> StdResult<Decimal256> {
     let basset_strategy_config: BassetStrategyConfig =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
             contract_addr: config.basset_vault_strategy_contract.to_string(),
-            key: Binary::from(b"config"),
+            key: Binary::from(b"config_v2"),
         }))?;
 
     Ok(basset_strategy_config.borrow_ltv_aim)
