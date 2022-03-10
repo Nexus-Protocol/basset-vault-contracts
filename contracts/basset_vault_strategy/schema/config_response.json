@@ -3,9 +3,11 @@
   "title": "ConfigResponse",
   "type": "object",
   "required": [
+    "anc_ust_swap_contract",
     "anchor_interest_model_contract",
     "anchor_market_contract",
     "anchor_overseer_contract",
+    "anchor_token_contract",
     "basset_max_ltv",
     "basset_token",
     "borrow_ltv_aim",
@@ -15,9 +17,13 @@
     "governance_contract",
     "oracle_contract",
     "price_timeframe",
-    "stable_denom"
+    "stable_denom",
+    "staking_apr"
   ],
   "properties": {
+    "anc_ust_swap_contract": {
+      "type": "string"
+    },
     "anchor_interest_model_contract": {
       "type": "string"
     },
@@ -25,6 +31,9 @@
       "type": "string"
     },
     "anchor_overseer_contract": {
+      "type": "string"
+    },
+    "anchor_token_contract": {
       "type": "string"
     },
     "basset_max_ltv": {
@@ -58,6 +67,9 @@
     },
     "stable_denom": {
       "type": "string"
+    },
+    "staking_apr": {
+      "$ref": "#/definitions/Decimal256"
     }
   },
   "definitions": {

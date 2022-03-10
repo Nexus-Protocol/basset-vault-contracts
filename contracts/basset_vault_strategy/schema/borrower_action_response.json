@@ -94,22 +94,17 @@
     {
       "type": "object",
       "required": [
-        "WithdrawAll"
+        "RepayAllAndWithdraw"
       ],
       "properties": {
-        "WithdrawAll": {
+        "RepayAllAndWithdraw": {
           "type": "object",
           "required": [
             "withdraw_amount"
           ],
           "properties": {
             "withdraw_amount": {
-              "description": "It might be strange that withdraw **all** contains amount, but since rebalance can be called with not actual balance but aim balance, we can't query it directly",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/Uint256"
-                }
-              ]
+              "$ref": "#/definitions/Uint256"
             }
           }
         }
@@ -212,22 +207,17 @@
         {
           "type": "object",
           "required": [
-            "WithdrawAll"
+            "RepayAllAndWithdraw"
           ],
           "properties": {
-            "WithdrawAll": {
+            "RepayAllAndWithdraw": {
               "type": "object",
               "required": [
                 "withdraw_amount"
               ],
               "properties": {
                 "withdraw_amount": {
-                  "description": "It might be strange that withdraw **all** contains amount, but since rebalance can be called with not actual balance but aim balance, we can't query it directly",
-                  "allOf": [
-                    {
-                      "$ref": "#/definitions/Uint256"
-                    }
-                  ]
+                  "$ref": "#/definitions/Uint256"
                 }
               }
             }

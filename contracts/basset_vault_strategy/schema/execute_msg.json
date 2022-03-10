@@ -99,6 +99,12 @@
                     "null"
                   ]
                 },
+                "anchor_token_addr": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
                 "basset_max_ltv": {
                   "anyOf": [
                     {
@@ -173,6 +179,16 @@
                   "type": [
                     "string",
                     "null"
+                  ]
+                },
+                "staking_apr": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/Decimal256"
+                    },
+                    {
+                      "type": "null"
+                    }
                   ]
                 }
               }
