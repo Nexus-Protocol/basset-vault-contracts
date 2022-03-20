@@ -122,7 +122,7 @@ fn calc_borrower_action(
     let current_ltv: Decimal256 =
         Decimal256::from_uint256(borrowed_amount) / Decimal256::from_uint256(max_borrow_amount);
 
-    let buffer_size = max_borrow_amount * buffer_part;
+    let buffer_size = max_borrow_amount * ltv_info.borrow_ltv_max * buffer_part;
     let aim_borrow_amount = ltv_info.borrow_ltv_aim * max_borrow_amount;
     if current_ltv >= ltv_info.borrow_ltv_max {
         let repay_amount = borrowed_amount - aim_borrow_amount;
@@ -157,15 +157,15 @@ mod test {
         let buffer_part = Decimal256::from_str("0.018").unwrap();
         let ltv_info = LTVInfo {
             basset_price: Decimal256::from_str("5.5").unwrap(),
-            borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
-            borrow_ltv_min: Decimal256::from_str("0.75").unwrap(),
-            borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
+            borrow_ltv_max: Decimal256::from_str("0.8").unwrap(),
+            borrow_ltv_min: Decimal256::from_str("0.65").unwrap(),
+            borrow_ltv_aim: Decimal256::from_str("0.7").unwrap(),
         };
 
         //max_borrow = 210_000 * 5.5 * 0.5 = 577_500
         //ltv = 519_750 / 577_500 = 0.9
-        //to_repay = (0.9 - 0.8) * 577_500 = 57_750
-        //buffer_size = 0.018 * 577_500 = 10_395
+        //to_borrow = (0.9 - 0.7) * 577_500 = 115_500
+        //buffer_size = 0.018 * 577_500 * 0.8 = 8_316
         let borrower_action = calc_borrower_action(
             ltv_info,
             borrowed_amount,
@@ -175,7 +175,7 @@ mod test {
         );
         assert_eq!(
             borrower_action,
-            BorrowerActionResponse::repay(Uint256::from(57_750u64), Uint256::from(10_395u64))
+            BorrowerActionResponse::repay(Uint256::from(115_500u64), Uint256::from(8_316u64))
         );
     }
 
@@ -187,15 +187,15 @@ mod test {
         let buffer_part = Decimal256::from_str("0.018").unwrap();
         let ltv_info = LTVInfo {
             basset_price: Decimal256::from_str("5.5").unwrap(),
-            borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
-            borrow_ltv_min: Decimal256::from_str("0.75").unwrap(),
-            borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
+            borrow_ltv_max: Decimal256::from_str("0.8").unwrap(),
+            borrow_ltv_min: Decimal256::from_str("0.65").unwrap(),
+            borrow_ltv_aim: Decimal256::from_str("0.7").unwrap(),
         };
 
         //max_borrow = 210_000 * 5.5 * 0.5 = 577_500
         //ltv = 346_500 / 577_500 = 0.6
-        //to_borrow =  (0.8 - 0.6) * 577_500 = 115_500
-        //buffer_size = 0.018 * 577_500 = 10_395
+        //to_borrow = (0.7 - 0.6) * 577_500 = 57_750
+        //buffer_size = 0.018 * 577_500 * 0.8 = 8_316
         let borrower_action = calc_borrower_action(
             ltv_info,
             borrowed_amount,
@@ -205,7 +205,7 @@ mod test {
         );
         assert_eq!(
             borrower_action,
-            BorrowerActionResponse::borrow(Uint256::from(115_500u64), Uint256::from(10_395u64))
+            BorrowerActionResponse::borrow(Uint256::from(57_750u64), Uint256::from(8_316u64))
         );
     }
 
@@ -364,15 +364,15 @@ mod test {
         let buffer_part = Decimal256::from_str("0.018").unwrap();
         let ltv_info = LTVInfo {
             basset_price: Decimal256::from_str("5.5").unwrap(),
-            borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
-            borrow_ltv_min: Decimal256::from_str("0.75").unwrap(),
-            borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
+            borrow_ltv_max: Decimal256::from_str("0.8").unwrap(),
+            borrow_ltv_min: Decimal256::from_str("0.65").unwrap(),
+            borrow_ltv_aim: Decimal256::from_str("0.7").unwrap(),
         };
 
         //max_borrow = 210_000 * 5.5 * 0.5 = 577_500
         //ltv = 0.0
-        //to_borrow = (0.8 - 0.0) * 577_500 = 462_000
-        //buffer_size = 0.018 * 577_500 = 10_395
+        //to_borrow = (0.7 - 0.0) * 577_500 = 404_250
+        //buffer_size = 0.018 * 577_500 * 0.8 = 8_316
         let borrower_action = calc_borrower_action(
             ltv_info,
             borrowed_amount,
@@ -382,7 +382,7 @@ mod test {
         );
         assert_eq!(
             borrower_action,
-            BorrowerActionResponse::borrow(Uint256::from(462_000u64), Uint256::from(10_395u64))
+            BorrowerActionResponse::borrow(Uint256::from(404_250u64), Uint256::from(8_316u64))
         );
     }
 
