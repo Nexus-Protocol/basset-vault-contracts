@@ -435,10 +435,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[entry_point]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> StdResult<Response> {
-    let mut config: Config = load_config(deps.storage)?;
-    config.psi_stable_swap_contract = deps.api.addr_validate(&msg.new_psi_stable_swap_addr)?;
-    config.anc_stable_swap_contract = deps.api.addr_validate(&msg.new_anc_stable_swap_addr)?;
-    store_config(deps.storage, &config)?;
-    Ok(Response::default())
+pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> StdResult<Response> {
+    commands::migrate(deps, env, msg)
 }

@@ -453,8 +453,16 @@ pub fn split_profit_to_handle_interest(
 
     let aim_stable_balance = borrowed_amount * over_loan_balance_value;
     if aim_stable_balance <= total_stable_coin_balance_before_sell_anc {
+        let total_stable_coin_balance =
+            total_stable_coin_balance_before_sell_anc + selling_anc_profit;
+        let total_profit = total_stable_coin_balance - aim_stable_balance;
+        let amount_to_buy_psi_on = if total_profit >= stable_coin_balance {
+            stable_coin_balance
+        } else {
+            total_profit
+        };
         return ActionWithProfit::BuyPsi {
-            amount: selling_anc_profit,
+            amount: amount_to_buy_psi_on,
         };
     }
 
@@ -1580,6 +1588,41 @@ mod test {
         let stable_coin_balance_before_sell_anc = Uint256::from(500u64);
         let over_loan_balance_value = Decimal256::from_str("1.01").unwrap();
 
+        // aim_balance = 2000 * 1.01 = 2020
+        // stable_total_balance = 1800 + 800 = 2600
+        // buy_psi on 'stable_total_balance - aim_balance' = 580
+        let action_with_profit = split_profit_to_handle_interest(
+            borrowed_amount,
+            aterra_balance,
+            aterra_state_exchange_rate,
+            stable_coin_balance,
+            stable_coin_balance_before_sell_anc,
+            over_loan_balance_value,
+        );
+
+        assert_eq!(
+            ActionWithProfit::BuyPsi {
+                amount: Uint256::from(580u64)
+            },
+            action_with_profit
+        );
+    }
+
+    #[test]
+    fn split_profit_to_handle_interest_current_balance_is_bigger_than_aim_but_total_profit_is_bigger_than_balance(
+    ) {
+        let borrowed_amount = Uint256::from(2_000u64);
+        //2500*1.2 = 3000
+        let aterra_balance = Uint256::from(2_500u64);
+        let aterra_state_exchange_rate = Decimal256::from_str("1.2").unwrap();
+        let stable_coin_balance = Uint256::from(300u64);
+        let stable_coin_balance_before_sell_anc = Uint256::from(250u64);
+        let over_loan_balance_value = Decimal256::from_str("1.01").unwrap();
+
+        // aim_balance = 2000 * 1.01 = 2020
+        // stable_total_balance = 3000 + 300 = 3300
+        // buy_psi on 'stable_total_balance - aim_balance' = 1280
+        // but it is more than we have, so BuyPsi only on what we have: 300
         let action_with_profit = split_profit_to_handle_interest(
             borrowed_amount,
             aterra_balance,

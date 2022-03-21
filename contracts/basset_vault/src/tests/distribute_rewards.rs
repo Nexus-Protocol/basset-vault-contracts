@@ -101,18 +101,25 @@ fn honest_work() {
     let stable_coin_balance_from_selling_anc = Uint128::new(1_000_000);
     //send DisributeRewards message
     {
+        let over_loan_balance_value = Decimal256::from_str(OVER_LOAN_BALANCE_VALUE).unwrap();
         sdk.set_stable_balance(stable_coin_balance + stable_coin_balance_from_selling_anc);
         sdk.set_loan(Uint256::from(stable_coin_balance));
         sdk.set_aterra_balance(Uint256::from(stable_coin_balance));
-        sdk.set_aterra_exchange_rate(Decimal256::from_str(OVER_LOAN_BALANCE_VALUE).unwrap());
+        sdk.set_aterra_exchange_rate(over_loan_balance_value);
         sdk.set_tax(Decimal256::zero().into(), 0);
 
+        let aim_stable_balance: Uint256 =
+            Uint256::from(stable_coin_balance) * over_loan_balance_value;
+        let total_ust_value: Uint256 = Uint256::from(stable_coin_balance) * over_loan_balance_value
+            + stable_coin_balance.into()
+            + stable_coin_balance_from_selling_anc.into();
+        let expected_rewards = total_ust_value - aim_stable_balance;
         let distribute_rewards_response = sdk.send_distribute_rewards().unwrap();
         let swap_asset = Asset {
             info: AssetInfo::NativeToken {
                 denom: STABLE_DENOM.to_string(),
             },
-            amount: stable_coin_balance_from_selling_anc,
+            amount: expected_rewards.into(),
         };
         assert_eq!(
             distribute_rewards_response.messages,
@@ -128,7 +135,7 @@ fn honest_work() {
                     .unwrap(),
                     funds: vec![Coin {
                         denom: STABLE_DENOM.to_string(),
-                        amount: stable_coin_balance_from_selling_anc,
+                        amount: expected_rewards.into(),
                     }],
                 })),
                 SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
