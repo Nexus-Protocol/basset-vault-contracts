@@ -4,7 +4,7 @@ use crate::{
         load_aim_buffer_size, load_config, load_gov_update, load_repaying_loan_state,
         load_stable_balance_before_selling_anc, remove_gov_update, store_aim_buffer_size,
         store_config, store_gov_update, store_repaying_loan_state,
-        store_stable_balance_before_selling_anc, Config, GovernanceUpdateState, RepayingLoanState, load_after_deposit_action, store_after_deposit_action,
+        store_stable_balance_before_selling_anc, Config, GovernanceUpdateState, RepayingLoanState, load_after_deposit_action, store_after_deposit_action, LegacyConfig, load_legacy_config,
     },
     tax_querier::get_tax_info,
     utils::{
@@ -17,7 +17,7 @@ use basset_vault::{
     anchor::basset_custody::get_basset_in_custody,
     anchor::market::{query_borrower_info, BorrowerInfoResponse},
     astroport_pair::{Cw20HookMsg as AstroportCw20HookMsg, ExecuteMsg as AstroportExecuteMsg},
-    basset_vault::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, YourselfMsg},
+    basset_vault::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, MigrateMsg, YourselfMsg},
     basset_vault_strategy::{query_borrower_action, BorrowerActionResponse},
     querier::{
         query_aterra_state, query_balance, query_supply, query_token_balance, AnchorCustodyCw20Msg,
@@ -28,8 +28,8 @@ use basset_vault::{
 };
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
-    from_binary, to_binary, Addr, BlockInfo, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
-    Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
+    from_binary, to_binary, Addr, BlockInfo, Coin, CosmosMsg, Deps, DepsMut, Env,
+    MessageInfo, Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
 };
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 
@@ -924,4 +924,32 @@ pub(crate) fn after_deposit_action_on_reply(deps: DepsMut, env: Env) -> StdResul
     let config = load_config(deps.storage)?;
     let action = load_after_deposit_action(deps.storage)?;
     handle_borrower_action(deps, env, &config, action)
+}
+
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> StdResult<Response> {
+    let legacy_config: LegacyConfig = load_legacy_config(deps.storage)?;
+    
+    let new_config = Config {
+        governance_contract: legacy_config.governance_contract,
+        anchor_token: legacy_config.anchor_token,
+        anchor_overseer_contract: legacy_config.anchor_overseer_contract,
+        anchor_market_contract: legacy_config.anchor_market_contract,
+        anchor_custody_basset_contract: legacy_config.anchor_custody_basset_contract,
+        anchor_basset_reward_contract: deps.api.addr_validate(&msg.anchor_basset_reward_addr)?,
+        anc_stable_swap_contract: legacy_config.anc_stable_swap_contract,
+        psi_stable_swap_contract: legacy_config.psi_stable_swap_contract,
+        basset_token: legacy_config.basset_token,
+        aterra_token: legacy_config.aterra_token,
+        psi_token: legacy_config.psi_token,
+        basset_vault_strategy_contract: legacy_config.basset_vault_strategy_contract,
+        stable_denom: legacy_config.stable_denom,
+        claiming_rewards_delay: legacy_config.claiming_rewards_delay,
+        over_loan_balance_value: legacy_config.over_loan_balance_value,
+        nasset_token: legacy_config.nasset_token,
+        psi_distributor: legacy_config.psi_distributor,
+    };
+    
+    store_config(deps.storage, &new_config)?;
+
+    Ok(Response::default())
 }

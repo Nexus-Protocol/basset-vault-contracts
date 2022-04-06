@@ -6,13 +6,13 @@ use cosmwasm_std::{
 
 use crate::reply_response::MsgInstantiateContractResponse;
 use crate::state::{
-    load_psi_distributor_init_info, store_psi_distributor_init_info, LegacyConfig, Config, PsiDistributorInitInfo,
+    load_psi_distributor_init_info, store_psi_distributor_init_info, Config, PsiDistributorInitInfo,
 };
 use crate::{
     commands, queries,
     state::{
         config_set_nasset_token, config_set_psi_distributor, load_child_contracts_info,
-        load_legacy_config, load_config, load_nasset_token_config_holder, store_child_contracts_info, store_config,
+        load_config, load_nasset_token_config_holder, store_child_contracts_info, store_config,
         store_nasset_token_config_holder, update_loan_state_part_of_loan_repaid,
         ChildContractsInfo,
     },
@@ -448,29 +448,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[entry_point]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> StdResult<Response> {
-    let legacy_config: LegacyConfig = load_legacy_config(deps.storage)?;
-    
-    let new_config = Config {
-        governance_contract: legacy_config.governance_contract,
-        anchor_token: legacy_config.anchor_token,
-        anchor_overseer_contract: legacy_config.anchor_overseer_contract,
-        anchor_market_contract: legacy_config.anchor_market_contract,
-        anchor_custody_basset_contract: legacy_config.anchor_custody_basset_contract,
-        anchor_basset_reward_contract: deps.api.addr_validate(&msg.anchor_basset_reward_addr)?,
-        anc_stable_swap_contract: legacy_config.anc_stable_swap_contract,
-        psi_stable_swap_contract: legacy_config.psi_stable_swap_contract,
-        basset_token: legacy_config.basset_token,
-        aterra_token: legacy_config.aterra_token,
-        psi_token: legacy_config.psi_token,
-        basset_vault_strategy_contract: legacy_config.basset_vault_strategy_contract,
-        stable_denom: legacy_config.stable_denom,
-        claiming_rewards_delay: legacy_config.claiming_rewards_delay,
-        over_loan_balance_value: legacy_config.over_loan_balance_value,
-        nasset_token: legacy_config.nasset_token,
-        psi_distributor: legacy_config.psi_distributor,
-    };
-    
-    store_config(deps.storage, &new_config)?;
-    Ok(Response::default())
+pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> StdResult<Response> {
+    commands::migrate(deps, env, msg)
 }
