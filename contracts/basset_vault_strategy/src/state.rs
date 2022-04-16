@@ -52,6 +52,7 @@ pub struct Config {
 }
 
 impl Config {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         governance_contract: Addr,
         oracle_contract: Addr,
@@ -242,7 +243,7 @@ pub fn save_gov_update(
     KEY_GOVERNANCE_UPDATE.save(storage, gov_update)
 }
 
-pub fn remove_gov_update(storage: &mut dyn Storage) -> () {
+pub fn remove_gov_update(storage: &mut dyn Storage) {
     KEY_GOVERNANCE_UPDATE.remove(storage)
 }
 

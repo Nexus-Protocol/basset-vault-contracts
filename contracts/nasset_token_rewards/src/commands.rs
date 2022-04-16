@@ -223,7 +223,7 @@ pub fn increase_balance(
     holder.balance += amount;
     state.total_balance += amount;
 
-    calculate_global_index(deps.as_ref(), env, &config, &mut state)?;
+    calculate_global_index(deps.as_ref(), env, config, &mut state)?;
     save_holder(deps.storage, &address, &holder)?;
     save_state(deps.storage, &state)?;
 
@@ -254,7 +254,7 @@ pub fn decrease_balance(
         .into());
     }
 
-    calculate_global_index(deps.as_ref(), env, &config, &mut state)?;
+    calculate_global_index(deps.as_ref(), env, config, &mut state)?;
 
     // get decimals
     let rewards = calculate_decimal_rewards(state.global_index, holder.index, holder.balance)?;

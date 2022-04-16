@@ -53,7 +53,7 @@ pub fn execute(
 
                     Ok(Response::default())
                 } else {
-                    return Err(ContractError::Unauthorized {});
+                    Err(ContractError::Unauthorized {})
                 }
             }
 

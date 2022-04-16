@@ -34,7 +34,7 @@ pub fn query_token_balance(deps: Deps, contract_addr: &Addr, account_addr: &Addr
         return balance;
     }
 
-    return Uint128::zero();
+    Uint128::zero()
 }
 
 fn query_token_balance_new(
@@ -74,7 +74,7 @@ pub fn query_supply(querier: &QuerierWrapper, contract_addr: &Addr) -> StdResult
         return Ok(supply);
     }
 
-    return query_supply_new(querier, contract_addr);
+    query_supply_new(querier, contract_addr)
 }
 
 fn query_supply_new(querier: &QuerierWrapper, contract_addr: &Addr) -> StdResult<Uint128> {
@@ -204,7 +204,7 @@ pub fn query_holding_info(
     holder: &Addr,
 ) -> StdResult<HolderResponse> {
     let addr = deps.api.addr_canonicalize(holder.as_str())?;
-    let anchor_key_path = Path::<HolderResponse>::new("holders".as_bytes(), &[&addr.as_slice()]);
+    let anchor_key_path = Path::<HolderResponse>::new("holders".as_bytes(), &[addr.as_slice()]);
 
     let holder_info: StdResult<HolderResponse> =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {

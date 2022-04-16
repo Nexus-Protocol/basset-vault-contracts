@@ -32,10 +32,10 @@ pub enum RepayLoanAction {
 impl RepayLoanAction {
     pub fn repaying_loan_amount(&self) -> Uint256 {
         match self {
-            &RepayLoanAction::RepayLoan { amount } => amount,
-            &RepayLoanAction::RepayLoanAndSellAterra {
+            RepayLoanAction::RepayLoan { amount } => *amount,
+            RepayLoanAction::RepayLoanAndSellAterra {
                 repay_loan_amount, ..
-            } => repay_loan_amount,
+            } => *repay_loan_amount,
 
             _ => Uint256::zero(),
         }
@@ -226,9 +226,9 @@ pub fn get_repay_loan_action(
     let aterra_to_sell = aterra_to_sell.min(aterra_balance);
     let expected_uusd = tax_info.subtract_tax(aterra_to_sell * aterra_exchange_rate);
     if aterra_to_sell.is_zero() || expected_uusd.is_zero() {
-        return RepayLoanAction::RepayLoan {
+        RepayLoanAction::RepayLoan {
             amount: repay_amount,
-        };
+        }
     } else {
         RepayLoanAction::RepayLoanAndSellAterra {
             aterra_amount_to_sell: aterra_to_sell,
@@ -259,7 +259,7 @@ fn calc_wanted_stablecoins(
 
     //need to fill up buffer and repay loan
     let add_to_buffer = aim_buffer_size - stable_coin_balance;
-    return repay_amount + add_to_buffer;
+    repay_amount + add_to_buffer
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -474,10 +474,10 @@ pub fn split_profit_to_handle_interest(
     }
 
     let buy_psi_amount = selling_anc_profit - amount_to_anc_deposit;
-    return ActionWithProfit::Split {
+    ActionWithProfit::Split {
         buy_psi: buy_psi_amount,
         deposit_to_anc: amount_to_anc_deposit,
-    };
+    }
 }
 
 pub fn is_anc_rewards_claimable(pending_rewards: Decimal256) -> bool {

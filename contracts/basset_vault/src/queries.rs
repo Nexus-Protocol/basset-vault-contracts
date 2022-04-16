@@ -52,7 +52,7 @@ pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
     let basset_in_custody = get_basset_in_custody(
         deps,
         &config.anchor_custody_basset_contract,
-        &env.contract.address.clone(),
+        &env.contract.address,
     )?;
 
     let borrower_info: BorrowerInfoResponse =
@@ -141,7 +141,7 @@ fn assert_max_borrow_factor(
         return false;
     }
 
-    return true;
+    true
 }
 
 pub fn child_contracts_code_id(deps: Deps) -> StdResult<ChildContractsInfoResponse> {

@@ -139,6 +139,7 @@ impl RewardsDistribution {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn update_config(
     deps: DepsMut,
     mut current_config: Config,
@@ -242,7 +243,7 @@ fn validate_field_to_one(
         );
     }
 
-    return Ok(());
+    Ok(())
 }
 
 fn get_time(block: &BlockInfo) -> u64 {

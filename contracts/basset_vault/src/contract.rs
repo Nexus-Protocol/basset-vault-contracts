@@ -201,8 +201,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
 
             let nasset_psi_swap_contract_addr = events
                 .into_iter()
-                .map(|event| event.attributes)
-                .flatten()
+                .flat_map(|event| event.attributes)
                 .find(|attr| attr.key == "pair_contract_addr")
                 .map(|attr| attr.value)
                 .ok_or_else(|| {
@@ -322,8 +321,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                     return Err(StdError::generic_err(format!(
                         "fail to redeem stables, reason: {}",
                         err_msg
-                    ))
-                    .into());
+                    )));
                 }
             }
             cosmwasm_std::ContractResult::Ok(_) => commands::repay_logic_on_reply(deps, env),
@@ -366,7 +364,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                 let basset_in_custody = get_basset_in_custody(
                     deps.as_ref(),
                     &config.anchor_custody_basset_contract,
-                    &env.contract.address.clone(),
+                    &env.contract.address,
                 )?;
 
                 commands::rebalance(deps, env, &config, basset_in_contract_address, basset_in_custody)

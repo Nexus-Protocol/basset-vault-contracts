@@ -72,6 +72,6 @@ pub fn save_gov_update(
     KEY_GOVERNANCE_UPDATE.save(storage, gov_update)
 }
 
-pub fn remove_gov_update(storage: &mut dyn Storage) -> () {
+pub fn remove_gov_update(storage: &mut dyn Storage) {
     KEY_GOVERNANCE_UPDATE.remove(storage)
 }

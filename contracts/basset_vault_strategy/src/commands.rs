@@ -11,6 +11,7 @@ use crate::{
 use cosmwasm_bignumber::Decimal256;
 
 /// Executor: governance
+#[allow(clippy::too_many_arguments)]
 pub fn update_config(
     deps: DepsMut,
     mut current_config: Config,
@@ -43,9 +44,9 @@ pub fn update_config(
     }
 
     current_config.validate_and_set_borrow_ltvs(
-        borrow_ltv_max.unwrap_or(current_config.get_borrow_ltv_max()),
-        borrow_ltv_min.unwrap_or(current_config.get_borrow_ltv_min()),
-        borrow_ltv_aim.unwrap_or(current_config.get_borrow_ltv_aim()),
+        borrow_ltv_max.unwrap_or_else(|| current_config.get_borrow_ltv_max()),
+        borrow_ltv_min.unwrap_or_else(|| current_config.get_borrow_ltv_min()),
+        borrow_ltv_aim.unwrap_or_else(|| current_config.get_borrow_ltv_aim()),
     )?;
 
     if let Some(basset_max_ltv) = basset_max_ltv {

@@ -75,7 +75,7 @@ fn query_borrow_rate(
     total_liabilities: Decimal256,
     total_reserves: Decimal256,
 ) -> StdResult<BorrowRateResponse> {
-    let market_balance = query_balance(&querier, anchor_market_contract, stable_denom)?;
+    let market_balance = query_balance(querier, anchor_market_contract, stable_denom)?;
     querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: anchor_interest_model_contract.to_string(),
         msg: to_binary(&InterestModelQueryMsg::BorrowRate {

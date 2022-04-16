@@ -59,12 +59,12 @@ impl LTVInfo {
             };
         }
 
-        return Self {
+        Self {
             basset_price: price.rate,
             borrow_ltv_max,
             borrow_ltv_min,
             borrow_ltv_aim,
-        };
+        }
     }
 }
 
@@ -156,6 +156,7 @@ pub fn borrower_action(
     Ok(response)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn calc_borrower_action(
     anchor_apr: AnchorApr,
     stacking_apr: Decimal256,

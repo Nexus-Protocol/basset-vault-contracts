@@ -33,6 +33,7 @@ use cosmwasm_std::{
 };
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 
+#[allow(clippy::too_many_arguments)]
 pub fn update_config(
     deps: DepsMut,
     mut current_config: Config,
@@ -434,7 +435,7 @@ fn handle_borrower_action(
         BorrowerActionResponse::Nothing {} => {
             //maybe it is better to return error here, but
             //we cant, cause it is used in 'withdraw' and 'deposit'
-            return Ok(Response::new().add_attribute("action", "rebalance_not_needed"));
+            Ok(Response::new().add_attribute("action", "rebalance_not_needed"))
         }
 
         BorrowerActionResponse::Borrow {
@@ -534,7 +535,7 @@ pub(crate) fn repay_logic(
     repaying_loan_state.repaying_amount = repay_action.repaying_loan_amount();
     store_repaying_loan_state(deps.storage, &repaying_loan_state)?;
 
-    repay_action.to_response(&config)
+    repay_action.to_response(config)
 }
 
 pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Response> {
@@ -544,7 +545,7 @@ pub(crate) fn repay_logic_on_reply(deps: DepsMut, env: Env) -> StdResult<Respons
         if repaying_loan_state.repayed_something {
             return Ok(Response::default());
         } else {
-            return Err(StdError::generic_err("fail to repay loan").into());
+            return Err(StdError::generic_err("fail to repay loan"));
         }
     }
     let config = load_config(deps.storage)?;
@@ -730,7 +731,7 @@ pub fn swap_anc(deps: DepsMut, env: Env) -> StdResult<Response> {
         query_token_balance(deps.as_ref(), &config.anchor_token, &env.contract.address);
 
     if anc_amount.is_zero() {
-        return Err(StdError::generic_err("ANC amount is zero").into());
+        return Err(StdError::generic_err("ANC amount is zero"));
     }
 
     let stable_coin_balance = query_balance(
