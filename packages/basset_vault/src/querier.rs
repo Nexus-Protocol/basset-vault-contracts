@@ -5,7 +5,7 @@ use cosmwasm_std::{
 };
 use cosmwasm_storage::to_length_prefixed;
 use cw20_base::state::TokenInfo;
-use cw_storage_plus::Map;
+use cw_storage_plus::Path;
 
 use crate::concat;
 use schemars::JsonSchema;
@@ -203,14 +203,13 @@ pub fn query_holding_info(
     anchor_basset_reward_contract: &Addr,
     holder: &Addr,
 ) -> StdResult<HolderResponse> {
-    pub const HOLDERS: Map<&[u8], ()> = Map::new("holders");
     let addr = deps.api.addr_canonicalize(holder.as_str())?;
-    let key = &*HOLDERS.key(addr.as_slice());
+    let anchor_key_path = Path::<HolderResponse>::new("holders".as_bytes(), &[&addr.as_slice()]);
 
     let holder_info: StdResult<HolderResponse> =
         deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
             contract_addr: anchor_basset_reward_contract.to_string(),
-            key: Binary::from(key),
+            key: Binary::from(&*anchor_key_path),
         }));
 
     Ok(holder_info.unwrap_or(HolderResponse { pending_rewards: Decimal256::zero() }))
