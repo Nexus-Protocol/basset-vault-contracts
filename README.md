@@ -135,3 +135,7 @@ Helper contract. CW20 contract have no ability to reward token holders, so some 
 ## nAsset token rewards
 
 Helper contract. CW20 contract have no ability to reward token holders, so some workaround needed. (same as in `bLuna`)
+
+# Integration tests
+
+Some contracts have integrations tests feature flag. To build them for integration tests properly, use `integration_tests_build.sh`. This script builds those contracts and puts them to special directory in `contracts_scripts`. To configure this you have to set the path to your contracts scripts directory to the `CONTRACTS_SCRIPTS_PATH` env variable.
