@@ -136,6 +136,14 @@ Helper contract. CW20 contract have no ability to reward token holders, so some 
 
 Helper contract. CW20 contract have no ability to reward token holders, so some workaround needed. (same as in `bLuna`)
 
+# Release build
+
+To build smart contracts for production, use `build_release.sh` script.
+
+Before running it, make sure you installed tools for WASM:
+ 1. [WABT](https://github.com/WebAssembly/wabt) (`brew install wabt`)
+ 2. [Binaryen](https://github.com/WebAssembly/binaryen) (`brew install binaryen`)
+
 # Integration tests
 
 Some contracts have integrations tests feature flag. To build them for integration tests properly, use `integration_tests_build.sh`. This script builds those contracts and puts them to special directory in `contracts_scripts`. To configure this you have to set the path to your contracts scripts directory to the `CONTRACTS_SCRIPTS_PATH` env variable.
