@@ -146,4 +146,4 @@ Before running it, make sure you installed tools for WASM:
 
 # Integration tests
 
-Some contracts have integrations tests feature flag. To build them for integration tests properly, use `integration_tests_build.sh`. This script builds those contracts and puts them to special directory in `contracts_scripts`. To configure this you have to set the path to your contracts scripts directory to the `CONTRACTS_SCRIPTS_PATH` env variable.
+Some contracts have integrations tests feature flag. To build them for integration tests properly, use `integration_tests_build.sh`. This script builds those contracts and puts them to special directory in `contracts_scripts`. To configure this you have to set the path to your contracts scripts directory to the `CONTRACTS_SCRIPTS_PATH` env variable. Make sure you installed [WABT](https://github.com/WebAssembly/wabt) (`brew install wabt`) for striping wasm binaries.
