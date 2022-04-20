@@ -17,7 +17,7 @@ use basset_vault::{
     anchor::basset_custody::get_basset_in_custody,
     anchor::market::{query_borrower_info, BorrowerInfoResponse},
     astroport_pair::{Cw20HookMsg as AstroportCw20HookMsg, ExecuteMsg as AstroportExecuteMsg},
-    basset_vault::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, MigrateMsg, YourselfMsg},
+    basset_vault::{AnyoneMsg, Cw20HookMsg, ExecuteMsg, YourselfMsg},
     basset_vault_strategy::{query_borrower_action, BorrowerActionResponse},
     querier::{
         query_aterra_state, query_balance, query_supply, query_token_balance, AnchorCustodyCw20Msg,
@@ -28,8 +28,8 @@ use basset_vault::{
 };
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
-    from_binary, to_binary, Addr, BankMsg, BlockInfo, Coin, CosmosMsg, Deps, DepsMut, Env,
-    MessageInfo, Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
+    from_binary, to_binary, Addr, BlockInfo, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
 };
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 
@@ -724,46 +724,4 @@ pub fn buy_psi_on_remainded_stable_coins(
 
 fn get_time(block: &BlockInfo) -> u64 {
     block.time.seconds()
-}
-
-pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> StdResult<Response> {
-    let config: Config = load_config(deps.storage)?;
-
-    let stable_coin_balance: Uint256 = query_balance(
-        &deps.querier,
-        &env.contract.address,
-        config.stable_denom.clone(),
-    )?
-    .into();
-    let aterra_balance =
-        query_token_balance(deps.as_ref(), &config.aterra_token, &env.contract.address);
-
-    let aterra_state = query_aterra_state(deps.as_ref(), &config.anchor_market_contract)?;
-    let borrower_info: BorrowerInfoResponse = query_borrower_info(
-        deps.as_ref(),
-        &config.anchor_market_contract,
-        &env.contract.address,
-    )?;
-    let borrowed_amount = borrower_info.loan_amount;
-
-    let aterra_amount: Uint256 = aterra_balance.into();
-    let aterra_exchange_rate = aterra_state.exchange_rate;
-    let over_loan_balance_value = config.over_loan_balance_value;
-
-    let aim_stable_balance = borrowed_amount * over_loan_balance_value;
-    let total_stable_coin_balance = aterra_amount * aterra_exchange_rate + stable_coin_balance;
-    let total_profit = total_stable_coin_balance - aim_stable_balance;
-    let retain_rewards_to_distribute = if total_profit >= stable_coin_balance {
-        stable_coin_balance
-    } else {
-        total_profit
-    };
-
-    Ok(Response::new().add_message(BankMsg::Send {
-        to_address: msg.retain_rewards_distributor,
-        amount: vec![Coin {
-            denom: config.stable_denom.clone(),
-            amount: retain_rewards_to_distribute.into(),
-        }],
-    }))
 }
