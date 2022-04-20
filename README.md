@@ -135,3 +135,5 @@ Helper contract. CW20 contract have no ability to reward token holders, so some 
 ## nAsset token rewards
 
 Helper contract. CW20 contract have no ability to reward token holders, so some workaround needed. (same as in `bLuna`)
+
+test unit test run
