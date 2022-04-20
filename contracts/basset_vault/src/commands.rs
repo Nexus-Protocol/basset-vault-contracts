@@ -3,7 +3,7 @@ use crate::{
     state::{
         load_aim_buffer_size, load_config, load_gov_update, load_repaying_loan_state,
         load_stable_balance_before_selling_anc, remove_gov_update, store_aim_buffer_size,
-        store_config, store_gov_update, store_repaying_loan_state,
+        store_config, store_gov_update, store_last_anc_claim_seconds, store_repaying_loan_state,
         store_stable_balance_before_selling_anc, Config, GovernanceUpdateState, RepayingLoanState,
     },
     tax_querier::get_tax_info,
@@ -530,7 +530,7 @@ pub fn claim_anc_rewards(deps: DepsMut, env: Env) -> StdResult<Response> {
         &env.contract.address,
     )?;
 
-    if is_anc_rewards_claimable(borrower_info.pending_rewards) {
+    if is_anc_rewards_claimable(deps.as_ref(), &env, borrower_info.pending_rewards)? {
         Ok(Response::new()
             .add_messages(vec![
                 WasmMsg::Execute {
@@ -568,6 +568,7 @@ pub fn swap_anc(deps: DepsMut, env: Env) -> StdResult<Response> {
         config.stable_denom.clone(),
     )?;
     store_stable_balance_before_selling_anc(deps.storage, &stable_coin_balance)?;
+    store_last_anc_claim_seconds(deps.storage, &env.block.time.seconds())?;
 
     Ok(Response::new()
         .add_messages(vec![

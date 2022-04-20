@@ -73,6 +73,7 @@ impl PsiDistributorInitInfo {
 static KEY_CONFIG: Item<Config> = Item::new("config");
 static KEY_REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
 static KEY_AIM_BUFFER_SIZE: Item<Uint256> = Item::new("aim_buf_size");
+static KEY_LAST_ANC_CLAIM_SECONDS: Item<u64> = Item::new("last_anc_claim_secs");
 
 static KEY_STABLE_BALANCE_BEFORE_SELL_ANC: Item<Uint128> = Item::new("balance_before_sell_anc");
 #[allow(dead_code)]
@@ -198,4 +199,17 @@ pub fn store_psi_distributor_init_info(
     info: &PsiDistributorInitInfo,
 ) -> StdResult<()> {
     KEY_PSI_DISTRIBUTOR_INIT_INFO.save(storage, info)
+}
+
+pub fn store_last_anc_claim_seconds(
+    storage: &mut dyn Storage,
+    claim_seconds: &u64,
+) -> StdResult<()> {
+    KEY_LAST_ANC_CLAIM_SECONDS.save(storage, claim_seconds)
+}
+
+pub fn load_last_anc_claim_seconds(storage: &dyn Storage) -> StdResult<u64> {
+    KEY_LAST_ANC_CLAIM_SECONDS
+        .may_load(storage)
+        .map(|res| res.unwrap_or_default())
 }

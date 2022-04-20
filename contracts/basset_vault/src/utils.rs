@@ -1,9 +1,14 @@
 use cosmwasm_bignumber::{Decimal256, Uint256};
-use cosmwasm_std::{to_binary, Coin, CosmosMsg, Response, StdResult, SubMsg, Uint128, WasmMsg};
+use cosmwasm_std::{
+    to_binary, Coin, CosmosMsg, Deps, Env, Response, StdResult, SubMsg, Uint128, WasmMsg,
+};
 
 use crate::tax_querier::TaxInfo;
 use crate::SubmsgIds;
-use crate::{state::Config, MIN_ANC_REWARDS_TO_CLAIM};
+use crate::{
+    state::{load_last_anc_claim_seconds, Config},
+    MAX_SECS_DELAY_BETWEEN_ANC_CLAIM, MIN_ANC_REWARDS_TO_CLAIM,
+};
 use basset_vault::{
     astroport_pair::ExecuteMsg as AstroportExecuteMsg,
     psi_distributor::{
@@ -480,8 +485,19 @@ pub fn split_profit_to_handle_interest(
     };
 }
 
-pub fn is_anc_rewards_claimable(pending_rewards: Decimal256) -> bool {
-    pending_rewards >= Decimal256::from_uint256(MIN_ANC_REWARDS_TO_CLAIM)
+pub fn is_anc_rewards_claimable(
+    deps: Deps,
+    env: &Env,
+    pending_rewards: Decimal256,
+) -> StdResult<bool> {
+    let enough_pending_rewards =
+        pending_rewards >= Decimal256::from_uint256(MIN_ANC_REWARDS_TO_CLAIM);
+    Ok(enough_pending_rewards || is_last_anc_claim_was_24_hours_ago(deps, env)?)
+}
+
+fn is_last_anc_claim_was_24_hours_ago(deps: Deps, env: &Env) -> StdResult<bool> {
+    let last_claim_seconds = load_last_anc_claim_seconds(deps.storage)?;
+    Ok((env.block.time.seconds() - last_claim_seconds) >= MAX_SECS_DELAY_BETWEEN_ANC_CLAIM)
 }
 
 #[cfg(test)]

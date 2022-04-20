@@ -15,6 +15,7 @@ mod tests;
 //withdrawing from Anchor Deposit error
 pub const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
 pub const MIN_ANC_REWARDS_TO_CLAIM: u64 = 100_000_000u64;
+pub const MAX_SECS_DELAY_BETWEEN_ANC_CLAIM: u64 = 86_400;
 
 pub enum SubmsgIds {
     InitNAssetConfigHolder,
