@@ -194,5 +194,9 @@ cd contracts_scripts
 # Troubleshooting
 
 - permission denied when running .sh files
-https://askubuntu.com/questions/409025/permission-denied-when-running-sh-scripts
 
+(source)[https://askubuntu.com/questions/409025/permission-denied-when-running-sh-scripts]
+```
+cd /path/to/target
+chmod +x the_file_name
+```
