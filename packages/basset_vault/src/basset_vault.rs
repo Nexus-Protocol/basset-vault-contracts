@@ -33,6 +33,8 @@ pub struct InstantiateMsg {
     pub a_overseer_addr: String,
     // anchor_custody_basset_contract_addr
     pub a_custody_basset_addr: String,
+    // anchor_basset_reward_contract
+    pub a_basset_reward_addr: String,
     // anc_stable_swap_contract_addr
     pub anc_stable_swap_addr: String,
     // psi_stable_swap_contract_addr
@@ -86,6 +88,7 @@ pub enum AnyoneMsg {
     AcceptGovernance {},
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum GovernanceMsg {
@@ -94,6 +97,7 @@ pub enum GovernanceMsg {
         anchor_overseer_contract_addr: Option<String>,
         anchor_market_contract_addr: Option<String>,
         anchor_custody_basset_contract_addr: Option<String>,
+        anchor_basset_reward_addr: Option<String>,
         anc_stable_swap_contract_addr: Option<String>,
         psi_stable_swap_contract_addr: Option<String>,
         basset_vault_strategy_contract_addr: Option<String>,
@@ -131,6 +135,7 @@ pub struct ConfigResponse {
     pub anchor_overseer_contract_addr: String,
     pub anchor_market_contract_addr: String,
     pub anchor_custody_basset_contract_addr: String,
+    pub anchor_basset_reward_addr: String,
     pub anc_stable_swap_contract_addr: String,
     pub psi_stable_swap_contract_addr: String,
     pub basset_token_addr: String,
@@ -154,6 +159,14 @@ pub enum RebalanceResponse {
     Repay {
         amount: Uint256,
         advised_buffer_size: Uint256,
+    },
+    Deposit {
+        deposit_amount: Uint256,
+        /// We need to rebalance again after deposit
+        action_after: Box<RebalanceResponse>,
+    },
+    RepayAllAndWithdraw {
+        withdraw_amount: Uint256,
     },
 }
 
@@ -179,5 +192,5 @@ pub struct IsRewardsClaimableResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct MigrateMsg {
-    pub retain_rewards_distributor: String,
+    pub anchor_basset_reward_addr: String,
 }

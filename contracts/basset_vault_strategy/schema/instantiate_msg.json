@@ -3,6 +3,11 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
+    "anc_ust_swap_addr",
+    "anchor_interest_model_addr",
+    "anchor_market_addr",
+    "anchor_overseer_addr",
+    "anchor_token_addr",
     "basset_max_ltv",
     "basset_token_addr",
     "borrow_ltv_aim",
@@ -12,9 +17,25 @@
     "governance_contract_addr",
     "oracle_contract_addr",
     "price_timeframe",
-    "stable_denom"
+    "stable_denom",
+    "staking_apr"
   ],
   "properties": {
+    "anc_ust_swap_addr": {
+      "type": "string"
+    },
+    "anchor_interest_model_addr": {
+      "type": "string"
+    },
+    "anchor_market_addr": {
+      "type": "string"
+    },
+    "anchor_overseer_addr": {
+      "type": "string"
+    },
+    "anchor_token_addr": {
+      "type": "string"
+    },
     "basset_max_ltv": {
       "$ref": "#/definitions/Decimal256"
     },
@@ -46,6 +67,9 @@
     },
     "stable_denom": {
       "type": "string"
+    },
+    "staking_apr": {
+      "$ref": "#/definitions/Decimal256"
     }
   },
   "definitions": {

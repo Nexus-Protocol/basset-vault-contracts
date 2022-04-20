@@ -3,6 +3,7 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
+    "a_basset_reward_addr",
     "a_custody_basset_addr",
     "a_market_addr",
     "a_overseer_addr",
@@ -29,6 +30,9 @@
     "ts_factory_addr"
   ],
   "properties": {
+    "a_basset_reward_addr": {
+      "type": "string"
+    },
     "a_custody_basset_addr": {
       "type": "string"
     },

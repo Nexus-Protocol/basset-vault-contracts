@@ -1,3 +1,4 @@
+use basset_vault::querier::query_token_balance;
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply,
     Response, StdError, StdResult, SubMsg, WasmMsg,
@@ -50,6 +51,7 @@ pub fn instantiate(
         anchor_overseer_contract: deps.api.addr_validate(&msg.a_overseer_addr)?,
         anchor_market_contract: deps.api.addr_validate(&msg.a_market_addr)?,
         anchor_custody_basset_contract: deps.api.addr_validate(&msg.a_custody_basset_addr)?,
+        anchor_basset_reward_contract: deps.api.addr_validate(&msg.a_basset_reward_addr)?,
         anc_stable_swap_contract: deps.api.addr_validate(&msg.anc_stable_swap_addr)?,
         psi_stable_swap_contract: deps.api.addr_validate(&msg.psi_stable_swap_addr)?,
         basset_token: deps.api.addr_validate(&msg.basset_addr)?,
@@ -199,8 +201,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
 
             let nasset_psi_swap_contract_addr = events
                 .into_iter()
-                .map(|event| event.attributes)
-                .flatten()
+                .flat_map(|event| event.attributes)
                 .find(|attr| attr.key == "pair_contract_addr")
                 .map(|attr| attr.value)
                 .ok_or_else(|| {
@@ -320,8 +321,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
                     return Err(StdError::generic_err(format!(
                         "fail to redeem stables, reason: {}",
                         err_msg
-                    ))
-                    .into());
+                    )));
                 }
             }
             cosmwasm_std::ContractResult::Ok(_) => commands::repay_logic_on_reply(deps, env),
@@ -339,6 +339,9 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> StdResult<Response> {
             //we do not care about errors here, just send all your stables to governance
             commands::buy_psi_on_remainded_stable_coins(deps.as_ref(), env, config)
         }
+
+        SubmsgIds::HoldingReward => commands::holding_reward_logic_on_reply(deps, env),
+        SubmsgIds::AfterDepositAction => commands::after_deposit_action_on_reply(deps, env),
     }
 }
 
@@ -351,17 +354,23 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
             AnyoneMsg::Rebalance {} => {
                 let config = load_config(deps.storage)?;
 
+                let basset_in_contract_address = query_token_balance(
+                    deps.as_ref(),
+                    &config.basset_token,
+                    &env.contract.address
+                ).into();
+
                 // basset balance in custody contract
                 let basset_in_custody = get_basset_in_custody(
                     deps.as_ref(),
                     &config.anchor_custody_basset_contract,
-                    &env.contract.address.clone(),
+                    &env.contract.address,
                 )?;
 
-                commands::rebalance(deps, env, &config, basset_in_custody, None)
+                commands::rebalance(deps, env, &config, basset_in_contract_address, basset_in_custody)
             }
 
-            AnyoneMsg::HonestWork {} => commands::claim_anc_rewards(deps, env),
+            AnyoneMsg::HonestWork {} => commands::claim_rewards(deps, env),
 
             AnyoneMsg::ClaimRemainder {} => commands::claim_remainded_stables(deps.as_ref(), env),
 
@@ -391,6 +400,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                     anchor_overseer_contract_addr,
                     anchor_market_contract_addr,
                     anchor_custody_basset_contract_addr,
+                    anchor_basset_reward_addr,
                     anc_stable_swap_contract_addr,
                     psi_stable_swap_contract_addr,
                     basset_vault_strategy_contract_addr,
@@ -403,6 +413,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
                     anchor_overseer_contract_addr,
                     anchor_market_contract_addr,
                     anchor_custody_basset_contract_addr,
+                    anchor_basset_reward_addr,
                     anc_stable_swap_contract_addr,
                     psi_stable_swap_contract_addr,
                     basset_vault_strategy_contract_addr,

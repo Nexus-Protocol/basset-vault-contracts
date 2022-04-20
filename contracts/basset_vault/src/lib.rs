@@ -14,7 +14,16 @@ mod tests;
 
 //withdrawing from Anchor Deposit error
 pub const TOO_HIGH_BORROW_DEMAND_ERR_MSG: &str = "borrow demand too high";
+
+#[cfg(not(feature = "integration_tests_build"))]
 pub const MIN_ANC_REWARDS_TO_CLAIM: u64 = 100_000_000u64;
+#[cfg(feature = "integration_tests_build")]
+pub const MIN_ANC_REWARDS_TO_CLAIM: u64 = 1u64;
+
+#[cfg(not(feature = "integration_tests_build"))]
+pub const MIN_HOLDING_REWARDS_TO_CLAIM: u64 = 100_000_000u64;
+#[cfg(feature = "integration_tests_build")]
+pub const MIN_HOLDING_REWARDS_TO_CLAIM: u64 = 1u64;
 
 pub enum SubmsgIds {
     InitNAssetConfigHolder,
@@ -26,6 +35,8 @@ pub enum SubmsgIds {
     RepayLoan,
     Borrowing,
     RedeemStableOnRemainder,
+    HoldingReward,
+    AfterDepositAction,
 }
 
 impl TryFrom<u64> for SubmsgIds {
@@ -48,6 +59,8 @@ impl TryFrom<u64> for SubmsgIds {
             x if x == SubmsgIds::RedeemStableOnRemainder.id() => {
                 Ok(SubmsgIds::RedeemStableOnRemainder)
             }
+            x if x == SubmsgIds::HoldingReward.id() => Ok(SubmsgIds::HoldingReward),
+            x if x == SubmsgIds::AfterDepositAction.id() => Ok(SubmsgIds::AfterDepositAction),
             unknown => Err(StdError::generic_err(format!(
                 "unknown reply message id: {}",
                 unknown
@@ -68,6 +81,8 @@ impl SubmsgIds {
             SubmsgIds::RepayLoan => 6,
             SubmsgIds::Borrowing => 7,
             SubmsgIds::RedeemStableOnRemainder => 8,
+            SubmsgIds::HoldingReward => 9,
+            SubmsgIds::AfterDepositAction => 10,
         }
     }
 }

@@ -16,6 +16,7 @@ pub struct InstantiateMsg {
     pub tax_rate: Decimal256,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {

@@ -23,10 +23,14 @@
         "borrower_action": {
           "type": "object",
           "required": [
+            "basset_in_contract_address",
             "borrowed_amount",
             "locked_basset_amount"
           ],
           "properties": {
+            "basset_in_contract_address": {
+              "$ref": "#/definitions/Uint256"
+            },
             "borrowed_amount": {
               "$ref": "#/definitions/Uint256"
             },
@@ -34,6 +38,18 @@
               "$ref": "#/definitions/Uint256"
             }
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "anchor_apr"
+      ],
+      "properties": {
+        "anchor_apr": {
+          "type": "object"
         }
       },
       "additionalProperties": false

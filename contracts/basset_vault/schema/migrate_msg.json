@@ -3,10 +3,10 @@
   "title": "MigrateMsg",
   "type": "object",
   "required": [
-    "retain_rewards_distributor"
+    "anchor_basset_reward_addr"
   ],
   "properties": {
-    "retain_rewards_distributor": {
+    "anchor_basset_reward_addr": {
       "type": "string"
     }
   }

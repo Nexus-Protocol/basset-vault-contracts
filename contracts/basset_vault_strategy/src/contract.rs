@@ -6,7 +6,7 @@ use crate::{
     commands,
     error::ContractError,
     queries,
-    state::{load_config, save_config},
+    state::{load_config, save_config, load_legacy_config},
 };
 use crate::{state::Config, ContractResult};
 use basset_vault::basset_vault_strategy::{
@@ -23,6 +23,11 @@ pub fn instantiate(
     let config = Config::new(
         deps.api.addr_validate(&msg.governance_contract_addr)?,
         deps.api.addr_validate(&msg.oracle_contract_addr)?,
+        deps.api.addr_validate(&msg.anchor_market_addr)?,
+        deps.api.addr_validate(&msg.anchor_interest_model_addr)?,
+        deps.api.addr_validate(&msg.anchor_overseer_addr)?,
+        deps.api.addr_validate(&msg.anc_ust_swap_addr)?,
+        deps.api.addr_validate(&msg.anchor_token_addr)?,
         deps.api.addr_validate(&msg.basset_token_addr)?,
         msg.stable_denom,
         msg.borrow_ltv_max,
@@ -31,6 +36,7 @@ pub fn instantiate(
         msg.basset_max_ltv,
         msg.buffer_part,
         msg.price_timeframe,
+        msg.staking_apr,
     )?;
 
     save_config(deps.storage, &config)?;
@@ -67,6 +73,12 @@ pub fn execute(
                     basset_max_ltv,
                     buffer_part,
                     price_timeframe,
+                    anchor_market_addr,
+                    anchor_interest_model_addr,
+                    anchor_overseer_addr,
+                    anc_ust_swap_addr,
+                    anchor_token_addr,
+                    staking_apr,
                 } => commands::update_config(
                     deps,
                     config,
@@ -79,6 +91,12 @@ pub fn execute(
                     basset_max_ltv,
                     buffer_part,
                     price_timeframe,
+                    anchor_market_addr,
+                    anchor_interest_model_addr,
+                    anchor_overseer_addr,
+                    anc_ust_swap_addr,
+                    anchor_token_addr,
+                    staking_apr,
                 ),
 
                 GovernanceMsg::UpdateGovernanceContract {
@@ -100,18 +118,35 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&queries::query_config(deps)?),
         QueryMsg::BorrowerAction {
+            basset_in_contract_address, 
             borrowed_amount,
             locked_basset_amount,
         } => to_binary(&queries::borrower_action(
             deps,
             env,
+            basset_in_contract_address,
             borrowed_amount,
             locked_basset_amount,
         )?),
+        QueryMsg::AnchorApr {} => {
+            let config = load_config(deps.storage)?;
+            to_binary(&queries::query_anchor_apr(deps, &config)?)
+        },
     }
 }
 
 #[entry_point]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> StdResult<Response> {
+    let legacy_config = load_legacy_config(deps.storage)?;
+    let new_config = Config::from_legacy(
+        legacy_config, 
+        deps.api.addr_validate(&msg.anchor_market_addr)?,
+        deps.api.addr_validate(&msg.anchor_interest_model_addr)?,
+        deps.api.addr_validate(&msg.anchor_overseer_addr)?,
+        deps.api.addr_validate(&msg.anc_ust_swap_addr)?,
+        deps.api.addr_validate(&msg.anchor_token_addr)?,
+        msg.staking_apr,
+    );
+    save_config(deps.storage, &new_config)?;
     Ok(Response::default())
 }

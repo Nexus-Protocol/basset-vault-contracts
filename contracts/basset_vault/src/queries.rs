@@ -8,7 +8,7 @@ use basset_vault::{
         ChildContractsInfoResponse, ConfigResponse, IsRewardsClaimableResponse, RebalanceResponse,
     },
     basset_vault_strategy::{query_borrower_action, BorrowerActionResponse},
-    querier::query_balance,
+    querier::{query_balance, query_token_balance},
 };
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Deps, Env, StdResult};
@@ -24,6 +24,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         anchor_overseer_contract_addr: config.anchor_overseer_contract.to_string(),
         anchor_market_contract_addr: config.anchor_market_contract.to_string(),
         anchor_custody_basset_contract_addr: config.anchor_custody_basset_contract.to_string(),
+        anchor_basset_reward_addr: config.anchor_basset_reward_contract.to_string(),
         anc_stable_swap_contract_addr: config.anc_stable_swap_contract.to_string(),
         psi_stable_swap_contract_addr: config.psi_stable_swap_contract.to_string(),
         nasset_token_addr: config.nasset_token.to_string(),
@@ -41,11 +42,17 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
     let config: Config = load_config(deps.storage)?;
 
+    let basset_in_contract_address = query_token_balance(
+        deps,
+        &config.basset_token,
+        &env.contract.address
+    );
+
     // basset balance in custody contract
     let basset_in_custody = get_basset_in_custody(
         deps,
         &config.anchor_custody_basset_contract,
-        &env.contract.address.clone(),
+        &env.contract.address,
     )?;
 
     let borrower_info: BorrowerInfoResponse =
@@ -55,11 +62,21 @@ pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
     let borrower_action = query_borrower_action(
         deps,
         &config.basset_vault_strategy_contract,
+        basset_in_contract_address.into(),
         borrowed_ust,
         basset_in_custody,
     )?;
 
-    let response = match borrower_action {
+    borrower_action_to_response(borrower_action, deps, env, &config)
+}
+
+fn borrower_action_to_response(
+    action: BorrowerActionResponse,
+    deps: Deps,
+    env: Env,
+    config: &Config
+) -> StdResult<RebalanceResponse> {
+    let response = match action {
         BorrowerActionResponse::Nothing {} => RebalanceResponse::Nothing {},
         BorrowerActionResponse::Repay {
             amount,
@@ -76,7 +93,7 @@ pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
             let anchor_market_balance = query_balance(
                 &deps.querier,
                 &config.anchor_market_contract,
-                config.stable_denom,
+                config.stable_denom.clone(),
             )?;
             let anchor_market_config = query_market_config(deps, &config.anchor_market_contract)?;
             let is_borrowing_possible = assert_max_borrow_factor(
@@ -91,9 +108,13 @@ pub fn query_rebalance(deps: Deps, env: Env) -> StdResult<RebalanceResponse> {
                 advised_buffer_size,
                 is_possible: is_borrowing_possible,
             }
-        }
+        },
+        BorrowerActionResponse::Deposit { deposit_amount, action_after } => RebalanceResponse::Deposit {
+            deposit_amount,
+            action_after: Box::new(borrower_action_to_response(*action_after, deps, env, config)?)
+        },
+        BorrowerActionResponse::RepayAllAndWithdraw { withdraw_amount } => RebalanceResponse::RepayAllAndWithdraw { withdraw_amount },
     };
-
     Ok(response)
 }
 
@@ -120,7 +141,7 @@ fn assert_max_borrow_factor(
         return false;
     }
 
-    return true;
+    true
 }
 
 pub fn child_contracts_code_id(deps: Deps) -> StdResult<ChildContractsInfoResponse> {

@@ -60,6 +60,7 @@ pub const ASTROPORT_FACTORY_CONTRACT_ADDR: &str = "addr0014";
 pub const BASSET_VAULT_STRATEGY_CONTRACT: &str = "addr0012";
 pub const COMMUNITY_POOL_CONTRACT_ADDR: &str = "addr0013";
 pub const NASSET_PSI_SWAP_CONTRACT_ADDR: &str = "addr0019";
+pub const ANCHOR_BASSET_REWARD_CONTRACT: &str = "addr0020";
 pub const CLAIMING_REWARDS_DELAY: u64 = 1000;
 pub const NASSET_TOKEN_CODE_ID: u64 = 10u64;
 pub const NASSET_TOKEN_CONFIG_HOLDER_CODE_ID: u64 = 11u64;
@@ -79,6 +80,7 @@ pub struct Sdk {
     aterra_exchange_rate: Decimal256,
     anc_pending_rewards: Decimal256,
     borrower_action: BorrowerActionResponse,
+    loan_amount: Uint256,
 }
 
 impl Sdk {
@@ -96,6 +98,7 @@ impl Sdk {
             a_market_addr: ANCHOR_MARKET_CONTRACT.to_string(),
             a_overseer_addr: ANCHOR_OVERSEER_CONTRACT.to_string(),
             a_custody_basset_addr: ANCHOR_CUSTODY_BASSET_CONTRACT.to_string(),
+            a_basset_reward_addr: ANCHOR_BASSET_REWARD_CONTRACT.to_string(),
             anc_stable_swap_addr: ANC_STABLE_SWAP_CONTRACT.to_string(),
             psi_stable_swap_addr: PSI_STABLE_SWAP_CONTRACT.to_string(),
             ts_factory_addr: ASTROPORT_FACTORY_CONTRACT_ADDR.to_string(),
@@ -130,6 +133,7 @@ impl Sdk {
             aterra_exchange_rate: Decimal256::zero(),
             anc_pending_rewards: Decimal256::zero(),
             borrower_action: BorrowerActionResponse::Nothing {},
+            loan_amount: Uint256::zero(),
         }
     }
 
@@ -456,17 +460,8 @@ impl Sdk {
 
     #[allow(dead_code)]
     pub fn set_loan(&mut self, value: Uint256) {
-        self.deps.querier.with_loan(&[(
-            &ANCHOR_MARKET_CONTRACT.to_string(),
-            &[(
-                &MOCK_CONTRACT_ADDR.to_string(),
-                &AnchorMarketBorrowerInfo {
-                    borrower: MOCK_CONTRACT_ADDR.to_string(),
-                    loan_amount: value,
-                    pending_rewards: Decimal256::zero(),
-                },
-            )],
-        )]);
+        self.loan_amount = value;
+        self.set_wasm_query_respones();
     }
 
     pub fn set_tax(&mut self, tax_percent: Decimal, cap: u128) {
@@ -511,7 +506,7 @@ impl Sdk {
                 .unwrap(),
                 &to_binary(&AnchorMarketBorrowerInfo {
                     borrower: MOCK_CONTRACT_ADDR.to_string(),
-                    loan_amount: Uint256::zero(),
+                    loan_amount: self.loan_amount,
                     pending_rewards: self.anc_pending_rewards,
                 })
                 .unwrap(),
@@ -552,6 +547,10 @@ impl Sdk {
     pub fn set_anc_pending_rewards(&mut self, value: Decimal256) {
         self.anc_pending_rewards = value;
         self.set_wasm_query_respones();
+    }
+
+    pub fn set_holding_pending_rewards(&mut self, value: Decimal256) {
+        self.deps.querier.with_basset_holding_reward(value);
     }
 
     fn set_token_supplies(&mut self) {
@@ -628,6 +627,18 @@ impl Sdk {
     pub fn continue_repay_loan(&mut self) -> StdResult<Response<Empty>> {
         let reply_msg = Reply {
             id: SubmsgIds::RepayLoan.id(),
+            result: cosmwasm_std::ContractResult::Ok(SubMsgExecutionResponse {
+                events: vec![],
+                data: None,
+            }),
+        };
+
+        crate::contract::reply(self.deps.as_mut(), mock_env(), reply_msg)
+    }
+
+    pub fn after_deposit_action(&mut self) -> StdResult<Response<Empty>> {
+        let reply_msg = Reply {
+            id: SubmsgIds::AfterDepositAction.id(),
             result: cosmwasm_std::ContractResult::Ok(SubMsgExecutionResponse {
                 events: vec![],
                 data: None,

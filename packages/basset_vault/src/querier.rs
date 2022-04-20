@@ -5,6 +5,7 @@ use cosmwasm_std::{
 };
 use cosmwasm_storage::to_length_prefixed;
 use cw20_base::state::TokenInfo;
+use cw_storage_plus::Path;
 
 use crate::concat;
 use schemars::JsonSchema;
@@ -33,7 +34,7 @@ pub fn query_token_balance(deps: Deps, contract_addr: &Addr, account_addr: &Addr
         return balance;
     }
 
-    return Uint128::zero();
+    Uint128::zero()
 }
 
 fn query_token_balance_new(
@@ -73,7 +74,7 @@ pub fn query_supply(querier: &QuerierWrapper, contract_addr: &Addr) -> StdResult
         return Ok(supply);
     }
 
-    return query_supply_new(querier, contract_addr);
+    query_supply_new(querier, contract_addr)
 }
 
 fn query_supply_new(querier: &QuerierWrapper, contract_addr: &Addr) -> StdResult<Uint128> {
@@ -128,8 +129,7 @@ pub enum AnchorMarketQueryMsg {
         borrower: String,
         block_height: Option<u64>,
     },
-    // using Raw query to ask for state
-    // State { block_height: Option<u64> },
+    State { block_height: Option<u64> },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -168,4 +168,49 @@ pub enum AnchorCustodyMsg {
 #[serde(rename_all = "snake_case")]
 pub enum AnchorCustodyCw20Msg {
     DepositCollateral {},
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AnchorBassetRewardMsg {
+    ClaimRewards {
+        recipient: Option<String>,
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AnchorBassetRewardQueryMsg {
+    Holder {
+        address: String,
+    },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct HolderResponse {
+    pub pending_rewards: Decimal256,
+
+    // These fields aren't used
+    //
+    // pub address: String,
+    // pub balance: Uint128,
+    // pub index: Decimal,
+}
+
+pub fn query_holding_info(
+    deps: Deps,
+    anchor_basset_reward_contract: &Addr,
+    holder: &Addr,
+) -> StdResult<HolderResponse> {
+    let addr = deps.api.addr_canonicalize(holder.as_str())?;
+    let anchor_key_path = Path::<HolderResponse>::new("holders".as_bytes(), &[addr.as_slice()]);
+
+    let holder_info: StdResult<HolderResponse> =
+        deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
+            contract_addr: anchor_basset_reward_contract.to_string(),
+            key: Binary::from(&*anchor_key_path),
+        }));
+
+    Ok(holder_info.unwrap_or(HolderResponse { pending_rewards: Decimal256::zero() }))
 }

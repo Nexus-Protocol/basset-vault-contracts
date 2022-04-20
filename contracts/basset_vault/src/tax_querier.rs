@@ -78,8 +78,7 @@ impl TaxInfo {
         if coin_amount.is_zero() {
             return Uint256::zero();
         }
-        let res = coin_amount - self.get_tax_for(coin_amount);
-        res
+        coin_amount - self.get_tax_for(coin_amount)
     }
 
     pub fn append_tax(&self, coin_amount: Uint256) -> Uint256 {
@@ -91,7 +90,7 @@ pub fn get_tax_info(deps: Deps, coin_denom: &str) -> StdResult<TaxInfo> {
     let terra_querier = TerraQuerier::new(&deps.querier);
     let rate = Decimal256::from((terra_querier.query_tax_rate()?).rate);
     let cap = Uint256::from((terra_querier.query_tax_cap(coin_denom)?).cap);
-    return Ok(TaxInfo { rate, cap });
+    Ok(TaxInfo { rate, cap })
 }
 
 #[cfg(test)]

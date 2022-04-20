@@ -19,6 +19,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
             anchor_overseer_contract_addr: None,
             anchor_market_contract_addr: None,
             anchor_custody_basset_contract_addr: None,
+            anchor_basset_reward_addr: None,
             anc_stable_swap_contract_addr: None,
             psi_stable_swap_contract_addr: None,
             basset_vault_strategy_contract_addr: None,
@@ -49,6 +50,7 @@ fn success_to_change_config_if_sender_governance() {
     let new_anc_stable_swap_contract_addr = "addr9990".to_string();
     let new_psi_stable_swap_contract_addr = "addr9989".to_string();
     let new_basset_vault_strategy_contract_addr = "addr9988".to_string();
+    let new_anchor_basset_reward_addr = "addr0087".to_string();
     let new_claiming_rewards_delay = 555;
     let new_over_loan_balance_value = Decimal256::from_str("1.88").unwrap();
 
@@ -60,6 +62,7 @@ fn success_to_change_config_if_sender_governance() {
             anchor_custody_basset_contract_addr: Some(
                 new_anchor_custody_basset_contract_addr.clone(),
             ),
+            anchor_basset_reward_addr: Some(new_anchor_basset_reward_addr.clone()),
             anc_stable_swap_contract_addr: Some(new_anc_stable_swap_contract_addr.clone()),
             psi_stable_swap_contract_addr: Some(new_psi_stable_swap_contract_addr.clone()),
             basset_vault_strategy_contract_addr: Some(
@@ -83,6 +86,10 @@ fn success_to_change_config_if_sender_governance() {
     assert_eq!(
         new_anchor_market_contract_addr,
         config.anchor_market_contract
+    );
+    assert_eq!(
+        new_anchor_basset_reward_addr,
+        config.anchor_basset_reward_contract
     );
     assert_eq!(
         new_anchor_custody_basset_contract_addr,

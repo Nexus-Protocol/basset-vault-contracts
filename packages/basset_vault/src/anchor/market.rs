@@ -56,6 +56,7 @@ pub fn query_borrower_info(
 pub struct StateResponse {
     pub total_liabilities: Decimal256,
     pub total_reserves: Decimal256,
+    pub anc_emission_rate: Decimal256,
     // we do not need those fields, removing it will save some space in
     // compiled wasm file
     //
@@ -63,14 +64,12 @@ pub struct StateResponse {
     // pub last_reward_updated: u64,
     // pub global_interest_index: Decimal256,
     // pub global_reward_index: Decimal256,
-    // pub anc_emission_rate: Decimal256,
 }
 
 pub fn query_market_state(deps: Deps, anchor_market_contract: &Addr) -> StdResult<StateResponse> {
-    let market_state: StateResponse = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Raw {
+    let market_state: StateResponse = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: anchor_market_contract.to_string(),
-        //Anchor use cosmwasm_storage::Singleton which add length prefix
-        key: Binary::from(to_length_prefixed(b"state").to_vec()),
+        msg: to_binary(&AnchorMarketQueryMsg::State { block_height: None })?
     }))?;
 
     Ok(market_state)

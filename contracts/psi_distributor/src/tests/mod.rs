@@ -89,7 +89,7 @@ impl WasmMockQuerier {
             QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
                 let key: &[u8] = key.as_slice();
 
-                let prefix_config = b"config";
+                let prefix_config = b"config_v2";
 
                 if key.to_vec() == prefix_config {
                     if contract_addr != BASSET_VAULT_STRATEGY_CONTRACT_ADDR {

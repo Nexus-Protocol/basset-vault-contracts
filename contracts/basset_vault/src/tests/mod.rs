@@ -9,9 +9,11 @@ mod repay_loan;
 mod repay_loan_action;
 mod sdk;
 mod withdraw_basset;
+mod rebalance_deposit;
+mod rebalance_withdraw;
 
 use basset_vault::anchor::basset_custody::BorrowerInfo as AnchorBassetCustodyBorrowerInfo;
-use basset_vault::anchor::market::BorrowerInfoResponse as AnchorMarketBorrowerInfo;
+use basset_vault::querier::HolderResponse;
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
@@ -24,6 +26,8 @@ use std::hash::Hash;
 use terra_cosmwasm::{TaxCapResponse, TaxRateResponse, TerraQuery, TerraQueryWrapper, TerraRoute};
 
 use cw20::TokenInfoResponse;
+
+use self::sdk::ANCHOR_BASSET_REWARD_CONTRACT;
 
 /// copypasted from TerraSwap
 /// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies
@@ -42,12 +46,12 @@ pub fn mock_dependencies(
 }
 
 pub struct WasmMockQuerier {
-    borrowers_info: HashMap<String, HashMap<String, AnchorMarketBorrowerInfo>>,
     borrowers: HashMap<String, HashMap<String, AnchorBassetCustodyBorrowerInfo>>,
     base: MockQuerier<TerraQueryWrapper>,
     tax_querier: TaxQuerier,
     token_querier: TokenQuerier,
     wasm_query_smart_responses: HashMap<String, HashMap<Binary, Binary>>,
+    basset_holding_reward: Decimal256,
 }
 
 #[derive(Clone, Default)]
@@ -150,8 +154,11 @@ impl WasmMockQuerier {
                 if let Some(borrower_res) = self.try_get_borrower(key, contract_addr) {
                     return borrower_res;
                 }
-                if let Some(borrower_info_res) = self.try_get_borrower_info(key, contract_addr) {
-                    return borrower_info_res;
+
+                if contract_addr == ANCHOR_BASSET_REWARD_CONTRACT {
+                    return SystemResult::Ok(ContractResult::from(to_binary(&HolderResponse {
+                        pending_rewards: self.basset_holding_reward
+                    })));
                 }
 
                 let prefix_token_info = b"token_info";
@@ -278,62 +285,17 @@ impl WasmMockQuerier {
             return None;
         }
     }
-
-    fn try_get_borrower_info(&self, key: &[u8], contract_addr: &String) -> Option<QuerierResult> {
-        //Anchor use cosmwasm_storage::bucket which add length prefix
-        let prefix_borrower_info = to_length_prefixed(b"liability").to_vec();
-        if key.len() < prefix_borrower_info.len() {
-            return None;
-        }
-
-        if key[..prefix_borrower_info.len()].to_vec() == prefix_borrower_info {
-            let key_address: &[u8] = &key[prefix_borrower_info.len()..];
-            let address_raw: CanonicalAddr = CanonicalAddr::from(key_address);
-
-            let api: MockApi = MockApi::default();
-            let address: Addr = match api.addr_humanize(&address_raw) {
-                Ok(v) => v,
-                Err(e) => {
-                    return Some(SystemResult::Err(SystemError::InvalidRequest {
-                        error: format!("Parsing query request: {}", e),
-                        request: key.into(),
-                    }))
-                }
-            };
-
-            let empty_borrowers_info = HashMap::new();
-            let default_borrower_info = AnchorMarketBorrowerInfo {
-                borrower: address.to_string(),
-                loan_amount: Uint256::zero(),
-                pending_rewards: Decimal256::zero(),
-            };
-
-            let borrowers_info_map = self
-                .borrowers_info
-                .get(contract_addr)
-                .unwrap_or(&empty_borrowers_info);
-            let borrower_info = borrowers_info_map
-                .get(&address.to_string())
-                .unwrap_or(&default_borrower_info);
-
-            return Some(SystemResult::Ok(ContractResult::from(to_binary(
-                &borrower_info,
-            ))));
-        } else {
-            return None;
-        }
-    }
 }
 
 impl WasmMockQuerier {
     pub fn new(base: MockQuerier<TerraQueryWrapper>) -> Self {
         WasmMockQuerier {
-            borrowers_info: HashMap::new(),
             borrowers: HashMap::new(),
             base,
             token_querier: TokenQuerier::default(),
             wasm_query_smart_responses: HashMap::new(),
             tax_querier: TaxQuerier::default(),
+            basset_holding_reward: Decimal256::zero(),
         }
     }
 
@@ -343,13 +305,6 @@ impl WasmMockQuerier {
 
     pub fn with_token_supplies(&mut self, supplies: HashMap<String, Uint128>) {
         self.token_querier.supplies = supplies;
-    }
-
-    pub fn with_loan(
-        &mut self,
-        borrowers_info: &[(&String, &[(&String, &AnchorMarketBorrowerInfo)])],
-    ) {
-        self.borrowers_info = array_to_hashmap(borrowers_info);
     }
 
     pub fn with_wasm_query_response(
@@ -379,5 +334,9 @@ impl WasmMockQuerier {
         borrowers: &[(&String, &[(&String, &AnchorBassetCustodyBorrowerInfo)])],
     ) {
         self.borrowers = array_to_hashmap(borrowers);
+    }
+
+    pub fn with_basset_holding_reward(&mut self, amount: Decimal256) {
+        self.basset_holding_reward = amount;
     }
 }

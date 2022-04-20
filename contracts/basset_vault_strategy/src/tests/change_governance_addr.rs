@@ -15,7 +15,12 @@ fn fail_to_change_governance_if_sender_is_not_governance() {
     let msg = basset_vault::basset_vault_strategy::InstantiateMsg {
         governance_contract_addr: governance_contract_addr.clone(),
         oracle_contract_addr: "addr0001".to_string(),
-        basset_token_addr: "addr0002".to_string(),
+        anchor_market_addr: "addr0002".to_string(),
+        anchor_interest_model_addr: "addr0003".to_string(),
+        anchor_overseer_addr: "addr0004".to_string(),
+        anchor_token_addr: "addr0005".to_string(),
+        anc_ust_swap_addr: "addr0006".to_string(),
+        basset_token_addr: "addr0007".to_string(),
         stable_denom: "uust".to_string(),
         borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
         borrow_ltv_min: Decimal256::from_str("0.75").unwrap(),
@@ -23,6 +28,7 @@ fn fail_to_change_governance_if_sender_is_not_governance() {
         basset_max_ltv: Decimal256::from_str("0.5").unwrap(),
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
+        staking_apr: Decimal256::from_str("0.0").unwrap(),
     };
 
     {
@@ -58,7 +64,12 @@ fn success_to_change_governance_if_sender_governance() {
     let msg = basset_vault::basset_vault_strategy::InstantiateMsg {
         governance_contract_addr: governance_contract_addr.clone(),
         oracle_contract_addr: "addr0001".to_string(),
-        basset_token_addr: "addr0002".to_string(),
+        anchor_market_addr: "addr0002".to_string(),
+        anchor_interest_model_addr: "addr0003".to_string(),
+        anchor_overseer_addr: "addr0004".to_string(),
+        anchor_token_addr: "addr0005".to_string(),
+        anc_ust_swap_addr: "addr0006".to_string(),
+        basset_token_addr: "addr0007".to_string(),
         stable_denom: "uust".to_string(),
         borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
         borrow_ltv_min: Decimal256::from_str("0.75").unwrap(),
@@ -66,6 +77,7 @@ fn success_to_change_governance_if_sender_governance() {
         basset_max_ltv: Decimal256::from_str("0.5").unwrap(),
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
+        staking_apr: Decimal256::from_str("0.0").unwrap(),
     };
 
     {
@@ -132,7 +144,12 @@ fn fail_to_accept_governance_if_sender_is_wrong() {
     let msg = basset_vault::basset_vault_strategy::InstantiateMsg {
         governance_contract_addr: governance_contract_addr.clone(),
         oracle_contract_addr: "addr0001".to_string(),
-        basset_token_addr: "addr0002".to_string(),
+        anchor_market_addr: "addr0002".to_string(),
+        anchor_interest_model_addr: "addr0003".to_string(),
+        anchor_overseer_addr: "addr0004".to_string(),
+        anchor_token_addr: "addr0005".to_string(),
+        anc_ust_swap_addr: "addr0006".to_string(),
+        basset_token_addr: "addr0007".to_string(),
         stable_denom: "uust".to_string(),
         borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
         borrow_ltv_min: Decimal256::from_str("0.75").unwrap(),
@@ -140,6 +157,7 @@ fn fail_to_accept_governance_if_sender_is_wrong() {
         basset_max_ltv: Decimal256::from_str("0.5").unwrap(),
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
+        staking_apr: Decimal256::from_str("0.0").unwrap(),
     };
 
     {
@@ -206,7 +224,12 @@ fn too_late_to_change_governance() {
     let msg = basset_vault::basset_vault_strategy::InstantiateMsg {
         governance_contract_addr: governance_contract_addr.clone(),
         oracle_contract_addr: "addr0001".to_string(),
-        basset_token_addr: "addr0002".to_string(),
+        anchor_market_addr: "addr0002".to_string(),
+        anchor_interest_model_addr: "addr0003".to_string(),
+        anchor_overseer_addr: "addr0004".to_string(),
+        anchor_token_addr: "addr0005".to_string(),
+        anc_ust_swap_addr: "addr0006".to_string(),
+        basset_token_addr: "addr0007".to_string(),
         stable_denom: "uust".to_string(),
         borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
         borrow_ltv_min: Decimal256::from_str("0.75").unwrap(),
@@ -214,6 +237,7 @@ fn too_late_to_change_governance() {
         basset_max_ltv: Decimal256::from_str("0.5").unwrap(),
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
+        staking_apr: Decimal256::from_str("0.0").unwrap(),
     };
 
     {
@@ -291,7 +315,12 @@ fn rewrite_new_gov_address_by_sending_second_update_gov_message() {
     let msg = basset_vault::basset_vault_strategy::InstantiateMsg {
         governance_contract_addr: governance_contract_addr.clone(),
         oracle_contract_addr: "addr0001".to_string(),
-        basset_token_addr: "addr0002".to_string(),
+        anchor_market_addr: "addr0002".to_string(),
+        anchor_interest_model_addr: "addr0003".to_string(),
+        anchor_overseer_addr: "addr0004".to_string(),
+        anchor_token_addr: "addr0005".to_string(),
+        anc_ust_swap_addr: "addr0006".to_string(),
+        basset_token_addr: "addr0007".to_string(),
         stable_denom: "uust".to_string(),
         borrow_ltv_max: Decimal256::from_str("0.85").unwrap(),
         borrow_ltv_min: Decimal256::from_str("0.75").unwrap(),
@@ -299,6 +328,7 @@ fn rewrite_new_gov_address_by_sending_second_update_gov_message() {
         basset_max_ltv: Decimal256::from_str("0.5").unwrap(),
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
+        staking_apr: Decimal256::from_str("0.0").unwrap(),
     };
 
     {

@@ -1,8 +1,30 @@
+use basset_vault::basset_vault_strategy::BorrowerActionResponse;
 use cw_storage_plus::Item;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{Addr, StdError, StdResult, Storage, Uint128};
+
+/// Only for migration purpose
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct LegacyConfig {
+    pub governance_contract: Addr,
+    pub anchor_token: Addr,
+    pub anchor_overseer_contract: Addr,
+    pub anchor_market_contract: Addr,
+    pub anchor_custody_basset_contract: Addr,
+    pub anc_stable_swap_contract: Addr,
+    pub psi_stable_swap_contract: Addr,
+    pub basset_token: Addr,
+    pub aterra_token: Addr,
+    pub psi_token: Addr,
+    pub basset_vault_strategy_contract: Addr,
+    pub stable_denom: String,
+    pub claiming_rewards_delay: u64,
+    pub over_loan_balance_value: Decimal256,
+    pub nasset_token: Addr,
+    pub psi_distributor: Addr,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Config {
@@ -11,6 +33,7 @@ pub struct Config {
     pub anchor_overseer_contract: Addr,
     pub anchor_market_contract: Addr,
     pub anchor_custody_basset_contract: Addr,
+    pub anchor_basset_reward_contract: Addr,
     pub anc_stable_swap_contract: Addr,
     pub psi_stable_swap_contract: Addr,
     pub basset_token: Addr,
@@ -70,7 +93,10 @@ impl PsiDistributorInitInfo {
     }
 }
 
-static KEY_CONFIG: Item<Config> = Item::new("config");
+/// Only for migration purpose
+static KEY_LEGACY_CONFIG: Item<LegacyConfig> = Item::new("config");
+
+static KEY_CONFIG: Item<Config> = Item::new("config_v2");
 static KEY_REPAYING_LOAN: Item<RepayingLoanState> = Item::new("repaying");
 static KEY_AIM_BUFFER_SIZE: Item<Uint256> = Item::new("aim_buf_size");
 
@@ -88,12 +114,19 @@ static KEY_GOVERNANCE_UPDATE: Item<GovernanceUpdateState> = Item::new("gov_updat
 static KEY_PSI_DISTRIBUTOR_INIT_INFO: Item<PsiDistributorInitInfo> =
     Item::new("psi_distributor_init_info");
 
+static KEY_AFTER_DEPOSIT_ACTION: Item<BorrowerActionResponse> = Item::new("after_deposit_action");
+
 pub fn load_nasset_token_config_holder(storage: &dyn Storage) -> StdResult<Addr> {
     KEY_NASSET_TOKEN_CONFIG_HOLDER.load(storage)
 }
 
 pub fn store_nasset_token_config_holder(storage: &mut dyn Storage, addr: &Addr) -> StdResult<()> {
     KEY_NASSET_TOKEN_CONFIG_HOLDER.save(storage, addr)
+}
+
+/// Only for migration purpose
+pub fn load_legacy_config(storage: &dyn Storage) -> StdResult<LegacyConfig> {
+    KEY_LEGACY_CONFIG.load(storage)
 }
 
 pub fn load_config(storage: &dyn Storage) -> StdResult<Config> {
@@ -185,7 +218,7 @@ pub fn store_gov_update(
     KEY_GOVERNANCE_UPDATE.save(storage, gov_update)
 }
 
-pub fn remove_gov_update(storage: &mut dyn Storage) -> () {
+pub fn remove_gov_update(storage: &mut dyn Storage) {
     KEY_GOVERNANCE_UPDATE.remove(storage)
 }
 
@@ -198,4 +231,15 @@ pub fn store_psi_distributor_init_info(
     info: &PsiDistributorInitInfo,
 ) -> StdResult<()> {
     KEY_PSI_DISTRIBUTOR_INIT_INFO.save(storage, info)
+}
+
+pub fn load_after_deposit_action(storage: &dyn Storage) -> StdResult<BorrowerActionResponse> {
+    KEY_AFTER_DEPOSIT_ACTION.load(storage)
+}
+
+pub fn store_after_deposit_action(
+    storage: &mut dyn Storage,
+    action: &BorrowerActionResponse,
+) -> StdResult<()> {
+    KEY_AFTER_DEPOSIT_ACTION.save(storage, action)
 }

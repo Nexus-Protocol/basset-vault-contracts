@@ -135,3 +135,68 @@ Helper contract. CW20 contract have no ability to reward token holders, so some 
 ## nAsset token rewards
 
 Helper contract. CW20 contract have no ability to reward token holders, so some workaround needed. (same as in `bLuna`)
+
+# Release build
+
+To build smart contracts for production, use `build_release.sh` script.
+
+Before running it, make sure you installed tools for WASM:
+ 1. [WABT](https://github.com/WebAssembly/wabt) (`brew install wabt`)
+ 2. [Binaryen](https://github.com/WebAssembly/binaryen) (`brew install binaryen`)
+
+# Integration tests
+
+Some contracts have integrations tests feature flag. To build them for integration tests properly, use `integration_tests_build.sh`. This script builds those contracts and puts them to special directory in `contracts_scripts`. 
+
+To configure this you have to set the path to your contracts scripts directory to the `CONTRACTS_SCRIPTS_PATH` env variable. Make sure you installed [WABT](https://github.com/WebAssembly/wabt) (`brew install wabt`) for striping wasm binaries.
+# Getting started
+
+## Setup Depedencies
+
+Set up cosmwasm dependencies:
+https://docs.cosmwasm.com/docs/0.14/getting-started/installation/
+
+Install docker:
+https://www.docker.com/products/docker-desktop/
+
+Install rust nightly
+```
+rustup install nightly
+rustup component add rust-src --toolchain nightly-x86_64-apple-darwin
+```
+
+```
+# optional, these two may not be needed, try running the build_release.sh and integration_tests_build.sh to see if they already works for you
+# if the above does, skip the below installations
+brew install wabt
+npm i wasm-opt -g
+```
+
+## Running integration tests on these contracts
+
+Clone down the integration tests repo: https://github.com/Nexus-Protocol/contracts_scripts
+
+Open your .bash_profile or .zshrc, add the below
+
+```
+export CONTRACTS_SCRIPTS_PATH=<path-to-contract-scripts>
+```
+
+Start local terra on a (new window)[https://github.com/Nexus-Protocol/contracts_scripts#start-localterra]
+
+Then to run the integration tests
+
+```
+cd contracts_scripts
+
+```
+
+# Troubleshooting
+
+- permission denied when running .sh files
+
+(source)[https://askubuntu.com/questions/409025/permission-denied-when-running-sh-scripts]
+```
+cd /path/to/target
+chmod +x the_file_name
+```

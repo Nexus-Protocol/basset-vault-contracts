@@ -11,6 +11,7 @@ use crate::{
 use cosmwasm_bignumber::Decimal256;
 
 /// Executor: governance
+#[allow(clippy::too_many_arguments)]
 pub fn update_config(
     deps: DepsMut,
     mut current_config: Config,
@@ -23,6 +24,12 @@ pub fn update_config(
     basset_max_ltv: Option<Decimal256>,
     buffer_part: Option<Decimal256>,
     price_timeframe: Option<u64>,
+    anchor_market_addr: Option<String>,
+    anchor_interest_model_addr: Option<String>,
+    anchor_overseer_addr: Option<String>,
+    anc_ust_swap_addr: Option<String>,
+    anchor_token_addr: Option<String>,
+    staking_apr: Option<Decimal256>,
 ) -> ContractResult<Response> {
     if let Some(ref oracle_addr) = oracle_addr {
         current_config.oracle_contract = deps.api.addr_validate(oracle_addr)?;
@@ -37,9 +44,9 @@ pub fn update_config(
     }
 
     current_config.validate_and_set_borrow_ltvs(
-        borrow_ltv_max.unwrap_or(current_config.get_borrow_ltv_max()),
-        borrow_ltv_min.unwrap_or(current_config.get_borrow_ltv_min()),
-        borrow_ltv_aim.unwrap_or(current_config.get_borrow_ltv_aim()),
+        borrow_ltv_max.unwrap_or_else(|| current_config.get_borrow_ltv_max()),
+        borrow_ltv_min.unwrap_or_else(|| current_config.get_borrow_ltv_min()),
+        borrow_ltv_aim.unwrap_or_else(|| current_config.get_borrow_ltv_aim()),
     )?;
 
     if let Some(basset_max_ltv) = basset_max_ltv {
@@ -52,6 +59,30 @@ pub fn update_config(
 
     if let Some(price_timeframe) = price_timeframe {
         current_config.price_timeframe = price_timeframe;
+    }
+
+    if let Some(ref anchor_market_addr) = anchor_market_addr {
+        current_config.anchor_market_contract = deps.api.addr_validate(anchor_market_addr)?;
+    }
+
+    if let Some(ref anchor_interest_model_addr) = anchor_interest_model_addr {
+        current_config.anchor_interest_model_contract = deps.api.addr_validate(anchor_interest_model_addr)?;
+    }
+
+    if let Some(ref anchor_overseer_addr) = anchor_overseer_addr {
+        current_config.anchor_overseer_contract = deps.api.addr_validate(anchor_overseer_addr)?;
+    }
+
+    if let Some(ref anc_ust_swap_addr) = anc_ust_swap_addr {
+        current_config.anc_ust_swap_contract = deps.api.addr_validate(anc_ust_swap_addr)?;
+    }
+
+    if let Some(ref anchor_token_addr) = anchor_token_addr {
+        current_config.anchor_token = deps.api.addr_validate(anchor_token_addr)?;
+    }
+
+    if let Some(staking_apr) = staking_apr {
+        current_config.staking_apr = staking_apr;
     }
 
     save_config(deps.storage, &current_config)?;

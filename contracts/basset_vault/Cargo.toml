@@ -34,6 +34,7 @@ overflow-checks = true
 [features]
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
+integration_tests_build = ["basset-vault/integration_tests_build"]
 
 [dependencies]
 basset-vault = { path = "../../packages/basset_vault", default-features = false, version = "1.0.0"}

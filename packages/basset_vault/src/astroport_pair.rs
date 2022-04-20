@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::Decimal;
+use cosmwasm_std::{Decimal, Uint128};
 use cw20::Cw20ReceiveMsg;
 
 use crate::terraswap::Asset;
@@ -36,4 +36,22 @@ pub enum Cw20HookMsg {
         to: Option<String>,
     },
     WithdrawLiquidity {},
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum QueryMsg {
+    Pool {},
+
+    // Those cases aren't used
+    //
+    // Pair {},
+    // Simulation { offer_asset: Asset },
+    // ReverseSimulation { ask_asset: Asset },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct PoolResponse {
+    pub assets: [Asset; 2],
+    pub total_share: Uint128,
 }
