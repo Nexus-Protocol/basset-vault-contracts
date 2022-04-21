@@ -492,7 +492,9 @@ pub fn is_anc_rewards_claimable(
 ) -> StdResult<bool> {
     let enough_pending_rewards =
         pending_rewards >= Decimal256::from_uint256(MIN_ANC_REWARDS_TO_CLAIM);
-    Ok(enough_pending_rewards || is_last_anc_claim_was_24_hours_ago(deps, env)?)
+    let is_there_any_rewards = pending_rewards > Decimal256::zero();
+    Ok(is_there_any_rewards
+        && (enough_pending_rewards || is_last_anc_claim_was_24_hours_ago(deps, env)?))
 }
 
 fn is_last_anc_claim_was_24_hours_ago(deps: Deps, env: &Env) -> StdResult<bool> {
@@ -1765,6 +1767,15 @@ mod test {
             store_last_anc_claim_seconds(deps.as_mut().storage, &last_anc_claim_seconds).unwrap();
             let is_claimable =
                 is_anc_rewards_claimable(deps.as_ref(), &env, Decimal256::from_uint256(100_000u64));
+            assert!(!is_claimable.unwrap());
+        }
+
+        // pending rewards is 0ANC tokens. So we should not claim it, even if last claim was long
+        // time ago
+        {
+            let last_anc_claim_seconds = 0;
+            store_last_anc_claim_seconds(deps.as_mut().storage, &last_anc_claim_seconds).unwrap();
+            let is_claimable = is_anc_rewards_claimable(deps.as_ref(), &env, Decimal256::zero());
             assert!(!is_claimable.unwrap());
         }
     }
