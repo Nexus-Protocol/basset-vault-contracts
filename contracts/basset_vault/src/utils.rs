@@ -502,14 +502,19 @@ fn is_last_anc_claim_was_24_hours_ago(deps: Deps, env: &Env) -> StdResult<bool> 
 
 #[cfg(test)]
 mod test {
-    use crate::tax_querier::TaxInfo;
+    use crate::{state::store_last_anc_claim_seconds, tax_querier::TaxInfo};
 
     use super::{
         calc_after_borrow_action, calc_wanted_stablecoins, get_repay_loan_action,
-        split_profit_to_handle_interest, ActionWithProfit, AfterBorrowAction, RepayLoanAction,
+        is_anc_rewards_claimable, split_profit_to_handle_interest, ActionWithProfit,
+        AfterBorrowAction, RepayLoanAction,
     };
 
     use cosmwasm_bignumber::{Decimal256, Uint256};
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env},
+        Timestamp,
+    };
     use std::str::FromStr;
 
     #[test]
@@ -1717,5 +1722,50 @@ mod test {
             },
             action_with_profit
         );
+    }
+
+    #[test]
+    fn is_anc_rewards_claimable_test() {
+        let mut env = mock_env();
+        env.block.time = Timestamp::from_seconds(1_650_000_000); //Apr 15 2022 05:20:00
+        let mut deps = mock_dependencies(&[]);
+
+        // pending rewards is bigger than 100ANC tokens. Meaning we should claim.
+        {
+            let is_claimable = is_anc_rewards_claimable(
+                deps.as_ref(),
+                &env,
+                Decimal256::from_uint256(100_000_000u64),
+            );
+            assert!(is_claimable.unwrap());
+        }
+
+        // pending rewards is lesser than 100ANC tokens. Meaning we should check last_claim_time.
+        // we do not set any previous anc_claim_time, so 'default' would be used which is '0'
+        {
+            let is_claimable =
+                is_anc_rewards_claimable(deps.as_ref(), &env, Decimal256::from_uint256(100_000u64));
+            assert!(is_claimable.unwrap());
+        }
+
+        // pending rewards is lesser than 100ANC tokens. Meaning we should check last_claim_time.
+        // set previous claim time to be earlier than 24 hours ago.
+        {
+            let last_anc_claim_seconds = env.block.time.seconds() - 60 * 60 * 24;
+            store_last_anc_claim_seconds(deps.as_mut().storage, &last_anc_claim_seconds).unwrap();
+            let is_claimable =
+                is_anc_rewards_claimable(deps.as_ref(), &env, Decimal256::from_uint256(100_000u64));
+            assert!(is_claimable.unwrap());
+        }
+
+        // pending rewards is lesser than 100ANC tokens. Meaning we should check last_claim_time.
+        // set previous claim time to be later than 24 hours ago.
+        {
+            let last_anc_claim_seconds = env.block.time.seconds() - 60 * 60 * 24 + 1;
+            store_last_anc_claim_seconds(deps.as_mut().storage, &last_anc_claim_seconds).unwrap();
+            let is_claimable =
+                is_anc_rewards_claimable(deps.as_ref(), &env, Decimal256::from_uint256(100_000u64));
+            assert!(!is_claimable.unwrap());
+        }
     }
 }
