@@ -23,7 +23,7 @@ dependencies = [
 
 [[package]]
 name = "basset-vault-basset-vault"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "basset-vault",
  "cosmwasm-bignumber",

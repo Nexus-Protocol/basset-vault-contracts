@@ -142,7 +142,7 @@ pub fn is_rewards_claimable(deps: Deps, env: Env) -> StdResult<IsRewardsClaimabl
     let borrower_info =
         query_borrower_info(deps, &config.anchor_market_contract, &env.contract.address)?;
 
-    let is_rewards_claimable = is_anc_rewards_claimable(borrower_info.pending_rewards);
+    let is_rewards_claimable = is_anc_rewards_claimable(deps, &env, borrower_info.pending_rewards)?;
 
     Ok(IsRewardsClaimableResponse {
         claimable: is_rewards_claimable,

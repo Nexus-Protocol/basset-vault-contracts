@@ -178,6 +178,4 @@ pub struct IsRewardsClaimableResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct MigrateMsg {
-    pub retain_rewards_distributor: String,
-}
+pub struct MigrateMsg {}

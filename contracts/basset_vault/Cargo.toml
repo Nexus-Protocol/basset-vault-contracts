@@ -1,6 +1,6 @@
 [package]
 name = "basset-vault-basset-vault"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Nexus Labs"]
 edition = "2018"
 description = "Contract for bAsset vault"
