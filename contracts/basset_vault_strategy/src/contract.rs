@@ -58,7 +58,8 @@ pub fn execute(
 
         ExecuteMsg::Governance { governance_msg } => {
             let config = load_config(deps.storage)?;
-            if info.sender != config.governance_contract {
+            let integration_tests = cfg!(feature = "integration_tests_build");
+            if info.sender != config.governance_contract && !integration_tests {
                 return Err(ContractError::Unauthorized {});
             }
 
