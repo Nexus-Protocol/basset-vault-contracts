@@ -145,11 +145,14 @@ Before running it, make sure you installed:
  2. [Binaryen](https://github.com/WebAssembly/binaryen) (`brew install binaryen`)
  3. `sha256sum` (`brew install coreutils`)
 
+If you want artifacts to be automatically copied to the contracts scripts, set `CONTRACTS_SCRIPTS_PATH` env variable
+
 # Integration tests
 
 Some contracts have integrations tests feature flag. To build them for integration tests properly, use `integration_tests_build.sh`. This script builds those contracts and puts them to special directory in `contracts_scripts`. 
 
 To configure this you have to set the path to your contracts scripts directory to the `CONTRACTS_SCRIPTS_PATH` env variable. Make sure you installed [WABT](https://github.com/WebAssembly/wabt) (`brew install wabt`) for striping wasm binaries.
+
 # Getting started
 
 ## Setup Depedencies

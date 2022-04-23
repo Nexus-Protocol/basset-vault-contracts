@@ -1,12 +1,18 @@
 # Set `CONTRACTS_SCRIPTS_PATH` environement variable.
 # It should points to the contracts scripts directory on your machine
 
+if [[ -z "${CONTRACTS_SCRIPTS_PATH}" ]]; then
+    echo "Error: you must set \`CONTRACTS_SCRIPTS_PATH\` env variable"
+    exit 1
+fi
+
 # You can add more contracts that are built with integration tests to this array
 contracts=(
     "basset_vault"
     "basset_vault_strategy"
 )
 
+# Copy artifacts
 for contract in "${contracts[@]}"
 do
     cd "contracts/${contract}"

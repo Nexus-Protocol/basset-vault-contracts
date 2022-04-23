@@ -24,3 +24,10 @@ sha256sum -- "target/wasm32-unknown-unknown/release/basset_vault_basset_vault.wa
 grep -v "basset_vault_basset_vault.wasm" artifacts/checksums.txt > artifacts/checksums.txt.tmp && mv artifacts/checksums.txt.tmp artifacts/checksums.txt
 cd artifacts
 sha256sum -- "basset_vault_basset_vault.wasm" | tee -a checksums.txt
+
+# Copy artifacts
+if [[ -z "${CONTRACTS_SCRIPTS_PATH}" ]]; then
+  echo "Info: set \`CONTRACTS_SCRIPTS_PATH\` env variable to automatically copy artifacts to contracts scripts"
+else
+  cp * ${CONTRACTS_SCRIPTS_PATH}/wasm_artifacts/nexus/basset_vaults/
+fi
