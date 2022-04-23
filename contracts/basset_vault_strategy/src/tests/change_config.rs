@@ -28,6 +28,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
         staking_apr: Decimal256::from_str("0.0").unwrap(),
+        holding_window: Decimal256::from_str("0.0").unwrap(),
     };
 
     {
@@ -55,6 +56,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
     let new_buffer_part = Some(Decimal256::from_str("0.99").unwrap());
     let new_price_timeframe = Some(100);
     let new_staking_apr = Some(Decimal256::from_str("0.05").unwrap());
+    let new_holding_window = Some(Decimal256::from_str("0.15").unwrap());
 
     let change_config_msg = ExecuteMsg::Governance {
         governance_msg: GovernanceMsg::UpdateConfig {
@@ -73,6 +75,7 @@ fn fail_to_change_config_if_sender_is_not_governance() {
             anc_ust_swap_addr: new_anc_ust_swap_addr,
             anchor_token_addr: new_anchor_token_addr,
             staking_apr: new_staking_apr,
+            holding_window: new_holding_window,
         },
     };
 
@@ -105,6 +108,7 @@ fn success_to_change_config_if_sender_governance() {
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
         staking_apr: Decimal256::from_str("0.0").unwrap(),
+        holding_window: Decimal256::from_str("0.0").unwrap(),
     };
 
     {
@@ -132,6 +136,7 @@ fn success_to_change_config_if_sender_governance() {
     let new_buffer_part = Decimal256::from_str("0.99").unwrap();
     let new_price_timeframe = 100;
     let new_staking_apr = Decimal256::from_str("0.05").unwrap();
+    let new_holding_window = Decimal256::from_str("0.15").unwrap();
 
     let change_config_msg = ExecuteMsg::Governance {
         governance_msg: GovernanceMsg::UpdateConfig {
@@ -150,6 +155,7 @@ fn success_to_change_config_if_sender_governance() {
             anc_ust_swap_addr: Some(new_anc_ust_swap_addr.clone()),
             anchor_token_addr: Some(new_anchor_token_addr.clone()),
             staking_apr: Some(new_staking_apr),
+            holding_window: Some(new_holding_window),
         },
     };
 
@@ -173,4 +179,5 @@ fn success_to_change_config_if_sender_governance() {
     assert_eq!(new_anc_ust_swap_addr, config.anc_ust_swap_contract);
     assert_eq!(new_anchor_token_addr, config.anchor_token);
     assert_eq!(new_staking_apr, config.staking_apr);
+    assert_eq!(new_holding_window, config.holding_window);
 }

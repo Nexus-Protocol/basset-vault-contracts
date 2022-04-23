@@ -27,6 +27,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         buffer_part: config.get_buffer_part(),
         price_timeframe: config.price_timeframe,
         staking_apr: config.staking_apr,
+        holding_window: config.holding_window,
     })
 }
 
@@ -94,24 +95,38 @@ pub fn query_anchor_apr(deps: Deps, config: &Config) -> StdResult<AnchorApr> {
 }
 
 impl AnchorApr {
-    fn is_profitable(&self, buffer_part: Decimal256, stacking_apr: Decimal256) -> bool {
+    fn should_use_holding_strategy(
+        &self,
+        buffer_part: Decimal256,
+        holding_now: bool,
+        staking_apr: Decimal256,
+        holding_window: Decimal256
+    ) -> bool {
         let deposited_part = Decimal256::one() - buffer_part;
         let earn_of_deposited_part = self.earn * deposited_part;
 
         let distr = self.borrow.distribution_apr;
         let interest = self.borrow.interest_apr;
 
+        let switching_window = if holding_now {
+            holding_window
+        } else {
+            Decimal256::zero()
+        };
+
         // The ideal formulae would be:
         //
         // borrow_apr = distr_apr - interest_apr
         // apr = earn_apr + borrow_apr
-        // anchor_has_profit = apr > stacking_apr
+        // anchor_has_profit = apr > staking_apr
         //
         // But `Decimal256` does not support negative numbers, so we do the following hacks:
         //
-        // anchor_has_profit = distribution_apr + borrow_apr - interest_apr > stacking_apr
-        //                   = distribution_apr + borrow_apr > stacking_apr + interest_apr
-        distr + earn_of_deposited_part > stacking_apr + interest
+        // anchor_has_profit = distribution_apr + borrow_apr - interest_apr > staking_apr + switching_window
+        //                   = distribution_apr + borrow_apr > staking_apr + switching_window + interest_apr
+        let anchor_profitable = distr + earn_of_deposited_part > staking_apr + switching_window + interest;
+
+        !anchor_profitable
     }
 }
 
@@ -145,6 +160,7 @@ pub fn borrower_action(
     let response = calc_borrower_action(
         anchor_apr,
         config.staking_apr,
+        config.holding_window,
         ltv_info,
         basset_in_contract_address,
         borrowed_amount,
@@ -159,7 +175,8 @@ pub fn borrower_action(
 #[allow(clippy::too_many_arguments)]
 fn calc_borrower_action(
     anchor_apr: AnchorApr,
-    stacking_apr: Decimal256,
+    staking_apr: Decimal256,
+    holding_window: Decimal256,
     ltv_info: LTVInfo,
     basset_in_contract_address: Uint256,
     borrowed_amount: Uint256,
@@ -167,7 +184,8 @@ fn calc_borrower_action(
     basset_max_ltv: Decimal256,
     buffer_part: Decimal256,
 ) -> BorrowerActionResponse {
-    if !anchor_apr.is_profitable(buffer_part, stacking_apr) {
+    let is_holding = locked_basset_amount.is_zero() && basset_in_contract_address > Uint256::zero();
+    if anchor_apr.should_use_holding_strategy(buffer_part, is_holding, staking_apr, holding_window) {
         // Withdraw all if there are anything to withdraw
         if locked_basset_amount != Uint256::zero() {
             // If the actual `locked_basset_amount`
@@ -276,6 +294,7 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.7").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         //max_borrow = 210_000 * 5.5 * 0.5 = 577_500
         //ltv = 519_750 / 577_500 = 0.9
@@ -284,6 +303,7 @@ mod test {
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -318,6 +338,7 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.7").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         //max_borrow = 210_000 * 5.5 * 0.5 = 577_500
         //ltv = 346_500 / 577_500 = 0.6
@@ -326,6 +347,7 @@ mod test {
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -360,10 +382,12 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -395,6 +419,7 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         //max_borrow = 210_000 * 5.5 * 0.5 = 577_500
         //ltv = 473_550 / 577_500 = 0.82
@@ -402,6 +427,7 @@ mod test {
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -433,10 +459,12 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -469,10 +497,12 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -507,10 +537,12 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -542,10 +574,12 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -580,6 +614,7 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.7").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         //max_borrow = 210_000 * 5.5 * 0.5 = 577_500
         //ltv = 0.0
@@ -588,6 +623,7 @@ mod test {
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -622,10 +658,12 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -757,6 +795,7 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         // aim_borrow_amount = locked_basset_amount * basset_price * basset_max_ltv * borrow_ltv_aim
         // aim_borrow_amount = 100 * 1 * 0,6 * 0,8 = 48 (= borrowed_amount = 48)
@@ -764,6 +803,7 @@ mod test {
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -795,10 +835,12 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.05").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -831,10 +873,12 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.05").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -867,10 +911,12 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -906,10 +952,12 @@ mod test {
             borrow_ltv_aim: Decimal256::from_str("0.8").unwrap(),
         };
         let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.0").unwrap();
 
         let borrower_action = calc_borrower_action(
             anchor_apr,
             staking_apr,
+            holding_window,
             ltv_info,
             basset_in_contract_address,
             borrowed_amount,
@@ -931,8 +979,10 @@ mod test {
             },
         };
         let buffer_part = Decimal256::from_str("0.018").unwrap();
+        let holding_now = false;
         let staking_apr = Decimal256::from_str("0.0").unwrap();
-        assert!(anchor_apr.is_profitable(buffer_part, staking_apr));
+        let holding_window = Decimal256::from_str("0.0").unwrap();
+        assert!(!anchor_apr.should_use_holding_strategy(buffer_part, holding_now, staking_apr, holding_window));
     }
 
     #[test]
@@ -945,8 +995,10 @@ mod test {
             },
         };
         let buffer_part = Decimal256::from_str("0.018").unwrap();
+        let holding_now = false;
         let staking_apr = Decimal256::from_str("0.0").unwrap();
-        assert!(anchor_apr.is_profitable(buffer_part, staking_apr));
+        let holding_window = Decimal256::from_str("0.0").unwrap();
+        assert!(!anchor_apr.should_use_holding_strategy(buffer_part, holding_now, staking_apr, holding_window));
     }
 
     #[test]
@@ -959,8 +1011,26 @@ mod test {
             },
         };
         let buffer_part = Decimal256::from_str("0.018").unwrap();
+        let holding_now = false;
         let staking_apr = Decimal256::from_str("0.30").unwrap();
-        assert!(anchor_apr.is_profitable(buffer_part, staking_apr));
+        let holding_window = Decimal256::from_str("0.0").unwrap();
+        assert!(!anchor_apr.should_use_holding_strategy(buffer_part, holding_now, staking_apr, holding_window));
+    }
+
+    #[test]
+    fn anchor_apr_profitable4() {
+        let anchor_apr = AnchorApr {
+            earn: Decimal256::from_str("0.20").unwrap(),
+            borrow: BorrowNetApr {
+                distribution_apr: Decimal256::from_str("0.10").unwrap(),
+                interest_apr: Decimal256::from_str("0.25").unwrap(),
+            },
+        };
+        let buffer_part = Decimal256::from_str("0.018").unwrap();
+        let holding_now = false;
+        let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.10").unwrap();
+        assert!(!anchor_apr.should_use_holding_strategy(buffer_part, holding_now, staking_apr, holding_window));
     }
 
     #[test]
@@ -973,8 +1043,10 @@ mod test {
             },
         };
         let buffer_part = Decimal256::from_str("0.018").unwrap();
+        let holding_now = false;
         let staking_apr = Decimal256::from_str("0.0").unwrap();
-        assert!(!anchor_apr.is_profitable(buffer_part, staking_apr));
+        let holding_window = Decimal256::from_str("0.0").unwrap();
+        assert!(anchor_apr.should_use_holding_strategy(buffer_part, holding_now, staking_apr, holding_window));
     }
 
     #[test]
@@ -987,8 +1059,10 @@ mod test {
             },
         };
         let buffer_part = Decimal256::from_str("0.018").unwrap();
+        let holding_now = false;
         let staking_apr = Decimal256::from_str("0.0").unwrap();
-        assert!(!anchor_apr.is_profitable(buffer_part, staking_apr));
+        let holding_window = Decimal256::from_str("0.0").unwrap();
+        assert!(anchor_apr.should_use_holding_strategy(buffer_part, holding_now, staking_apr, holding_window));
     }
 
     #[test]
@@ -1001,8 +1075,10 @@ mod test {
             },
         };
         let buffer_part = Decimal256::from_str("0.018").unwrap();
+        let holding_now = false;
         let staking_apr = Decimal256::from_str("0.30").unwrap();
-        assert!(!anchor_apr.is_profitable(buffer_part, staking_apr));
+        let holding_window = Decimal256::from_str("0.0").unwrap();
+        assert!(anchor_apr.should_use_holding_strategy(buffer_part, holding_now, staking_apr, holding_window));
     }
 
     #[test]
@@ -1017,7 +1093,25 @@ mod test {
         // Earn apr is multiplied by the buffer_part, which is huge in this case,
         // so it cannot cover the interest apr
         let buffer_part = Decimal256::from_str("0.5").unwrap();
+        let holding_now = false;
         let staking_apr = Decimal256::from_str("0.0").unwrap();
-        assert!(!anchor_apr.is_profitable(buffer_part, staking_apr));
+        let holding_window = Decimal256::from_str("0.0").unwrap();
+        assert!(anchor_apr.should_use_holding_strategy(buffer_part, holding_now, staking_apr, holding_window));
+    }
+
+    #[test]
+    fn anchor_apr_not_profitable5() {
+        let anchor_apr = AnchorApr {
+            earn: Decimal256::from_str("0.20").unwrap(),
+            borrow: BorrowNetApr {
+                distribution_apr: Decimal256::from_str("0.10").unwrap(),
+                interest_apr: Decimal256::from_str("0.25").unwrap(),
+            },
+        };
+        let buffer_part = Decimal256::from_str("0.018").unwrap();
+        let holding_now = true;
+        let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.10").unwrap();
+        assert!(anchor_apr.should_use_holding_strategy(buffer_part, holding_now, staking_apr, holding_window));
     }
 }

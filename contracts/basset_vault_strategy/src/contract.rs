@@ -37,6 +37,7 @@ pub fn instantiate(
         msg.buffer_part,
         msg.price_timeframe,
         msg.staking_apr,
+        msg.holding_window,
     )?;
 
     save_config(deps.storage, &config)?;
@@ -80,6 +81,7 @@ pub fn execute(
                     anc_ust_swap_addr,
                     anchor_token_addr,
                     staking_apr,
+                    holding_window,
                 } => commands::update_config(
                     deps,
                     config,
@@ -98,6 +100,7 @@ pub fn execute(
                     anc_ust_swap_addr,
                     anchor_token_addr,
                     staking_apr,
+                    holding_window,
                 ),
 
                 GovernanceMsg::UpdateGovernanceContract {
@@ -147,6 +150,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> StdResult<Response>
         deps.api.addr_validate(&msg.anc_ust_swap_addr)?,
         deps.api.addr_validate(&msg.anchor_token_addr)?,
         msg.staking_apr,
+        msg.holding_window,
     );
     save_config(deps.storage, &new_config)?;
     Ok(Response::default())

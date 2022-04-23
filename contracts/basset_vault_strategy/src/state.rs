@@ -49,6 +49,7 @@ pub struct Config {
     buffer_part: Decimal256,
     pub price_timeframe: u64,
     pub staking_apr: Decimal256,
+    pub holding_window: Decimal256,
 }
 
 impl Config {
@@ -70,6 +71,7 @@ impl Config {
         buffer_part: Decimal256,
         price_timeframe: u64,
         staking_apr: Decimal256,
+        holding_window: Decimal256,
     ) -> ContractResult<Self> {
         Self::validate_borrow_ltvs(borrow_ltv_max, borrow_ltv_min, borrow_ltv_aim)?;
 
@@ -90,6 +92,7 @@ impl Config {
             buffer_part,
             price_timeframe,
             staking_apr,
+            holding_window,
         };
 
         config.set_basset_max_ltv(basset_max_ltv)?;
@@ -107,6 +110,7 @@ impl Config {
         anc_ust_swap_contract: Addr,
         anchor_token: Addr,
         staking_apr: Decimal256,
+        holding_window: Decimal256,
     ) -> Self {
         Self {
             governance_contract: legacy.governance_contract,
@@ -125,6 +129,7 @@ impl Config {
             buffer_part: legacy.buffer_part,
             price_timeframe: legacy.price_timeframe,
             staking_apr,
+            holding_window,
         }
     }
 
@@ -276,6 +281,7 @@ mod test {
             Decimal256::from_str("0.018").unwrap(),
             PRICE_TIMEFRAME,
             Decimal256::from_str("0.0").unwrap(),
+            Decimal256::from_str("0.0").unwrap(),
         );
         assert!(creation_res.is_err());
 
@@ -296,6 +302,7 @@ mod test {
             Decimal256::from_str("0.5").unwrap(),
             Decimal256::from_str("0.018").unwrap(),
             PRICE_TIMEFRAME,
+            Decimal256::from_str("0.0").unwrap(),
             Decimal256::from_str("0.0").unwrap(),
         );
         assert!(creation_res.is_err());
@@ -318,6 +325,7 @@ mod test {
             Decimal256::from_str("0.018").unwrap(),
             PRICE_TIMEFRAME,
             Decimal256::from_str("0.0").unwrap(),
+            Decimal256::from_str("0.0").unwrap(),
         );
         assert!(creation_res.is_err());
 
@@ -338,6 +346,7 @@ mod test {
             Decimal256::from_str("0.5").unwrap(),
             Decimal256::from_str("0.018").unwrap(),
             PRICE_TIMEFRAME,
+            Decimal256::from_str("0.0").unwrap(),
             Decimal256::from_str("0.0").unwrap(),
         );
         assert!(creation_res.is_err());
@@ -360,6 +369,7 @@ mod test {
             Decimal256::from_str("0.018").unwrap(),
             PRICE_TIMEFRAME,
             Decimal256::from_str("0.0").unwrap(),
+            Decimal256::from_str("0.0").unwrap(),
         );
         assert!(creation_res.is_err());
 
@@ -381,6 +391,7 @@ mod test {
             Decimal256::from_str("1.1").unwrap(),
             PRICE_TIMEFRAME,
             Decimal256::from_str("0.0").unwrap(),
+            Decimal256::from_str("0.0").unwrap(),
         );
         assert!(creation_res.is_err());
 
@@ -401,6 +412,7 @@ mod test {
             Decimal256::from_str("0.5").unwrap(),
             Decimal256::zero(),
             PRICE_TIMEFRAME,
+            Decimal256::from_str("0.0").unwrap(),
             Decimal256::from_str("0.0").unwrap(),
         );
         assert!(creation_res.is_err());
@@ -424,6 +436,7 @@ mod test {
             Decimal256::from_str("0.5").unwrap(),
             Decimal256::from_str("0.018").unwrap(),
             PRICE_TIMEFRAME,
+            Decimal256::from_str("0.0").unwrap(),
             Decimal256::from_str("0.0").unwrap(),
         )
         .unwrap();
@@ -503,6 +516,7 @@ mod test {
             Decimal256::from_str("0.018").unwrap(),
             PRICE_TIMEFRAME,
             Decimal256::from_str("0.0").unwrap(),
+            Decimal256::from_str("0.0").unwrap(),
         )
         .unwrap();
 
@@ -532,6 +546,7 @@ mod test {
             Decimal256::from_str("0.5").unwrap(),
             Decimal256::from_str("0.018").unwrap(),
             PRICE_TIMEFRAME,
+            Decimal256::from_str("0.0").unwrap(),
             Decimal256::from_str("0.0").unwrap(),
         )
         .unwrap();

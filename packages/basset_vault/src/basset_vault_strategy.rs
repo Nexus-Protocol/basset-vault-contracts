@@ -22,6 +22,7 @@ pub struct InstantiateMsg {
     pub buffer_part: Decimal256,
     pub price_timeframe: u64,
     pub staking_apr: Decimal256,
+    pub holding_window: Decimal256,
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -58,6 +59,7 @@ pub enum GovernanceMsg {
         anc_ust_swap_addr: Option<String>,
         anchor_token_addr: Option<String>,
         staking_apr: Option<Decimal256>,
+        holding_window: Option<Decimal256>,
     },
     UpdateGovernanceContract {
         gov_addr: String,
@@ -96,6 +98,7 @@ pub struct ConfigResponse {
     pub buffer_part: Decimal256,
     pub price_timeframe: u64,
     pub staking_apr: Decimal256,
+    pub holding_window: Decimal256,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -180,4 +183,5 @@ pub struct MigrateMsg {
     pub anc_ust_swap_addr: String,
     pub anchor_token_addr: String,
     pub staking_apr: Decimal256,
+    pub holding_window: Decimal256,
 }
