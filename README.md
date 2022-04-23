@@ -140,9 +140,10 @@ Helper contract. CW20 contract have no ability to reward token holders, so some 
 
 To build smart contracts for production, use `build_release.sh` script.
 
-Before running it, make sure you installed tools for WASM:
+Before running it, make sure you installed:
  1. [WABT](https://github.com/WebAssembly/wabt) (`brew install wabt`)
  2. [Binaryen](https://github.com/WebAssembly/binaryen) (`brew install binaryen`)
+ 3. `sha256sum` (`brew install coreutils`)
 
 # Integration tests
 
