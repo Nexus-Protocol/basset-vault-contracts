@@ -15,6 +15,7 @@
     "borrow_ltv_min",
     "buffer_part",
     "governance_contract",
+    "holding_window",
     "oracle_contract",
     "price_timeframe",
     "stable_denom",
@@ -56,6 +57,9 @@
     },
     "governance_contract": {
       "type": "string"
+    },
+    "holding_window": {
+      "$ref": "#/definitions/Decimal256"
     },
     "oracle_contract": {
       "type": "string"

@@ -97,6 +97,16 @@
                 }
               ]
             },
+            "holding_window": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Decimal256"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "oracle_addr": {
               "type": [
                 "string",

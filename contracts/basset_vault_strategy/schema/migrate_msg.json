@@ -8,6 +8,7 @@
     "anchor_market_addr",
     "anchor_overseer_addr",
     "anchor_token_addr",
+    "holding_window",
     "staking_apr"
   ],
   "properties": {
@@ -25,6 +26,9 @@
     },
     "anchor_token_addr": {
       "type": "string"
+    },
+    "holding_window": {
+      "$ref": "#/definitions/Decimal256"
     },
     "staking_apr": {
       "$ref": "#/definitions/Decimal256"
