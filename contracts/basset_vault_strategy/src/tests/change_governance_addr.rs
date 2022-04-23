@@ -29,6 +29,7 @@ fn fail_to_change_governance_if_sender_is_not_governance() {
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
         staking_apr: Decimal256::from_str("0.0").unwrap(),
+        holding_window: Decimal256::from_str("0.0").unwrap(),
     };
 
     {
@@ -78,6 +79,7 @@ fn success_to_change_governance_if_sender_governance() {
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
         staking_apr: Decimal256::from_str("0.0").unwrap(),
+        holding_window: Decimal256::from_str("0.0").unwrap(),
     };
 
     {
@@ -158,6 +160,7 @@ fn fail_to_accept_governance_if_sender_is_wrong() {
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
         staking_apr: Decimal256::from_str("0.0").unwrap(),
+        holding_window: Decimal256::from_str("0.0").unwrap(),
     };
 
     {
@@ -238,6 +241,7 @@ fn too_late_to_change_governance() {
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
         staking_apr: Decimal256::from_str("0.0").unwrap(),
+        holding_window: Decimal256::from_str("0.0").unwrap(),
     };
 
     {
@@ -329,6 +333,7 @@ fn rewrite_new_gov_address_by_sending_second_update_gov_message() {
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
         staking_apr: Decimal256::from_str("0.0").unwrap(),
+        holding_window: Decimal256::from_str("0.0").unwrap(),
     };
 
     {

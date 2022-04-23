@@ -1034,6 +1034,22 @@ mod test {
     }
 
     #[test]
+    fn anchor_apr_profitable5() {
+        let anchor_apr = AnchorApr {
+            earn: Decimal256::from_str("0.30").unwrap(),
+            borrow: BorrowNetApr {
+                distribution_apr: Decimal256::from_str("0.10").unwrap(),
+                interest_apr: Decimal256::from_str("0.25").unwrap(),
+            },
+        };
+        let buffer_part = Decimal256::from_str("0.018").unwrap();
+        let holding_now = true;
+        let staking_apr = Decimal256::from_str("0.0").unwrap();
+        let holding_window = Decimal256::from_str("0.10").unwrap();
+        assert!(!anchor_apr.should_use_holding_strategy(buffer_part, holding_now, staking_apr, holding_window));
+    }
+
+    #[test]
     fn anchor_apr_not_profitable1() {
         let anchor_apr = AnchorApr {
             earn: Decimal256::from_str("0.0").unwrap(),

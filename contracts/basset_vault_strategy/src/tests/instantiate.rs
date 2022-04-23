@@ -26,6 +26,7 @@ fn proper_initialization() {
         buffer_part: Decimal256::from_str("0.018").unwrap(),
         price_timeframe: 60,
         staking_apr: Decimal256::from_str("0.0").unwrap(),
+        holding_window: Decimal256::from_str("0.0").unwrap(),
     };
 
     let env = mock_env();
@@ -39,6 +40,7 @@ fn proper_initialization() {
     assert_eq!(msg.anchor_market_addr, config.anchor_market_contract);
     assert_eq!(msg.anchor_interest_model_addr, config.anchor_interest_model_contract);
     assert_eq!(msg.anchor_overseer_addr, config.anchor_overseer_contract);
+    assert_eq!(msg.anchor_token_addr, config.anchor_token);
     assert_eq!(msg.anc_ust_swap_addr, config.anc_ust_swap_contract);
     assert_eq!(msg.basset_token_addr, config.basset_token);
     assert_eq!(msg.stable_denom, config.stable_denom);
@@ -48,4 +50,6 @@ fn proper_initialization() {
     assert_eq!(msg.basset_max_ltv, config.get_basset_max_ltv());
     assert_eq!(msg.buffer_part, config.get_buffer_part());
     assert_eq!(msg.price_timeframe, config.price_timeframe);
+    assert_eq!(msg.staking_apr, config.staking_apr);
+    assert_eq!(msg.holding_window, config.holding_window);
 }
