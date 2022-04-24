@@ -1,4 +1,4 @@
-name: Rust
+name: bAsset vault unit tests
 
 on:
   push:
