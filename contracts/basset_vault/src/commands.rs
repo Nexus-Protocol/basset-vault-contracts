@@ -321,48 +321,38 @@ pub fn withdraw_basset(
     //3. withdraw basset from anchor_custody
     //4. send basset to farmer
     //5. burn nasset
-    let mut rebalance_response = rebalance(
-        deps,
-        env,
-        &config,
-        basset_in_custody,
-        Some(basset_to_withdraw),
-    )?;
+    // let mut rebalance_response = rebalance(
+    //     deps,
+    //     env,
+    //     &config,
+    //     basset_in_custody,
+    //     Some(basset_to_withdraw),
+    // )?;
 
-    rebalance_response
-        .messages
-        .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+    let response = Response::new()
+        .add_submessage(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.anchor_overseer_contract.to_string(),
             msg: to_binary(&AnchorOverseerMsg::UnlockCollateral {
                 collaterals: vec![(config.basset_token.to_string(), basset_to_withdraw)],
             })?,
             funds: vec![],
-        })));
-
-    rebalance_response
-        .messages
-        .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+        })))
+        .add_submessage(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.anchor_custody_basset_contract.to_string(),
             msg: to_binary(&AnchorCustodyMsg::WithdrawCollateral {
                 amount: Some(basset_to_withdraw),
             })?,
             funds: vec![],
-        })));
-
-    rebalance_response
-        .messages
-        .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+        })))
+        .add_submessage(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.basset_token.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: farmer.to_string(),
                 amount: basset_to_withdraw.into(),
             })?,
             funds: vec![],
-        })));
-
-    rebalance_response
-        .messages
-        .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
+        })))
+        .add_submessage(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: config.nasset_token.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Burn {
                 amount: nasset_to_withdraw_amount.into(),
@@ -370,7 +360,7 @@ pub fn withdraw_basset(
             funds: vec![],
         })));
 
-    Ok(rebalance_response.add_attributes(vec![
+    Ok(response.add_attributes(vec![
         ("action", "withdraw"),
         ("nasset_amount", &nasset_to_withdraw_amount.to_string()),
     ]))
